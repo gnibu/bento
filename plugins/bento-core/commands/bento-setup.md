@@ -1,30 +1,24 @@
 ---
-description: Wire bento's always-on principles into your user CLAUDE.md (run once after installing bento). Idempotent.
+description: Wire bento into the current environment — always-on principles (user CLAUDE.md) and, in a repo, the Codex pointer block (AGENTS.md). Idempotent; run once after installing bento.
 ---
 
 # bento setup
 
-Marketplace install gives you the **playbooks** (triggered skills), but the **always-on
-principles** aren't a plugin surface — they need an `@import` in your user `CLAUDE.md`. This
-command adds it, once.
+Marketplace install gives Claude the **playbooks**. This command wires the two things it
+doesn't: the always-on **principles** (for Claude) and the **Codex pointer block** (for
+AGENTS.md-based agents). Both steps are idempotent.
 
-Do this:
+Locate bento's root — the parent of the `plugins/` dir holding this plugin
+(`${CLAUDE_PLUGIN_ROOT}/../..`), or `./.bento` if vendored as a submodule.
 
-1. Find bento's `install.sh`. It sits at the bento root — the parent of the `plugins/`
-   directory that contains this plugin. From this plugin's root (`${CLAUDE_PLUGIN_ROOT}`),
-   that's typically `${CLAUDE_PLUGIN_ROOT}/../../install.sh`. If bento is vendored in the
-   repo instead (submodule), it's `./.bento/install.sh`.
-2. Run it: `bash <path>/install.sh`. It idempotently appends
-   `@<bento>/principles/PRINCIPLES.md` as a block at the end of `~/.claude/CLAUDE.md`
-   (honours `$CLAUDE_CONFIG_DIR`), and is safe to re-run.
-3. Confirm the import line is present in the user `CLAUDE.md`, then tell the user the
-   principles load next session.
+1. **Principles → user `CLAUDE.md`:** run `bash <bento>/install.sh`. It appends
+   `@<bento>/principles/PRINCIPLES.md` to `~/.claude/CLAUDE.md` (honours `$CLAUDE_CONFIG_DIR`),
+   only if absent. Principles load next session.
 
-If `install.sh` can't be located, fall back to appending the import manually: resolve the
-absolute path to bento's `principles/PRINCIPLES.md` and, only if that exact `@import` line
-is not already in `~/.claude/CLAUDE.md`, append a new block:
+2. **Codex block → repo `AGENTS.md`** (only when working in a repo that has one): run
+   `python3 <bento>/install/bento-agents.py ./AGENTS.md`. It adds or updates a
+   marker-bounded pointer block so Codex reaches the same `.bento/` files. Edit the
+   `AGENTS.md` source, never a `CLAUDE.md` symlink. Skip this step outside a repo.
 
-```
-# bento (shared agent operating layer — always-on principles)
-@<abs>/principles/PRINCIPLES.md
-```
+Then confirm to the user what was wired, and that step 2 is a **committed** change (review
+before landing in a team repo).
