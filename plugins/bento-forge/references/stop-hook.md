@@ -97,10 +97,18 @@ command = 'bash "$(git rev-parse --show-toplevel)/.bento/plugins/bento-forge/scr
 ```
 
 Verified on codex-cli 0.153.4: the Stop hook fires and passes `session_id`,
-`transcript_path`, and `cwd`, so **autorun works** (`BENTO_IMPROVE_AUTORUN=1`). But Codex
-does **not** surface the passive nudge — the hook's `additionalContext` output is not
-injected (tested camelCase and snake_case; no continuation in `codex exec`). So under Codex,
-rely on autorun or manual `bento-improve`; the passive reminder is Claude-only.
+`transcript_path`, and `cwd`, so **autorun works** (`BENTO_IMPROVE_AUTORUN=1`).
+
+**The nudge must use `systemMessage`, not `additionalContext`.** For the `Stop` event,
+`hookSpecificOutput.additionalContext` is *not* surfaced to the user or model on either
+Claude or Codex — only `SessionStart`/`UserPromptSubmit` inject context. The field a Stop
+hook surfaces is **`systemMessage`** ("shown as a warning in the UI"). `stop-nudge.sh`
+emits `systemMessage` (with `additionalContext` kept as a harmless fallback), so the nudge
+surfaces on both hosts. `systemMessage` is a UI warning, so it appears in an interactive
+session — not in headless `codex exec` output (which is why exec can't verify it; test
+interactively). To *continue* the turn instead of just warning, a Stop hook returns
+`{"decision":"block","reason":"…"}` (the reason becomes the next prompt) — bento's nudge
+deliberately only warns, it doesn't force continuation.
 
 ## Remove it
 
