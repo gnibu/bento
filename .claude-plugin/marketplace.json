@@ -1,0 +1,20 @@
+{
+  "name": "bento",
+  "owner": { "name": "Ben Pothier" },
+  "metadata": {
+    "description": "Ben's personal agent kit — how I work, packed into portable compartments.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "bento-core",
+      "source": "./plugins/bento-core",
+      "description": "L1: generic playbooks (triggered skills). Principles ship separately via the user CLAUDE.md import — see install/user-claude-md.md."
+    },
+    {
+      "name": "bento-forge",
+      "source": "./plugins/bento-forge",
+      "description": "Generator: init a fresh repo's L2, or improve an existing one. Stubs today — see plugins/bento-forge/commands."
+    }
+  ]
+}
