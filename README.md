@@ -21,7 +21,26 @@ Precedence: **L2 > L1.** A project's own rules win; bento fills the gaps.
   - `eval-blind` — compare models/prompts without bias leaking into the verdict.
   - `hillclimb` — tune a metric one variable at a time, keep-or-revert, logged.
 
-Install + dev-load: see `install/user-claude-md.md`.
+## Install
+
+**Claude-only (via marketplace):**
+
+```bash
+claude plugin marketplace add gnibu/bento
+claude plugin install bento-core@bento     # + bento-forge@bento
+/bento-setup                               # wires the always-on principles (one time)
+```
+
+Marketplace install gives you the **playbooks**; the always-on **principles** aren't a
+plugin surface, so run `/bento-setup` (or `install.sh`) once to `@import` them into your
+user `CLAUDE.md`.
+
+**Cross-agent (Claude + Codex) in a repo:** vendor bento as a submodule so Codex can read
+the files, then a directory-source marketplace for Claude + `AGENTS.md` pointers for Codex —
+see `ARCHITECTURE.md` and `install/agents-md-snippet.md`.
+
+Dev-load while iterating: `claude --plugin-dir plugins/bento-core`. See
+`install/user-claude-md.md`.
 
 ## Not built yet (deliberately)
 
