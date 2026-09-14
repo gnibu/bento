@@ -55,22 +55,30 @@ preferences.
 
 ## Autorun (optional, recurrence-gated)
 
-A guarded Stop hook can run Reflect+Route headless, bank each candidate in a local ledger,
-and open a PR only once the same learning has recurred across several independent sessions —
-a single session can't tell a pattern from a one-off, so recurrence is the filter and the PR
-is the approval gate that replaces the interactive apply.
+Two hooks run Reflect+Route headless and split the loop by what each hook can do —
+**bank at Stop, surface at SessionStart** — so it needs no env var and behaves the
+same on Claude and Codex:
+
+- **Stop** reflects on the finished session and banks each candidate in a local ledger,
+  silently. Always-on; it never opens a PR. Trivial sessions ("say hi") are skipped.
+- **SessionStart** reads the ledger (no LLM) and, when a learning has recurred across
+  enough independent sessions, injects a model-visible prompt to review the ripe learnings
+  and open a PR. A single session can't tell a pattern from a one-off, so recurrence is the
+  filter and **your yes to that prompt is the approval gate** that replaces the interactive
+  apply. Fully hands-off? `BENTO_IMPROVE_AUTO_PR=1` lets the Stop worker open the PR itself.
 
 This is implemented, not just described. The bundle lives beside this command:
 
 ```
-scripts/stop-nudge.sh      Stop-hook entry: nudge, or (BENTO_IMPROVE_AUTORUN=1) spawn the worker
-scripts/worker.sh          detached retrospective: digest → reflect → ledger → promote (branch + PR)
+scripts/session-stop.sh    Stop-hook entry: skip trivial, else spawn the worker (reflect + bank)
+scripts/session-start.sh   SessionStart-hook entry: surface ripe learnings, model-visible (no LLM)
+scripts/worker.sh          detached retrospective: digest → reflect → ledger; promote only if AUTO_PR
 scripts/digest.sh          transcript → learnable signal, gated on friction
 scripts/ledger.sh          local per-key recurrence ledger (keys|add|pending|ripe|show|promote|path)
 scripts/secret-scan.sh     fail-closed credential filter on candidates before they are banked
 prompts/reflect.md         read-only Reflect+Route prompt (this command's steps 1–2)
 prompts/promote.md         write-enabled Propose prompt for ripe candidates (this command's step 3)
-references/stop-hook.md    how to wire the hook (personal, opt-in)
+references/stop-hook.md    how to wire both hooks (personal, opt-in)
 references/autorun.md      the full pipeline, gate, ledger, tunables, safety model
 scripts/test-*.sh          self-checks: `bash scripts/test-parse.sh` etc.
 ```
