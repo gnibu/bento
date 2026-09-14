@@ -52,6 +52,9 @@ if [ -n "${BENTO_IMPROVE_AUTORUN:-}" ]; then
   exit 0
 fi
 
+# `systemMessage` is the field a Stop hook surfaces to the user on BOTH Claude and Codex.
+# `additionalContext` is NOT model/user-visible for the Stop event, so it can't carry the
+# nudge — kept only as a harmless fallback for any host that reads it.
 cat <<'JSON'
-{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"Session winding down — consider capturing learnings via your session-learn / bento-improve skill and routing them to the right shared artifact (subsystem AGENTS.md, a skill, docs, or a code fix)."}}
+{"systemMessage":"Session winding down — consider capturing learnings via your session-learn / bento-improve skill and routing them to the right shared artifact (subsystem AGENTS.md, a skill, docs, or a code fix).","hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"Session winding down — consider capturing learnings via your session-learn / bento-improve skill."}}
 JSON

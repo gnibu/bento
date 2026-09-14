@@ -84,6 +84,33 @@ sleep 1 && tail -1 ~/.claude/bento-improve/worker.log   # -> "test456 below gate
 rm -f "${TMPDIR:-/tmp}/bento-improve-test456.done"
 ```
 
+## Codex
+
+Codex has the same hooks system (`[features].hooks`) with a `Stop` event; wire the same
+script in `.codex/config.toml`:
+
+```toml
+[[hooks.Stop]]
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'bash "$(git rev-parse --show-toplevel)/.bento/plugins/bento-forge/scripts/stop-nudge.sh"'
+```
+
+Verified on codex-cli 0.153.4: the Stop hook fires and passes `session_id`,
+`transcript_path`, and `cwd`, so **autorun works** (`BENTO_IMPROVE_AUTORUN=1`).
+
+**The nudge must use `systemMessage`, not `additionalContext`.** For the `Stop` event,
+`hookSpecificOutput.additionalContext` is *not* surfaced to the user or model on either
+Claude or Codex — only `SessionStart`/`UserPromptSubmit` inject context. The field a Stop
+hook surfaces is **`systemMessage`** ("shown as a warning in the UI"). `stop-nudge.sh`
+emits `systemMessage` (with `additionalContext` kept as a harmless fallback), so the nudge
+surfaces on both hosts. `systemMessage` is a UI warning, so it appears in an interactive
+session — not in headless `codex exec` output (which is why exec can't verify it; test
+interactively). To *continue* the turn instead of just warning, a Stop hook returns
+`{"decision":"block","reason":"…"}` (the reason becomes the next prompt) — bento's nudge
+deliberately only warns, it doesn't force continuation.
+
 ## Remove it
 
-Delete the `Stop` block from `.claude/settings.local.json`. Nothing else to undo.
+Delete the `Stop` block from `.claude/settings.local.json` (Claude) or `.codex/config.toml`
+(Codex). Nothing else to undo.
