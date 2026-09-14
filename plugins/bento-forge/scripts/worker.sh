@@ -9,12 +9,16 @@
 #   1. digest the finished session                       (digest.sh, gated)
 #   2. reflect on it in a read-only `claude -p`          -> candidate JSONL
 #   3. append candidates to the local ledger             (ledger.sh)
-#   4. any key that has now recurred in >=N sessions     -> branch + PR
+#   4. (BENTO_IMPROVE_AUTO_PR=1 only) any key that has
+#      now recurred in >=N sessions                      -> branch + PR
 #
-# Step 3/4 is the whole point of the split. One session cannot tell a real
-# pattern from a one-off, and a job that opened a PR per session would bury the
-# team in noise. Recurrence across independent sessions is the filter; the PR is
-# the approval gate that replaces the interactive `apply`.
+# Bank-only by default. Reflect + bank always runs; opening a PR is OPT-IN via
+# BENTO_IMPROVE_AUTO_PR=1, for fully hands-off operators. Without it the worker
+# stops after banking, and ripened learnings are surfaced at the next session
+# start (session-start.sh) for a human to say yes — that interactive yes is the
+# approval gate. One session cannot tell a real pattern from a one-off, so even
+# when auto-PR is on, recurrence across >=N independent sessions is the filter
+# that decides what gets a PR.
 #
 # Promotion runs in a throwaway worktree, never the session's own: this is an
 # agent with write access firing while nobody is watching, and it must not be
@@ -176,6 +180,10 @@ fi
 rm -f "$clean"
 
 # ---- 4. promote anything that has now recurred -------------------------------
+# Bank-only unless the operator opted into hands-off PRs. Default: stop here and
+# let session-start.sh surface the ripe keys next session for a human to approve.
+[ -n "${BENTO_IMPROVE_AUTO_PR:-}" ] || exit 0
+
 ripe="$("$here/ledger.sh" ripe "$THRESHOLD")"
 [ -n "$ripe" ] || exit 0
 

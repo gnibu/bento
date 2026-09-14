@@ -1,26 +1,49 @@
 # Autorun: unattended session retrospectives
 
-Opt-in mode where the `Stop` hook hands each finished session to a detached
-worker instead of nudging the operator. Enable with `BENTO_IMPROVE_AUTORUN=1` on
-the hook command (see `stop-hook.md`).
+The loop is split across two hooks by what each can do — **bank at Stop, surface
+at SessionStart** — so it needs no env var and works the same on Claude and
+Codex. See `stop-hook.md` for wiring.
+
+- **Stop (`session-stop.sh`)** hands each finished session to a detached worker
+  that reflects + banks candidates to the local ledger. Always-on, silent, no env
+  gate. It never opens a PR.
+- **SessionStart (`session-start.sh`)** reads the ledger (no LLM) and, if any
+  learning has ripened, injects a model-visible prompt to review them and open a
+  PR. This is where surfacing happens: SessionStart `additionalContext` is
+  model-visible, a Stop hook's is not.
+- **PR opening is opt-in.** By default the human's yes to the SessionStart prompt
+  is the approval gate. Set `BENTO_IMPROVE_AUTO_PR=1` on the Stop command for a
+  fully hands-off worker that opens the PR itself once a learning ripens.
 
 ## Pipeline
 
 ```
-Stop hook  (stop-nudge.sh, once per session_id)
+Stop hook  (session-stop.sh, once per session_id; skips trivial sessions)
   └─ nohup worker.sh --transcript … --session … --cwd …      detached
        │
        ├─ digest.sh          transcript -> signal only, or exit if below gate
        ├─ claude -p          read-only reflect  -> candidate JSONL
-       ├─ ledger.sh add      bank candidates locally
-       └─ ledger.sh ripe     key recurred in >=N sessions?
+       ├─ ledger.sh add      bank candidates locally           ← default stops here
+       └─ ledger.sh ripe     key recurred in >=N sessions?     ← only if BENTO_IMPROVE_AUTO_PR=1
             ├─ claude -p        (optional) tracker: open the issue that hosts the work
             └─ scratch worktree -> claude -p (acceptEdits) -> commit -> PR
+
+SessionStart hook  (session-start.sh, next session)
+  └─ ledger.sh ripe -> if >=1, inject a model-visible "N learnings ripened" prompt
 ```
 
 There is no cron and no LaunchAgent. A scheduler would have to rediscover which
 sessions ended and when; the `Stop` hook already knows and hands over the exact
-transcript path.
+transcript path. The SessionStart read is what closes the loop with no scheduler:
+the next session inspects the ledger the previous ones filled.
+
+## Trivial-session skip
+
+`session-stop.sh` spawns the worker only for sessions that could teach something.
+It skips (before spawning, no cost) when the transcript is missing, or the
+session has **fewer than 2 operator turns AND no tool use** — a "say hi" session
+never touched the repo. The `digest.sh` gate inside the worker is the real
+quality filter; this pre-check just avoids paying a worker for nothing.
 
 ## Repo adoption gate
 
@@ -58,8 +81,9 @@ and the ledger only counts. A key's weight is its number of **distinct
 `session_id`s**: one session tripping over the same thing five times is still one
 observation.
 
-Read by exactly two things: the worker, at the end of every run (so no second
-scheduler exists), and you.
+Read by three things: the worker (when `BENTO_IMPROVE_AUTO_PR=1`, to decide what
+to promote), `session-start.sh` at the next session start (to count ripe keys and
+surface them — this is what closes the loop with no scheduler), and you.
 
 ```bash
 ledger.sh pending          # key -> distinct-session count, unpromoted only
@@ -122,7 +146,7 @@ worker.sh --preview-issue
 
 | Env | Default | |
 |---|---|---|
-| `BENTO_IMPROVE_AUTORUN` | unset | Enables autorun; unset means nudge. |
+| `BENTO_IMPROVE_AUTO_PR` | unset | Set on the Stop command for a hands-off worker that opens the PR itself once a learning ripens. Unset = bank only, surface at next SessionStart. |
 | `BENTO_IMPROVE_REPO_MARKER` | `.bento` | Repo-adoption marker; empty runs in any git repo. |
 | `BENTO_IMPROVE_BASE_BRANCH` | `main` | Branch the promotion worktree and PR target. |
 | `BENTO_IMPROVE_THRESHOLD` | `3` | Distinct sessions before a key is promoted. |
@@ -202,6 +226,8 @@ output as a fixture.
 ./test-parse.sh     # reflect-output parsing against a real captured response
 ./test-issue.sh     # tracker issue title/body derived from ripe keys (renders only)
 ./test-secret-scan.sh   # credential shapes are dropped, ordinary errors are not
+./test-session-stop.sh  # Stop hook skips trivial sessions, spawns on substantive ones
+./test-session-start.sh # SessionStart emits the prompt only when candidates ripen
 ./digest.sh <transcript.jsonl> | head    # eyeball a digest
 ./worker.sh --preview-issue              # what the ledger would file right now
 ```
