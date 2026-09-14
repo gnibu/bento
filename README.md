@@ -54,6 +54,29 @@ see `ARCHITECTURE.md` and `install/agents-md-snippet.md`.
 Dev-load while iterating: `claude --plugin-dir plugins/bento-core`. See
 `install/user-claude-md.md`.
 
+## Update (self-update)
+
+bento is versioned; pull the latest and reconcile the wiring. Same repo, two install modes:
+
+- **Marketplace install (Claude-only):**
+  ```bash
+  claude plugin update bento-core@bento     # + bento-forge@bento; restart to apply
+  ```
+- **Vendored (`.bento` submodule, cross-agent):**
+  ```bash
+  git submodule update --remote .bento      # pull latest bento
+  git add .bento && git commit -m "chore: bump .bento"
+  ```
+- **After either, re-run `/bento-setup`** — it's idempotent and reconciles the principles
+  import, the `AGENTS.md` block, and the hooks with the new version (e.g. picks up a renamed
+  script). Safe to run every update.
+
+Pin/roll back by checking the submodule out at a specific bento SHA (or a `plugin@version`).
+
+**Content self-update:** bento also improves *itself* — `bento-improve` routes generic
+learnings back into bento (L1) as PRs. That's the mechanism for the framework evolving from
+real use, not just version bumps.
+
 ## Not built yet (deliberately)
 
 - More playbooks (bug-fix, ship, refactor…) — add when a real recurring task needs one,
