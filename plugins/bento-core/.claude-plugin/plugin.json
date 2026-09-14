@@ -1,0 +1,5 @@
+{
+  "name": "bento-core",
+  "description": "Generic task playbooks that travel across every project. Each opens with a pasteable step checklist.",
+  "version": "0.1.0"
+}
