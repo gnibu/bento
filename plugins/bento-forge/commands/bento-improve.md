@@ -1,24 +1,61 @@
 ---
-description: Improve an existing project layer (L2) — mine signal, propose a patch, prove keep-or-revert. Never regenerate.
+description: Reflect on a session and route each reusable learning to its cheapest correct home (L1 bento or L2 repo). Evolve an existing instruction layer — diff and propose, never regenerate. Idempotent; prove skill edits with the eval harness.
 ---
 
-# bento improve (stub — phase 2/3)
+# bento improve
 
-Evolve an existing L2 instead of regenerating it. The engine already exists: this is
-Rose's `rose-session-learn` (Reflect → Route → Propose, with its pricing model and
-recurrence-gated autorun) **generalized** — widen its Route table's sinks from Rose-only
-(`AGENTS.md`/docs/skills) to **L1 principles vs L2 project layer**, respecting L2 > L1.
+The learning engine. Turn what a session surfaced into durable improvements, each routed to
+one home. Generalizes a session-learning router to two layers: **L1 (bento, generic)** and
+**L2 (this repo, specific)**. This is *improve* — evolve what exists, diff and propose; for a
+greenfield repo with no layer, see `bento-init`.
 
-**Not built yet.** Reuse `rose-session-learn` as the reference implementation; do not
-rebuild the router. The routing + pricing rules it applies live in
-`conventions/instruction-layer.md` — the single source for "which sink, how terse".
+## 1. Reflect
 
-When implemented:
+Scan the session for signal, citing the turn/command:
 
-1. Widen the sink table to L1 vs L2; propose a patch, never regenerate over hand edits
-   (needs the "last generated" baseline from `/bento-init` for a 3-way merge).
-2. Start from a quality signal: never-invoked / high-cost-low-use skills, and
-   `claude plugin eval` with/without (which skills actually move outcomes).
-3. Mine only PR reviews since the last run (incremental tribal knowledge).
-4. Require the eval arm to prove keep-or-revert — hillclimb applied to the skills themselves.
-5. In a team repo, the proposed L2 patch still lands via normal PR review.
+- **Friction** — anything slow, retried, or failed before it worked. Trace the *root cause*.
+- **Operator corrections** — a redirect/reminder is a signal even with no error: something you
+  should have done or offered yourself. Fix the missing behavior, not the one instance.
+- **Surfaced bugs** — code that misbehaved (silent failures, wrong checks, missing guards).
+- **Reusable gotchas** — a command, env quirk, or non-obvious pattern the next agent trips on.
+- **Repeatable workflows** — a multi-step procedure that will recur.
+
+**Reuse gate (hard filter):** keep a candidate only if you can name a concrete recurring
+trigger. Default to dropping. Surfacing nothing is a valid outcome — don't manufacture
+learnings. Ignore anything already documented (grep first).
+
+## 2. Route — one destination per learning
+
+Pick the cheapest correct home. Price the sink first (see `.bento/conventions/instruction-layer.md`).
+
+**By kind:**
+- Code bug / wrong logic → fix the **source** + a test. The fix is the learning.
+- Cross-role procedure → **existing docs** + a task-triggered link from the instruction file.
+- Agent orchestration / tool choice / review behavior → a **skill** (amend the owner; create
+  one only if none fits — see `authoring-a-playbook`).
+- Code-scoped gotcha / command / env quirk → the **nearest `AGENTS.md`** to that code.
+- Human-facing architecture / decision → **docs** (or an ADR).
+- One-off → **drop it.**
+
+**By layer:**
+- Generic (helps any repo, any agent) → **L1: bento** — a principle, convention, or playbook.
+- Repo-specific → **L2: this repo's** instruction layer.
+
+Never bank a team-useful learning in **private memory** — it's per-operator and reaches no
+one else. Private memory is the last resort, only for genuinely personal, cross-project
+preferences.
+
+## 3. Propose, then apply
+
+- Show the concrete diff per learning, grouped by destination, **before** touching anything.
+- Apply on explicit go-ahead. Leave commits/PRs to the user.
+- **For a skill/playbook edit, prove it:** baseline `claude plugin eval` → apply the edit →
+  re-run → keep only on a real lift beyond noise (`--runs 3+`), else revert. Log kept/reverted
+  (this is `hillclimb` applied to the instruction layer itself).
+
+## Autorun (optional, recurrence-gated)
+
+A guarded Stop hook can run Reflect+Route headless, bank each candidate in a local ledger,
+and open a PR only once the same learning has recurred across several independent sessions —
+a single session can't tell a pattern from a one-off, so recurrence is the filter and the PR
+is the approval gate that replaces the interactive apply.

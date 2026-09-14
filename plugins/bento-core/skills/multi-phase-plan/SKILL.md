@@ -20,15 +20,19 @@ a checklist an owner runs box by box and an auditor can check from the evidence.
    options, don't block.
 3. **Explore in subagents,** each returning file pointers, conventions, test commands, and
    entry points — not inlined dumps. Keeps the planning context clean.
-4. **Write the plan as a checklist.** One section per PR; **one PR = one change with its own
+4. **Lock the architecture before coding.** State the module boundaries, data flow, and the
+   key interfaces/contracts the change assumes, and pressure-test them: what breaks at scale,
+   which decisions are hard to reverse, where the design fights the existing system? Settle
+   these now — a wrong contract discovered mid-build is the expensive kind.
+5. **Write the plan as a checklist.** One section per PR; **one PR = one change with its own
    evidence.** Order sections by dependency (independent work first; dependent work after its
    parent).
-5. **Every box names the evidence that checks it** — a file, a log line, a screenshot, a test
+6. **Every box names the evidence that checks it** — a file, a log line, a screenshot, a test
    run, or a SHA. A box is checked only when that evidence exists.
-6. **State the verification rule per PR:** tests alone are not sufficient. A PR is verified
+7. **State the verification rule per PR:** tests alone are not sufficient. A PR is verified
    only when its unit test, a live run on the real surface, and a regression check vs the
    current baseline all pass. Name the metric/scenario for each.
-7. **Hand back.** Post the plan path and stop. Implementation starts only on the operator's
+8. **Hand back.** Post the plan path and stop. Implementation starts only on the operator's
    explicit go, under whichever execution flow the plan names.
 
 ## Guardrails
