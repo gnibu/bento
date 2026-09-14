@@ -59,23 +59,60 @@ Test for each practice: *would this help an agent in a repo that isn't Rose?*
 
 ## How a project adopts bento
 
-Pin bento as a git submodule so team + CI get one reproducible, versioned source for both
-delivery channels:
+**Playbooks + forge (the plugins) — canonical marketplace install, not a submodule.**
+Claude Code manages the clone and updates. Commit the marketplace + enablement to the
+repo's `.claude/settings.json` so the team and CI get it automatically:
+
+```
+claude plugin marketplace add gnibu/bento     # resolves from the repo's DEFAULT branch
+claude plugin install bento-core@bento
+claude plugin install bento-forge@bento
+```
+
+This persists the marketplace + `enabledPlugins` into settings; commit those. Upgrade with
+`claude plugin update` (pin releases with `claude plugin tag`). The marketplace resolves
+from the repo's **default branch**, so `marketplace.json` must live there — not just on a
+feature branch.
+
+**Principles (always-on) — the one gap the plugin system doesn't cover.** A plugin ships
+only *triggered* surfaces, so the always-on principles still need a `CLAUDE.md` `@import`,
+and a committed team import needs a stable in-repo path (the plugin cache under `~/.claude`
+is per-machine, not committable). Options, cheapest first:
+- Each dev imports them at user scope (`install.sh`) — personal, not enforced in CI.
+- Inline the (short) principle text into the repo's own root instructions — committed and
+  enforced, but it becomes the repo's copy, not the shared source.
+- Vendor just `principles/PRINCIPLES.md` at a known path for a committed `@import`.
+
+Keep bento **thin** so it doesn't duplicate what a mature repo already does better (Rose
+has `investigate`, `ship`, …). bento carries the cross-cutting layer; the repo keeps its
+domain skills.
+
+## Cross-agent (Claude Code + Codex)
+
+The plugin/marketplace system is **Claude-only** — Codex reads `AGENTS.md`, with no plugin
+or triggered-skill loader. To serve both, keep one agent-neutral source and two thin
+wrappers. This requires bento to be **vendored in the repo** (Codex can't fetch a Claude
+marketplace, so the files must be on disk):
 
 ```
 <repo>/
-  .bento/                         # submodule → github.com/<you>/bento @ pinned SHA
-  .claude/
-    settings.json  (committed)    # marketplace: "./.bento"; enabledPlugins: bento-core, bento-forge
-    CLAUDE.md      (committed)    # @.bento/principles/PRINCIPLES.md   (+ conventions import)
+  .bento/                      # vendored bento (git submodule, pinned) — so Codex can read it
+  .claude/settings.json        # Claude: local-path marketplace ./.bento → auto-triggering skills
+  AGENTS.md                    # Codex: principles + playbook pointers into .bento/ (see install/agents-md-snippet.md)
 ```
 
-Upgrade = bump the submodule SHA via a normal PR. bento evolves in its own repo, reviewed
-independently of the consuming project.
+| pillar | shared source | Claude Code | Codex |
+|---|---|---|---|
+| principles | `.bento/principles/PRINCIPLES.md` | `CLAUDE.md` `@import` | `AGENTS.md` pointer |
+| conventions | `.bento/conventions/*` | referenced | `AGENTS.md` pointer |
+| playbooks | `.bento/plugins/**/SKILL.md` | auto-triggering skill (local marketplace) | `AGENTS.md` task-trigger pointer |
 
-Adopting into a mature repo (Rose) means: keep bento **thin** so it doesn't duplicate what
-the repo already does better (Rose already has `investigate`, `ship`, …). bento carries the
-cross-cutting layer; the repo keeps its domain skills.
+Trade-off: Codex loses auto-triggering (it follows a pointer and the model chooses to read);
+same content, less ergonomics. That's inherent to Codex having no skill system.
+
+Note: with the vendored `.bento`, Claude uses a **local-path** marketplace
+(`claude plugin marketplace add ./.bento`), so bento need **not** be merged to its default
+branch for a consuming repo to use it — the files are already present.
 
 ## Phased build
 
@@ -84,8 +121,9 @@ cross-cutting layer; the repo keeps its domain skills.
 2. **Conventions:** extract the pricing/pointer/routing discipline from `rose-session-learn`
    + `claude-md-improver` into `conventions/`. Extraction, not authoring.
 3. **Engine:** implement `bento-forge improve` = session-learn router with L1/L2 sinks.
-4. **Adopt into Rose:** push bento to GitHub; add as `.bento` submodule + committed
-   `.claude/settings.json` + `CLAUDE.md` import, as a draft PR to `develop` for team review.
+4. **Adopt into Rose:** merge bento to its default branch; add the marketplace + enable the
+   plugins in a committed `.claude/settings.json`, as a draft PR to `develop` for team
+   review. Principles (the always-on `@import`) follow separately.
 
 ## Credits
 
