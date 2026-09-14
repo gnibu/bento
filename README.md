@@ -27,6 +27,11 @@ Precedence: **L2 > L1.** A project's own rules win; bento fills the gaps.
   - `refactor` — change structure while holding behavior; pin first, prove equivalence.
   - `prototype` — throwaway spike to make a design decision cheaply; decide by observation.
   - `multi-phase-plan` — plan a large change as verifiable units before implementing.
+  - `ship` — land a change: sync base, verify, review diff, commit/push/PR (git/file-only).
+  - `qa` — exercise a change on its real surface (browser/CLI/API); report evidenced defects.
+  - `spec` — turn vague intent into a precise, executable spec before building.
+  - `cso` — security audit against common vuln classes; evidenced, confidence-calibrated.
+  - `docs` — write/update docs to match current code; release notes.
 
 ## Install
 
