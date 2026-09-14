@@ -24,6 +24,9 @@ Precedence: **L2 > L1.** A project's own rules win; bento fills the gaps.
   - `authoring-a-playbook` — how to write a new bento playbook (gate, checklist, prove, eval).
   - `investigate` — evidence-first root-cause debugging; fix at the shared source.
   - `checkpoint` — capture in-progress state so work survives a reset or handoff.
+  - `refactor` — change structure while holding behavior; pin first, prove equivalence.
+  - `prototype` — throwaway spike to make a design decision cheaply; decide by observation.
+  - `multi-phase-plan` — plan a large change as verifiable units before implementing.
 
 ## Install
 
