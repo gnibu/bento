@@ -84,6 +84,25 @@ sleep 1 && tail -1 ~/.claude/bento-improve/worker.log   # -> "test456 below gate
 rm -f "${TMPDIR:-/tmp}/bento-improve-test456.done"
 ```
 
+## Codex
+
+Codex has the same hooks system (`[features].hooks`) with a `Stop` event; wire the same
+script in `.codex/config.toml`:
+
+```toml
+[[hooks.Stop]]
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'bash "$(git rev-parse --show-toplevel)/.bento/plugins/bento-forge/scripts/stop-nudge.sh"'
+```
+
+Verified on codex-cli 0.153.4: the Stop hook fires and passes `session_id`,
+`transcript_path`, and `cwd`, so **autorun works** (`BENTO_IMPROVE_AUTORUN=1`). But Codex
+does **not** surface the passive nudge — the hook's `additionalContext` output is not
+injected (tested camelCase and snake_case; no continuation in `codex exec`). So under Codex,
+rely on autorun or manual `bento-improve`; the passive reminder is Claude-only.
+
 ## Remove it
 
-Delete the `Stop` block from `.claude/settings.local.json`. Nothing else to undo.
+Delete the `Stop` block from `.claude/settings.local.json` (Claude) or `.codex/config.toml`
+(Codex). Nothing else to undo.
