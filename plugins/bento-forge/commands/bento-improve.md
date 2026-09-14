@@ -59,3 +59,22 @@ A guarded Stop hook can run Reflect+Route headless, bank each candidate in a loc
 and open a PR only once the same learning has recurred across several independent sessions —
 a single session can't tell a pattern from a one-off, so recurrence is the filter and the PR
 is the approval gate that replaces the interactive apply.
+
+This is implemented, not just described. The bundle lives beside this command:
+
+```
+scripts/stop-nudge.sh      Stop-hook entry: nudge, or (BENTO_IMPROVE_AUTORUN=1) spawn the worker
+scripts/worker.sh          detached retrospective: digest → reflect → ledger → promote (branch + PR)
+scripts/digest.sh          transcript → learnable signal, gated on friction
+scripts/ledger.sh          local per-key recurrence ledger (keys|add|pending|ripe|show|promote|path)
+scripts/secret-scan.sh     fail-closed credential filter on candidates before they are banked
+prompts/reflect.md         read-only Reflect+Route prompt (this command's steps 1–2)
+prompts/promote.md         write-enabled Propose prompt for ripe candidates (this command's step 3)
+references/stop-hook.md    how to wire the hook (personal, opt-in)
+references/autorun.md      the full pipeline, gate, ledger, tunables, safety model
+scripts/test-*.sh          self-checks: `bash scripts/test-parse.sh` etc.
+```
+
+Repo/host-neutral: base branch, tracker integration, and the repo-adoption marker are all
+env-parameterized (`references/autorun.md` → Tunables). Nothing is hardcoded to a repo.
+Preview what the ledger would file with `scripts/worker.sh --preview-issue`.
