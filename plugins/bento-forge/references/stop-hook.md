@@ -1,0 +1,89 @@
+# Wiring the bento-improve Stop hook
+
+The nudge is **opt-in per operator**. The scripts ship with the `bento-forge`
+plugin, but the activation lives in your **personal, gitignored**
+`.claude/settings.local.json` so it never fires for coworkers who didn't opt in.
+
+## Why personal scope
+
+A `Stop` hook fires at the end of **every turn**. The script guards against
+per-turn spam with a per-`session_id` sentinel, so it nudges at most once per
+session. But whether you *want* that nudge at all is a personal preference — so
+the trigger stays out of the committed `.claude/settings.json`.
+
+## Two modes
+
+| Mode | Behaviour |
+|---|---|
+| **nudge** (default) | Injects a reminder to capture the session's learnings. |
+| **autorun** (`BENTO_IMPROVE_AUTORUN=1`) | Spawns a detached worker that reflects, banks candidates in a local ledger, and opens a PR once a learning recurs. See `autorun.md`. |
+
+## Path to the script
+
+The scripts live under the plugin at `scripts/stop-nudge.sh`. Point the hook at
+wherever bento is installed. With bento **vendored** in the repo (the
+`<repo>/.bento` model), that is:
+
+```
+"$CLAUDE_PROJECT_DIR"/.bento/plugins/bento-forge/scripts/stop-nudge.sh
+```
+
+Adjust the prefix if you install bento elsewhere (e.g. a plugin cache path or an
+absolute checkout). Scripts call their siblings via `$(dirname "$0")`, so the
+whole bundle is relocatable — only this one entry path needs to be correct.
+
+## Add it
+
+Use the `update-config` skill, or hand-edit `.claude/settings.local.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.bento/plugins/bento-forge/scripts/stop-nudge.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+If `settings.local.json` already has other keys (e.g. `permissions`), merge the
+`hooks` block in rather than overwriting the file.
+
+For **autorun**, prefix the command with the env var:
+
+```json
+"command": "BENTO_IMPROVE_AUTORUN=1 \"$CLAUDE_PROJECT_DIR\"/.bento/plugins/bento-forge/scripts/stop-nudge.sh"
+```
+
+Autorun is silent by design — the session ends normally and the retrospective
+runs behind it. Watch `~/.claude/bento-improve/worker.log` to see it work.
+
+## Verify
+
+```bash
+dir=.bento/plugins/bento-forge/scripts
+echo '{"session_id":"test123"}' | "$dir"/stop-nudge.sh   # → emits additionalContext JSON
+echo '{"session_id":"test123"}' | "$dir"/stop-nudge.sh   # → no output (sentinel hit)
+rm -f "${TMPDIR:-/tmp}/bento-improve-test123.done"
+```
+
+Autorun spawns instead of printing, so it emits nothing either way — check the log:
+
+```bash
+echo "{\"session_id\":\"test456\",\"transcript_path\":\"/nope.jsonl\",\"cwd\":\"$PWD\"}" \
+  | BENTO_IMPROVE_AUTORUN=1 "$dir"/stop-nudge.sh
+sleep 1 && tail -1 ~/.claude/bento-improve/worker.log   # -> "test456 below gate" (or a repo-marker skip)
+rm -f "${TMPDIR:-/tmp}/bento-improve-test456.done"
+```
+
+## Remove it
+
+Delete the `Stop` block from `.claude/settings.local.json`. Nothing else to undo.
