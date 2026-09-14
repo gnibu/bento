@@ -48,13 +48,11 @@ def build_block() -> str:
 
 {principles}
 
-Full text and reasoning: `.bento/principles/PRINCIPLES.md`. Instruction-authoring rules:
-`.bento/conventions/instruction-layer.md`.
-
-**Playbooks — read the file when its trigger fires:**
+**Read the file when its trigger fires:**
 
 - Comparing models/prompts, "which variant is better?" -> `.bento/plugins/bento-core/skills/eval-blind/SKILL.md`
 - Tuning a metric, stuck score, retrieval/latency -> `.bento/plugins/bento-core/skills/hillclimb/SKILL.md`
+- Authoring instruction files, capturing learnings -> `.bento/conventions/instruction-layer.md`
 {END}"""
 
 
