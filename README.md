@@ -20,6 +20,10 @@ Precedence: **L2 > L1.** A project's own rules win; bento fills the gaps.
 - `plugins/bento-core/skills/` — triggered playbooks:
   - `eval-blind` — compare models/prompts without bias leaking into the verdict.
   - `hillclimb` — tune a metric one variable at a time, keep-or-revert, logged.
+  - `figure-it-out` — fallback for a task no playbook covers; frame it, then maybe capture it.
+  - `authoring-a-playbook` — how to write a new bento playbook (gate, checklist, prove, eval).
+  - `investigate` — evidence-first root-cause debugging; fix at the shared source.
+  - `checkpoint` — capture in-progress state so work survives a reset or handoff.
 
 ## Install
 
