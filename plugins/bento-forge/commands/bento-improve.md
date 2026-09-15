@@ -49,9 +49,22 @@ preferences.
 
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
 - Apply on explicit go-ahead. Leave commits/PRs to the user.
+- **Preserve generated-file ownership.** If `.bento-state/baseline.json` lists the
+  destination, build a proposal from its last-generated text plus this learning,
+  then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/l2-state.py" --repo . merge <proposal.json>`
+  to preview; append `--apply` only after approval. `${CLAUDE_PLUGIN_ROOT}` resolves
+  to this command's installed bento-forge directory. The helper merges current / baseline / proposed and advances
+  the baseline only on success. Show the **merged diff**, not just the proposal.
+  Never edit a managed file directly or replace its baseline with hand-edited text.
+  A conflict writes nothing: revise the proposal for review or leave it unapplied.
+  Unattended promotion skips conflicting learnings and records why in its PR body.
+  No baseline, or an unlisted destination → ordinary targeted diff-and-propose;
+  never invent a baseline for existing L2. See
+  `${CLAUDE_PLUGIN_ROOT}/references/bento-init.md` for the proposal format and recovery rules.
 - **For a skill/playbook edit, prove it:** baseline `claude plugin eval` → apply the edit →
   re-run → keep only on a real lift beyond noise (`--runs 3+`), else revert. Log kept/reverted
   (this is `hillclimb` applied to the instruction layer itself).
+  Revert the corresponding baseline change too if a managed-file edit is rejected.
 
 ## Autorun (optional, recurrence-gated)
 
