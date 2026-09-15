@@ -41,7 +41,9 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
   - `bento-improve` — Reflect → Route → Propose: route each session's learnings to their
     cheapest correct home (L1 bento / L2 repo), with an eval-gated keep-or-revert. Ships the
     **autorun** subsystem (bank at `Stop`, surface ripened at `SessionStart`, PR on your yes).
-  - `bento-init` — *(stub)* bootstrap a fresh repo's L2; use potion off-the-shelf until built.
+  - `bento-init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews,
+    with human checkpoints and a generated baseline for later three-way merges.
+    See [the workflow and file contract](plugins/bento-forge/references/bento-init.md).
 
 Quality is built in: an **eval harness** (`claude plugin eval` with with/without ablation +
 a `tool_used` firing indicator) proves whether a skill actually changes behavior — see
@@ -91,9 +93,11 @@ Pin/roll back by checking the submodule out at a specific bento SHA (or a `plugi
 learnings back into bento (L1) as PRs. That's the framework evolving from real use, not just
 version bumps.
 
+Use potion off-the-shelf when it meets your generation needs; use `bento-init` when
+you need bento's reviewed generation and baseline-aware updates.
+
 ## Not built yet (deliberately)
 
-- **`bento-init`** (greenfield L2 generation) — use potion off-the-shelf until it's outgrown.
 - More playbooks — add only when a real recurring task needs one, never speculatively.
 - Eval cases for the ported playbooks (ship/qa/spec/cso/docs) — the harness exists; cases for
   eval-blind and hillclimb are in place, the rest are follow-ups.

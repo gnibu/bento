@@ -31,6 +31,14 @@ bento
 - **Playbooks** are triggered skills, shipped by the `bento-core` plugin.
 - **Forge** is the `bento-forge` plugin: `bento-init` (generate) + `bento-improve` (evolve).
 
+`bento-init` inspects code, docs, and merged PR reviews, then pauses for approval
+of the evidence, file design, and generated diff. Its `l2-state.py` helper refuses
+existing instruction layers and records generated text in the consuming repo's
+`.bento-state/baseline.json`. Both improvement paths use that baseline for
+three-way merges, preserving non-conflicting hand edits and leaving files unchanged
+on conflict. The baseline travels with the L2 in Git; it is not part of vendored
+L1 or private hook state. See [generation and update mechanics](plugins/bento-forge/references/bento-init.md).
+
 ## The improve engine (do not rebuild)
 
 `bento-forge improve` **is** Rose's `rose-session-learn` generalized: its Reflect → Route →

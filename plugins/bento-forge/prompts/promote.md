@@ -34,6 +34,17 @@ independently hit the same trigger, with its own evidence and proposal.
    copying them.
 3. **Write the change.** Fix the principle, not the one example; minimal GOOD/BAD
    pairs; `AGENTS.md` entries in pointer form, one bullet, ≤2 wrapped lines.
+   For any path listed in `.bento-state/baseline.json`, do not edit it directly.
+   Build a version-1 JSON proposal (`schema_version: 1`, `files: {path: text}`)
+   from the baseline text plus the learning, not from the hand-edited current file.
+   Use the absolute L2 helper path supplied below with `--repo . merge <proposal>`
+   to preview, then `--repo . merge <proposal> --apply`. Keep proposals in a temp
+   directory outside the worktree so the worker cannot commit them. The helper
+   preserves manual edits and records only generated content in the baseline.
+   Conflicts or helper errors → skip the affected learning, leave its files and
+   baseline unchanged, and explain under Skipped. Never bypass a failed merge.
+   If the helper is unavailable, skip managed-file edits. Without a baseline, or
+   for unlisted paths, use ordinary targeted edits; never invent a baseline.
 4. **Do not** touch anything outside the change, reformat neighbouring code,
    or fix unrelated things you notice.
 5. **Run the tests you touched.** A commit that fails the pre-commit hook is
@@ -41,6 +52,7 @@ independently hit the same trigger, with its own evidence and proposal.
    affected package's test command, or the specific test file. If you cannot make
    it pass, revert that learning and record it under Skipped — a dropped learning
    costs nothing, a red branch costs a human.
+   For a managed file, revert its baseline update together with its file change.
 6. **Do not commit, push, or open a PR.** The calling script stages and commits
    whatever you leave in the working tree, then pushes and opens the PR.
 
