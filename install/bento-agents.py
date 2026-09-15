@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Install/update the bento pointer block in a repo's AGENTS.md (idempotent).
 
-For agents without a plugin loader (e.g. Codex), whose only surface is AGENTS.md.
+Always-on principles for Codex and a legacy fallback alongside native skills.
 
 Principles are always-on: they are INLINED (distilled from principles/PRINCIPLES.md, the
 single source) so they stay resident every task — a pointer would only be a suggestion to
@@ -48,7 +48,8 @@ def build_block() -> str:
 
 {principles}
 
-**Read the file when its trigger fires:**
+**Native skills:** use `bento-core:<name>` when available. Legacy fallback — read the
+file when its trigger fires:
 
 - Comparing models/prompts, "which variant is better?" -> `.bento/plugins/bento-core/skills/eval-blind/SKILL.md`
 - Tuning a metric, stuck score, retrieval/latency -> `.bento/plugins/bento-core/skills/hillclimb/SKILL.md`

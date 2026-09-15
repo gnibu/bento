@@ -1,32 +1,23 @@
-# Codex (and any AGENTS.md-based agent) — adapter block
+# AGENTS.md: always-on principles and legacy fallback
 
-Codex has no plugin/skill loader; its only surface is `AGENTS.md`. bento installs a small
-marker-bounded pointer block into the consuming repo's `AGENTS.md` so Codex reaches the same
-files Claude loads as plugins. Single source of truth stays in `.bento/`; the block is only
-pointers.
-
-**Install it (idempotent, re-runnable):**
+Current Codex supports native skills. Install Bento's relative skill links with:
 
 ```bash
-python3 .bento/install/bento-agents.py            # default target: ./AGENTS.md
+bash .bento/install.sh --codex
 ```
 
-`/bento-setup` runs this for you. The block it manages (authoritative version lives in
-`install/bento-agents.py`):
+Bento playbooks appear as `bento-core:<name>`; setup and improve share their instructions
+with the Claude commands. Start a fresh Codex session after setup.
 
-```markdown
-<!-- bento:start -->
-## bento (shared agent operating layer, vendored at `.bento/`)
+The marker-bounded `AGENTS.md` block remains the always-on principles layer and a legacy
+fallback for agents that do not discover skills. Principles are distilled and inlined from
+`principles/PRINCIPLES.md`; fallback playbooks stay task-triggered pointers into `.bento/`.
 
-Agents without a plugin loader (e.g. Codex): read the target file when its trigger fires.
-
-- Comparing models/prompts, "which variant is better?" -> `.bento/plugins/bento-core/skills/eval-blind/SKILL.md`
-- Tuning a metric, stuck score, retrieval/latency -> `.bento/plugins/bento-core/skills/hillclimb/SKILL.md`
-- Principles & instruction-authoring rules -> `.bento/principles/PRINCIPLES.md`, `.bento/conventions/instruction-layer.md`
-<!-- bento:end -->
+```bash
+python3 .bento/install/bento-agents.py ./AGENTS.md
 ```
 
-Kept deliberately terse: `AGENTS.md` is the highest-cost sink and both agents pay for every
-line. Claude reads this too (via the `CLAUDE.md` symlink) but doesn't need it — it gets the
-principles by `@import` and the playbooks as auto-triggering skills; the block exists for
-Codex. Edit the `AGENTS.md` source, never a `CLAUDE.md` symlink.
+`/bento-setup` runs this for you. The authoritative generated block lives in
+`install/bento-agents.py`. Re-running updates only the `<!-- bento:start -->` through
+`<!-- bento:end -->` block, preserving surrounding project instructions. Edit the `AGENTS.md`
+source, never a `CLAUDE.md` symlink. Review this committed change before landing it.

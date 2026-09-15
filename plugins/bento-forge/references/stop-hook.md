@@ -7,9 +7,9 @@ The subsystem uses **two** hooks that split the loop by what each can do:
 | **Stop** | `session-stop.sh` | Reflect + bank the finished session to a local ledger. Silent, always-on, no env gate. Never opens a PR by itself. |
 | **SessionStart** | `session-start.sh` | If any learning has ripened (recurred across enough sessions), inject a model-visible prompt offering to review them and open a PR. Otherwise silent. |
 
-Wiring is **opt-in per operator**: the scripts ship with the `bento-forge` plugin,
-but the activation lives in your **personal, gitignored** `.claude/settings.local.json`
-so it never fires for coworkers who didn't opt in.
+Hook scripts ship with `bento-forge`; setup activates them in the selected scope. Claude
+uses committed project settings by default, shared by all worktrees and teammates. A
+personal scope can cover the same project's worktrees without changing team settings.
 
 > Renamed: the Stop entry used to be `stop-nudge.sh`. It is now `session-stop.sh`
 > (its job is bank, not nudge). Update any hook still pointing at the old name.
@@ -58,69 +58,57 @@ bundle is relocatable — only these two entry paths need to be correct.
 
 ## Add it (Claude)
 
-Use the `update-config` skill, or hand-edit `.claude/settings.local.json`:
+For a vendored consumer, run once from the project root:
 
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.bento/plugins/bento-forge/scripts/session-stop.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.bento/plugins/bento-forge/scripts/session-start.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
-}
+```bash
+bash .bento/install.sh --claude-hooks                  # committed .claude/settings.json
+# Or personal activation for this repo and every one of its worktrees:
+bash .bento/install.sh --claude-hooks --scope personal  # user settings.json, guarded by repo
 ```
 
-If `settings.local.json` already has other keys (e.g. `permissions`), merge the
-`hooks` block in rather than overwriting the file.
+Commit project settings so new worktrees inherit both hooks; initialize `.bento` in each
+checkout. Personal settings honor `$CLAUDE_CONFIG_DIR` and use the common Git directory to
+recognize all of this repo's worktrees. Neither choice needs a new `settings.local.json`
+for each worktree. The installer merges hooks and preserves unrelated permissions/handlers.
+Append `--auto-pr` only to opt into hands-off PRs. Use one scope, and remove obsolete Bento
+handlers from old local settings to avoid running duplicates.
 
-For **fully hands-off PRs**, prefix the Stop command with the env var:
+For marketplace-only installs, locate forge's `installPath` with `claude plugin list --json`
+and point command hooks at its `scripts/session-start.sh` and `scripts/session-stop.sh`.
+Merge them under the corresponding `hooks.SessionStart` / `hooks.Stop` arrays, each in a
+`{"hooks": [{"type": "command", "command": "bash <quoted-absolute-script-path>", "timeout": 5}]}`
+group. Cache paths can change on update; rerun setup to reconcile them.
 
-```json
-"command": "BENTO_IMPROVE_AUTO_PR=1 \"$CLAUDE_PROJECT_DIR\"/.bento/plugins/bento-forge/scripts/session-stop.sh"
-```
-
-Banking is silent by design — the session ends normally and the retrospective
-runs behind it. Watch `~/.claude/bento-improve/worker.log` to see it work.
+Banking is silent by design — the session ends normally and the retrospective runs behind
+it. Watch `~/.claude/bento-improve/worker.log` to see it work.
 
 ## Add it (Codex)
 
-Codex has the same hooks system (`[features].hooks`) with `Stop` and
-`SessionStart` events; wire the same scripts in `.codex/config.toml`:
+Use the deterministic installer from the consumer repo (Python 3.11+):
 
-```toml
-[[hooks.Stop]]
-[[hooks.Stop.hooks]]
-type = "command"
-command = 'bash "$(git rev-parse --show-toplevel)/.bento/plugins/bento-forge/scripts/session-stop.sh"'
-
-[[hooks.SessionStart]]
-[[hooks.SessionStart.hooks]]
-type = "command"
-command = 'bash "$(git rev-parse --show-toplevel)/.bento/plugins/bento-forge/scripts/session-start.sh"'
+```bash
+bash .bento/install.sh --codex                 # personal ~/.codex/hooks.json
+bash .bento/install.sh --codex --hooks team    # committed .codex/config.toml instead
 ```
 
-Verified on codex-cli 0.153.4: the Stop hook fires and passes `session_id`,
-`transcript_path`, and `cwd`, so banking works. `SessionStart` `additionalContext`
-is injected into the model on Codex just as on Claude.
+Choose one scope; Codex combines hooks from all active sources. Personal hooks honor
+`$CODEX_HOME`. Existing hand-written hooks are preserved, so review old user `config.toml`
+entries when migrating to `hooks.json` to avoid duplicate execution. The installer merges
+only Bento's handlers, preserves unrelated hooks, and uses these actual scripts:
+
+```
+.bento/plugins/bento-forge/scripts/session-start.sh
+.bento/plugins/bento-forge/scripts/session-stop.sh
+```
+
+Commands resolve the session's Git root, work from nested directories, and no-op when the
+scripts are absent. `--auto-pr` sets `BENTO_IMPROVE_AUTO_PR=1` for Stop only. Without it,
+Stop banks learnings and SessionStart surfaces candidates for review.
+
+**Start a fresh Codex session after setup.** If prompted, review/trust the definitions in
+`/hooks`. An existing `features.hooks = false` is respected. Personal hooks belong in
+`~/.codex/hooks.json`, while team hooks stay in `.codex/config.toml`; see
+[Codex hook locations and schema](https://developers.openai.com/codex/hooks).
 
 ## Verify
 
@@ -144,5 +132,13 @@ BENTO_IMPROVE_THRESHOLD=1 "$dir"/session-start.sh </dev/null   # -> SessionStart
 
 ## Remove it
 
-Delete the `Stop` and `SessionStart` blocks from `.claude/settings.local.json`
-(Claude) or `.codex/config.toml` (Codex). Nothing else to undo.
+For Claude, run `bash .bento/install.sh --claude-hooks --purge` (or add `--scope personal`
+for the personal scope). Remove legacy local Bento handlers separately, preserving other
+handlers in the same groups. For Codex:
+
+```bash
+bash .bento/install.sh --codex --purge --hooks personal
+# Or --hooks team for the committed scope. Purge also removes Bento skill links.
+```
+
+Personal hook removal affects all repos for this operator. Start a fresh Codex session.
