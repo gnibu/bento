@@ -69,7 +69,8 @@ Test for each practice: *would this help an agent in a repo that isn't Rose?*
 
 **Playbooks + forge (the plugins) — canonical marketplace install, not a submodule.**
 Claude Code manages the clone and updates. Commit the marketplace + enablement to the
-repo's `.claude/settings.json` so the team and CI get it automatically:
+repo's `.claude/settings.json` to declare the team defaults. Each machine still needs
+a registered marketplace and installed plugins; verify with the CLI:
 
 ```
 claude plugin marketplace add gnibu/bento     # resolves from the repo's DEFAULT branch
@@ -77,8 +78,10 @@ claude plugin install bento-core@bento
 claude plugin install bento-forge@bento
 ```
 
-This persists the marketplace + `enabledPlugins` into settings; commit those. Upgrade with
-`claude plugin update` (pin releases with `claude plugin tag`). The marketplace resolves
+These commands default to user scope. Team declarations belong in project settings, while
+registration and installed-plugin records live in the machine's Claude config directory.
+Upgrade with `claude plugin marketplace update bento`, then `claude plugin update` for each
+plugin. The marketplace resolves
 from the repo's **default branch**, so `marketplace.json` must live there — not just on a
 feature branch.
 
@@ -97,30 +100,89 @@ domain skills.
 
 ## Cross-agent (Claude Code + Codex)
 
-The plugin/marketplace system is **Claude-only** — Codex reads `AGENTS.md`, with no plugin
-or triggered-skill loader. To serve both, keep one agent-neutral source and two thin
-wrappers. This requires bento to be **vendored in the repo** (Codex can't fetch a Claude
-marketplace, so the files must be on disk):
+Both Claude and current Codex support native, triggered skills. Bento maintains one source
+with two discovery adapters: a Claude marketplace/cache and relative Codex skill links.
+The cross-agent install vendors Bento as a pinned submodule:
 
 ```
 <repo>/
-  .bento/                      # vendored bento (git submodule, pinned) — so Codex can read it
-  .claude/settings.json        # Claude: local-path marketplace ./.bento → auto-triggering skills
-  AGENTS.md                    # Codex: principles + playbook pointers into .bento/ (see install/agents-md-snippet.md)
+  .bento/                      # shared source, pinned git submodule
+  .claude/settings.json        # Claude declarations + project hooks shared by worktrees
+  .codex/skills/<skill>        # relative links into .bento/plugins/*/skills/<skill>
+  .codex/config.toml          # committed hooks only when team scope is selected
+  AGENTS.md                   # always-on principles + legacy fallback pointers
+~/.codex/hooks.json           # personal Codex hooks (default scope)
 ```
 
 | pillar | shared source | Claude Code | Codex |
 |---|---|---|---|
-| principles | `.bento/principles/PRINCIPLES.md` | `CLAUDE.md` `@import` | `AGENTS.md` pointer |
+| principles | `.bento/principles/PRINCIPLES.md` | `CLAUDE.md` `@import` | distilled into `AGENTS.md` |
 | conventions | `.bento/conventions/*` | referenced | `AGENTS.md` pointer |
-| playbooks | `.bento/plugins/**/SKILL.md` | auto-triggering skill (local marketplace) | `AGENTS.md` task-trigger pointer |
+| playbooks | `.bento/plugins/**/SKILL.md` | native plugin skills | native skills via relative links |
+| setup / improve | plugin `references/bento-setup.md` / `bento-improve.md` | command wrappers | `SKILL.md` wrappers |
 
-Trade-off: Codex loses auto-triggering (it follows a pointer and the model chooses to read);
-same content, less ergonomics. That's inherent to Codex having no skill system.
+`bash .bento/install.sh --codex` runs `install/bento-codex.py` without requiring Claude.
+It discovers every core skill directory and the forge `bento-improve` entrypoint, preflights
+collisions and hook configuration, then creates missing relative links and merges hooks.
+Unrelated links, files, settings, and hook handlers are preserved. Reruns are idempotent;
+purge removes only exact owned links (including dangling links) and owned hook entries.
+Each mutation is reported. The links follow the current checkout's submodule pin.
 
-Note: with the vendored `.bento`, Claude uses a **local-path** marketplace
-(`claude plugin marketplace add ./.bento`), so bento need **not** be merged to its default
-branch for a consuming repo to use it — the files are already present.
+Codex surfaces **`bento-core:<name>`**, including `bento-core:bento-setup`, and
+`bento-forge:bento-improve` (verified with codex-cli 0.153.4's `debug prompt-input`). The
+`AGENTS.md` block stays as an always-on principles and legacy fallback layer, not the primary
+skill loader. **Start a fresh Codex session after setup.**
+
+Personal hooks are merged into `${CODEX_HOME:-~/.codex}/hooks.json`; committed hooks stay in
+`.codex/config.toml`. Choose one scope; hook sources are additive. Legacy hand-written
+hooks are preserved, so remove obsolete Bento entries through review when migrating.
+Generated hooks resolve the current Git root and use the real
+`.bento/plugins/bento-forge/scripts/session-start.sh` and `session-stop.sh` paths, silently
+skipping repos without the scripts. Setup respects an explicit hooks disable and Codex's
+hook review flow. See [Codex hooks](https://developers.openai.com/codex/hooks).
+
+### Claude hooks across worktrees
+
+`bash .bento/install.sh --claude-hooks` merges the two hooks into committed project
+`.claude/settings.json`, the default Claude scope in setup. Once committed, new worktrees
+inherit the definitions. Hook commands resolve each session's Git root, so there is no
+per-worktree absolute path or manual `settings.local.json` setup. Each checkout still needs
+its `.bento` submodule initialized.
+
+The personal alternative (`--scope personal`) merges into user Claude settings and guards
+execution using the repository's common Git directory. All worktrees share that identity;
+unrelated projects do not activate these hooks. This is one setup per repo per machine.
+Both scopes preserve unrelated settings/handlers, support purge, and keep auto-PR opt-in.
+Choose one scope to avoid duplicate execution from additive hook sources.
+
+### Vendored bootstrap and machine state
+
+Run `git submodule update --init .bento` and `bash .bento/install.sh` in each consumer checkout
+on each machine before invoking `/bento-setup`. The installer checks the real CLI state,
+registers a directory marketplace when bento is absent, and installs/enables both plugins
+at user scope. Committed `extraKnownMarketplaces.bento` and `enabledPlugins` declarations
+alone do not establish that the directory marketplace or plugin cache exists on a machine.
+`/bento-setup` prefers the consumer's submodule and repeats this check idempotently.
+
+The CLI persists a local source as an **absolute path** in
+`$CLAUDE_CONFIG_DIR/plugins/known_marketplaces.json` (default `~/.claude`), shared across
+projects. A relative `./.bento` is not resolved afresh in each session. The installer resolves
+worktrees to the main checkout's initialized `.bento`, requiring clean copies at the same
+commit, and uses that durable path for the principles import too. Keep the main checkout;
+worktree deletion is then safe. Missing or mismatched main-checkout copies stop setup with
+repair instructions. Existing missing/worktree-based registrations also require repair.
+
+Existing valid registrations, including GitHub, are preserved and reported. With a newly
+registered **directory** marketplace, local content can be installed before bento merges to
+its default branch. With an existing **GitHub** marketplace, Claude still installs from that
+source. One machine cannot have multiple independent sources under the name `bento`.
+
+Claude copies plugins into a separate versioned cache recorded in `installed_plugins.json`.
+Changing the submodule pin changes Codex's files immediately, but does **not** update Claude's
+installed skills. Refresh the registered marketplace, update both plugins, and restart
+Claude (README **Update**). Setup installs missing plugins; it does not synchronize existing
+caches to the submodule pin. Verify marketplace/plugin lists, then confirm the 14 core playbooks plus setup
+in a fresh session.
 
 ## Phased build
 

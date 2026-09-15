@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
-# bento install: wire the always-on principles into the user CLAUDE.md, idempotently.
-# Playbooks (bento-core) are loaded separately by installing the plugin; see README.
+# Wire principles and, for a vendored .bento submodule, bootstrap Claude plugins.
 set -euo pipefail
 
 BENTO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ "${1:-}" == "--codex" ]]; then
+  shift
+  exec python3 "$BENTO_DIR/install/bento-codex.py" "$@"
+fi
+if [[ "${1:-}" == "--claude-hooks" ]]; then
+  shift
+  exec python3 "$BENTO_DIR/install/bento-claude-hooks.py" "$@"
+fi
+if [[ $# -gt 0 ]]; then
+  echo "usage: bash install.sh [--codex [options] | --claude-hooks [options]]" >&2
+  exit 1
+fi
+# Keep this before the import's idempotency check: existing principles do not prove
+# that this machine has registered the marketplace or installed the plugins.
+BENTO_DIR="$(python3 "$BENTO_DIR/install/claude-plugins.py" "$BENTO_DIR")"
 CLAUDE_MD="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/CLAUDE.md"
 IMPORT="@${BENTO_DIR}/principles/PRINCIPLES.md"
 
