@@ -9,7 +9,11 @@ Codex. See `stop-hook.md` for wiring.
   gate. It never opens a PR.
 - **SessionStart (`session-start.sh`)** reads the ledger (no LLM) and, if any
   learning has ripened, injects a model-visible prompt to review them and open a
-  PR. This is where surfacing happens: SessionStart `additionalContext` is
+  PR. It also periodically instructs the agent to check for a newer Bento version
+  and offer a manual update only when one is confirmed. The hook itself uses no
+  network; a local timestamp throttles these checks. Worker children inherit
+  `BENTO_UPDATE_REMINDER_DAYS=0`, so they cannot consume the reminder window.
+  This is where surfacing happens: SessionStart `additionalContext` is
   model-visible, a Stop hook's is not.
 - **PR opening is opt-in.** By default the human's yes to the SessionStart prompt
   is the approval gate. Set `BENTO_IMPROVE_AUTO_PR=1` on the Stop command for a
@@ -154,6 +158,8 @@ worker.sh --preview-issue
 | `BENTO_IMPROVE_PROMOTE_MODEL` | `opus` | Runs rarely and writes code. |
 | `BENTO_IMPROVE_STATE` | `~/.claude/bento-improve` | Logs and lock. |
 | `BENTO_IMPROVE_LEDGER` | `$BENTO_IMPROVE_STATE/ledger.jsonl` | |
+| `BENTO_UPDATE_REMINDER_DAYS` | `30` | Interval between update-check instructions at SessionStart, starting on first use. `0` disables without touching the timestamp. The worker always exports `0` for its children; use `0` for other unattended callers too. |
+| `BENTO_UPDATE_REMINDER_STATE` | `~/.bento/update-reminder` | Local throttle timestamp shared across agents and workspaces; separate from the learning ledger and worker state. |
 | `BENTO_IMPROVE_LINEAR_TEAM` | unset | Set to enable tracker integration; the team name. |
 | `BENTO_IMPROVE_LINEAR_STATUS` | `Triage` | |
 | `BENTO_IMPROVE_LINEAR_LABELS` | `session-learning` | Marker for the automation exclusion. |
@@ -227,7 +233,7 @@ output as a fixture.
 ./test-issue.sh     # tracker issue title/body derived from ripe keys (renders only)
 ./test-secret-scan.sh   # credential shapes are dropped, ordinary errors are not
 ./test-session-stop.sh  # Stop hook skips trivial sessions, spawns on substantive ones
-./test-session-start.sh # SessionStart emits the prompt only when candidates ripen
+./test-session-start.sh # ripe learnings, throttled update checks, worker children preserve reminder state
 ./digest.sh <transcript.jsonl> | head    # eyeball a digest
 ./worker.sh --preview-issue              # what the ledger would file right now
 ```

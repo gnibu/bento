@@ -33,6 +33,9 @@ personal scope can cover the same project's worktrees without changing team sett
   workspaces. Set `BENTO_UPDATE_REMINDER_DAYS=0` to disable, or another positive number
   for the interval; `BENTO_UPDATE_REMINDER_STATE` overrides the timestamp path. Missing
   Python 3 or unavailable state silently skips this reminder, preserving learning prompts.
+  The worker exports `BENTO_UPDATE_REMINDER_DAYS=0` for all its unattended children, so
+  their hooks leave the reminder timestamp untouched. Other unattended callers should
+  set the same override; see `autorun.md` → Tunables.
 - **Fully hands-off?** Set `BENTO_IMPROVE_AUTO_PR=1` on the Stop command and the
   worker opens the PR itself once a learning ripens — no prompt needed. See
   `autorun.md`.

@@ -67,6 +67,44 @@ has "invalid configuration preserves learning prompt" "2 bento learning" \
 has "unavailable state preserves learning prompt" "2 bento learning" \
     "$(BENTO_UPDATE_REMINDER_STATE="$tmp/ledger.jsonl/state" ./session-start.sh </dev/null)"
 
+# Exercise a real worker invocation, replacing only Claude with a child that
+# fires SessionStart. No model, network, personal state, or promotion is used.
+mkdir -p "$tmp/bin" "$tmp/repo/.bento"
+git init -q "$tmp/repo"
+cat >"$tmp/transcript.jsonl" <<'EOF'
+{"type":"user","message":{"content":"Implement the change"}}
+{"type":"user","message":{"content":"That failed"}}
+{"type":"user","message":{"content":"Fix the failure"}}
+{"type":"user","message":{"content":[{"type":"tool_result","is_error":true,"content":"test failed"}]}}
+EOF
+cat >"$tmp/bin/claude" <<'EOF'
+#!/usr/bin/env bash
+cat >/dev/null
+bash "$BENTO_TEST_SCRIPTS/session-start.sh" </dev/null >"$BENTO_TEST_WORKER_HOOK"
+EOF
+chmod +x "$tmp/bin/claude"
+export BENTO_TEST_SCRIPTS="$PWD" BENTO_TEST_WORKER_HOOK="$tmp/worker-hook.json"
+run_worker() {
+  PATH="$tmp/bin:$PATH" BENTO_IMPROVE_STATE="$tmp/worker-state" \
+    BENTO_IMPROVE_AUTO_PR='' BENTO_IMPROVE_REPO_MARKER='.bento' \
+    bash ./worker.sh --transcript "$tmp/transcript.jsonl" --session test-worker --cwd "$tmp/repo"
+}
+rm -f "$BENTO_UPDATE_REMINDER_STATE"
+run_worker
+check "worker does not create reminder state" "no" "$([ -e "$BENTO_UPDATE_REMINDER_STATE" ] && echo yes || echo no)"
+has "worker child still receives learning prompt" "2 bento learning" "$(cat "$BENTO_TEST_WORKER_HOOK")"
+check "worker child receives no update-check instructions" "false" \
+      "$(jq '.hookSpecificOutput.additionalContext | contains("A periodic Bento update check is due")' "$BENTO_TEST_WORKER_HOOK")"
+has "normal session after worker still receives due check" "A periodic Bento update check is due" \
+    "$(./session-start.sh </dev/null)"
+
+expired="$(($(date +%s) - 31 * 86400))"
+printf '%s' "$expired" >"$BENTO_UPDATE_REMINDER_STATE"
+run_worker
+check "worker preserves expired timestamp" "$expired" "$(cat "$BENTO_UPDATE_REMINDER_STATE")"
+has "expired reminder remains due after worker" "A periodic Bento update check is due" \
+    "$(./session-start.sh </dev/null)"
+
 # Competing starts share one throttle.
 export BENTO_IMPROVE_LEDGER="$tmp/empty-ledger.jsonl"
 rm -f "$BENTO_UPDATE_REMINDER_STATE"
