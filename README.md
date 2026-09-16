@@ -172,9 +172,19 @@ The `.codex/skills` link and namespace behavior is tested with codex-cli 0.153.4
 Dev-load while iterating: `claude --plugin-dir plugins/bento-core`. See
 `install/user-claude-md.md`.
 
-## Update (self-update)
+## Update (manual)
 
-bento is versioned; pull the latest and reconcile the wiring. Same repo, two install modes:
+Bento updates are manual: choose when to pull a newer version and reconcile the wiring.
+With the forge hooks enabled, the session-start hook asks the agent to check upstream
+automatically, at most once every 30 days (including the first session). The agent prompts
+you only after confirming a newer version is available, showing the installed and available
+revisions/versions. It stays silent when current, offline, or unable to verify an update.
+Installing the update remains your choice. The hook itself makes no network request; the
+agent performs the read-only check. Its timestamp lives in `~/.bento/update-reminder`, shared
+across agents and workspaces. Set `BENTO_UPDATE_REMINDER_DAYS=0` in the hook environment to disable it, or
+set a different interval in days. `BENTO_UPDATE_REMINDER_STATE` overrides the timestamp path.
+
+Same repo, two install modes:
 
 - **Marketplace install (Claude-only):**
   ```bash

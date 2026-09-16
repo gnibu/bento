@@ -184,6 +184,13 @@ Claude (README **Update**). Setup installs missing plugins; it does not synchron
 caches to the submodule pin. Verify marketplace/plugin lists, then confirm the 14 core playbooks plus setup
 in a fresh session.
 
+Updates are manual. On first use and at most every 30 days afterward, the shared
+SessionStart hook instructs the agent to check upstream before prompting. The agent offers
+an update only after confirming a newer version; current or inconclusive checks stay silent.
+The hook itself makes no network request, and nothing installs automatically.
+A local timestamp in `~/.bento/update-reminder` throttles checks across agents and
+workspaces; `BENTO_UPDATE_REMINDER_DAYS=0` disables it. See README **Update** for options.
+
 ## Phased build
 
 1. **Seed (done):** principles (autonomy, prove, subtract) + `eval-blind` + `hillclimb`,
