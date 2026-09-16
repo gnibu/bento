@@ -29,6 +29,10 @@
 # hardcodes a particular repo.
 set -uo pipefail
 
+# Every child runs unattended, including reflection, promotion, and tracker
+# calls. Their SessionStart hooks must not consume the user's reminder window.
+export BENTO_UPDATE_REMINDER_DAYS=0
+
 STATE="${BENTO_IMPROVE_STATE:-$HOME/.claude/bento-improve}"
 THRESHOLD="${BENTO_IMPROVE_THRESHOLD:-3}"
 REFLECT_MODEL="${BENTO_IMPROVE_REFLECT_MODEL:-sonnet}"

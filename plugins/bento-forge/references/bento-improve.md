@@ -79,12 +79,16 @@ same on Claude and Codex:
   and open a PR. A single session can't tell a pattern from a one-off, so recurrence is the
   filter and **your yes to that prompt is the approval gate** that replaces the interactive
   apply. Fully hands-off? `BENTO_IMPROVE_AUTO_PR=1` lets the Stop worker open the PR itself.
+- **Update checks** are also requested at SessionStart, at most every 30 days. The agent
+  checks upstream first and offers a manual update only if a newer version is confirmed.
+  Worker children have these checks disabled so they preserve the user's reminder window.
+  See `references/autorun.md` → Tunables for the interval and timestamp path.
 
 This is implemented, not just described. The bundle lives beside this command:
 
 ```
 scripts/session-stop.sh    Stop-hook entry: skip trivial, else spawn the worker (reflect + bank)
-scripts/session-start.sh   SessionStart-hook entry: surface ripe learnings, model-visible (no LLM)
+scripts/session-start.sh   SessionStart-hook entry: ripe learnings + periodic update-check instructions (no LLM)
 scripts/worker.sh          detached retrospective: digest → reflect → ledger; promote only if AUTO_PR
 scripts/digest.sh          transcript → learnable signal, gated on friction
 scripts/ledger.sh          local per-key recurrence ledger (keys|add|pending|ripe|show|promote|path)

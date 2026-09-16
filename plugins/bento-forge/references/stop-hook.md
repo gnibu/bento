@@ -5,7 +5,7 @@ The subsystem uses **two** hooks that split the loop by what each can do:
 | Hook | Script | Job |
 |---|---|---|
 | **Stop** | `session-stop.sh` | Reflect + bank the finished session to a local ledger. Silent, always-on, no env gate. Never opens a PR by itself. |
-| **SessionStart** | `session-start.sh` | If any learning has ripened (recurred across enough sessions), inject a model-visible prompt offering to review them and open a PR. Otherwise silent. |
+| **SessionStart** | `session-start.sh` | Offer to review ripened learnings and, at most every 30 days, instruct the agent to check for a newer Bento version before offering an update. Otherwise silent. |
 
 Hook scripts ship with `bento-forge`; setup activates them in the selected scope. Claude
 uses committed project settings by default, shared by all worktrees and teammates. A
@@ -24,6 +24,18 @@ personal scope can cover the same project's worktrees without changing team sett
   ripened you get a prompt to review them. Say yes and the agent opens the PR via
   the `bento-improve` / session-learn skill. That interactive yes is the approval
   gate.
+- **Check first, update manually.** On first use and every 30 days thereafter, SessionStart
+  instructs the agent to check upstream automatically using read-only operations. The agent
+  asks about updating only after confirming a newer version and reports the installed and
+  available revisions/versions. Current, offline, and inconclusive checks stay silent.
+  The hook itself makes no network request and installs nothing. A local
+  timestamp in `~/.bento/update-reminder` prevents repeated checks across agents and
+  workspaces. Set `BENTO_UPDATE_REMINDER_DAYS=0` to disable, or another positive number
+  for the interval; `BENTO_UPDATE_REMINDER_STATE` overrides the timestamp path. Missing
+  Python 3 or unavailable state silently skips this reminder, preserving learning prompts.
+  The worker exports `BENTO_UPDATE_REMINDER_DAYS=0` for all its unattended children, so
+  their hooks leave the reminder timestamp untouched. Other unattended callers should
+  set the same override; see `autorun.md` → Tunables.
 - **Fully hands-off?** Set `BENTO_IMPROVE_AUTO_PR=1` on the Stop command and the
   worker opens the PR itself once a learning ripens — no prompt needed. See
   `autorun.md`.
@@ -123,11 +135,12 @@ echo "{\"session_id\":\"test456\",\"transcript_path\":\"/nope.jsonl\",\"cwd\":\"
 rm -f "${TMPDIR:-/tmp}/bento-improve-test456.done"
 ```
 
-Surfacing prints JSON only when something has ripened:
+Surfacing prints JSON when something has ripened or an update reminder is due. Disable
+the reminder to verify learning prompts independently:
 
 ```bash
-"$dir"/session-start.sh </dev/null        # -> nothing, unless the ledger has ripe keys
-BENTO_IMPROVE_THRESHOLD=1 "$dir"/session-start.sh </dev/null   # -> SessionStart JSON if any candidate is banked
+BENTO_UPDATE_REMINDER_DAYS=0 "$dir"/session-start.sh </dev/null
+BENTO_UPDATE_REMINDER_DAYS=0 BENTO_IMPROVE_THRESHOLD=1 "$dir"/session-start.sh </dev/null
 ```
 
 ## Remove it
