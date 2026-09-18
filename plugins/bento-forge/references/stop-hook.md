@@ -125,14 +125,18 @@ Stop banks learnings and SessionStart surfaces candidates for review.
 ## Verify
 
 Banking spawns a detached worker instead of printing, so `session-stop.sh` emits
-nothing either way — check the log:
+nothing either way — check the log. Note that Stop fires at the end of every
+turn, so banking is **debounced**: the worker runs once the session has been idle
+for `BENTO_IMPROVE_QUIESCE_SECS` (default 300s), reflecting on the complete
+transcript. Log entries therefore appear minutes after the last turn, not at each
+stop. Lower the window to see it quickly:
 
 ```bash
 dir=.bento/plugins/bento-forge/scripts
 echo "{\"session_id\":\"test456\",\"transcript_path\":\"/nope.jsonl\",\"cwd\":\"$PWD\"}" \
   | "$dir"/session-stop.sh
-# missing transcript -> trivial skip, nothing spawned, nothing logged.
-rm -f "${TMPDIR:-/tmp}/bento-improve-test456.done"
+# missing transcript -> nothing arms, nothing spawned, nothing logged.
+rm -rf "${TMPDIR:-/tmp}/bento-improve-test456"
 ```
 
 Surfacing prints JSON when something has ripened or an update reminder is due. Disable

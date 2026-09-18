@@ -1,52 +1,79 @@
 #!/usr/bin/env bash
-# Self-check for session-stop.sh: skip trivial sessions, spawn the worker for
-# substantive ones, and stay once-per-session. A stub worker (BENTO_IMPROVE_WORKER)
-# stands in for the real reflect+bank so no LLM runs here.
+# Self-check for session-stop.sh. Because Stop fires at the end of EVERY turn,
+# session-stop must NOT reflect per turn: it skips trivial sessions, and for a
+# substantive one it debounces to quiescence and reflects ONCE, on the COMPLETE
+# transcript — never the early slice present at the first stop, and never locked
+# out of a later burst. The real quality gate is digest.sh's job (its own test).
+# A stub worker (BENTO_IMPROVE_WORKER) stands in for the real reflect+bank.
 set -uo pipefail
 cd "$(dirname "$0")"
 tmp="$(mktemp -d)"
-# Isolate TMPDIR so per-session sentinels live in the throwaway dir — no cross-run
-# contamination from a real ~/TMPDIR, and `rm -rf "$tmp"` wipes everything.
+# Isolate TMPDIR so per-session debounce state lives in the throwaway dir — no
+# cross-run contamination from a real ~/TMPDIR, and `rm -rf "$tmp"` wipes it.
 export TMPDIR="$tmp"
+# Tiny quiescence window so the debounce resolves within the test.
+export BENTO_IMPROVE_QUIESCE_SECS=1
 fails=0
 check() { if [ "$2" = "$3" ]; then echo "ok   $1"; else echo "FAIL $1: expected [$2] got [$3]"; fails=$((fails+1)); fi; }
 
-# Stub worker records that it was spawned. It replaces the reflect+bank worker.
+# Stub worker: one "spawned" line per call plus the line count of the transcript
+# it was handed, namespaced by session id so tests don't cross-contaminate.
 stub="$tmp/stub-worker.sh"
-printf '#!/usr/bin/env bash\necho spawned >>"%s/spawned"\n' "$tmp" >"$stub"
+cat >"$stub" <<STUB
+#!/usr/bin/env bash
+t=""; s=""
+while [ \$# -gt 0 ]; do case "\$1" in
+  --transcript) t="\$2"; shift 2 ;;
+  --session)    s="\$2"; shift 2 ;;
+  *) shift ;;
+esac; done
+echo spawned >>"$tmp/spawned.\$s"
+wc -l <"\$t" 2>/dev/null | tr -d ' ' >>"$tmp/lines.\$s"
+STUB
 chmod +x "$stub"
 export BENTO_IMPROVE_WORKER="$stub"
 
 uturn() { printf '{"type":"user","isMeta":false,"message":{"content":"%s"}}\n' "$1"; }
 tooluse() { printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Edit"}]}}\n'; }
+toolerr() { printf '{"type":"user","message":{"content":[{"type":"tool_result","is_error":true,"content":"boom"}]}}\n'; }
 
-run() { # <session_id> <transcript> -> yes|no (worker spawned?)
-  rm -f "$tmp/spawned"
-  echo "{\"session_id\":\"$1\",\"transcript_path\":\"$2\",\"cwd\":\"$PWD\"}" | ./session-stop.sh
-  # The worker is detached; poll for its marker rather than race a fixed sleep.
+fire() { echo "{\"session_id\":\"$1\",\"transcript_path\":\"$2\",\"cwd\":\"$PWD\"}" | ./session-stop.sh; }
+awaited() { # <session> -> yes|no  (poll for the debounced spawn)
   local i=0
-  while [ ! -e "$tmp/spawned" ] && [ "$i" -lt 20 ]; do sleep 0.1; i=$((i+1)); done
-  [ -e "$tmp/spawned" ] && echo yes || echo no
+  while [ ! -e "$tmp/spawned.$1" ] && [ "$i" -lt 60 ]; do sleep 0.2; i=$((i+1)); done
+  [ -e "$tmp/spawned.$1" ] && echo yes || echo no
 }
+count() { [ -e "$tmp/spawned.$1" ] && wc -l <"$tmp/spawned.$1" | tr -d ' ' || echo 0; }
 
-# trivial: one operator turn, no tool use
+# trivial: 1 turn, no tool use → never arms a waiter, so it never reflects
 triv="$tmp/triv.jsonl"; uturn "hi" >"$triv"
-check "trivial session (1 turn, no tools) does not spawn" "no" "$(run triv-1 "$triv")"
+fire triv-1 "$triv"; sleep 1.5
+check "trivial session does not reflect" "0" "$(count triv-1)"
 
-# substantive: 2 operator turns + a tool use
-sub="$tmp/sub.jsonl"; { uturn "do a thing"; tooluse; uturn "fix it"; } >"$sub"
-check "substantive session (2 turns + tool) spawns" "yes" "$(run sub-1 "$sub")"
+# missing transcript → nothing to arm on
+fire miss-1 "$tmp/nope.jsonl"; sleep 1.5
+check "missing transcript does not reflect" "0" "$(count miss-1)"
 
-# the skip is an AND: one turn but a tool use still spawns (it touched the repo)
-mix="$tmp/mix.jsonl"; { uturn "one shot"; tooluse; } >"$mix"
-check "one turn WITH tool use spawns" "yes" "$(run mix-1 "$mix")"
+# substantive single stop → reflects once, after the quiescence window
+sub="$tmp/sub.jsonl"; { uturn "a"; tooluse; } >"$sub"
+fire sub-1 "$sub"
+check "substantive session reflects" "yes" "$(awaited sub-1)"
 
-# missing transcript never spawns
-check "missing transcript does not spawn" "no" "$(run miss-1 "$tmp/nope.jsonl")"
+# headline: Stop fires per turn, so a growing session must reflect ONCE, on the
+# FULL transcript — not the 2-line slice present at the first stop.
+grow="$tmp/grow.jsonl"; { uturn "a"; tooluse; } >"$grow"          # 2 lines at first stop
+fire grow-1 "$grow"
+{ uturn "a"; tooluse; uturn "b"; toolerr; uturn "c"; } >"$grow"   # grows to 5 lines
+fire grow-1 "$grow"
+check "growing session reflects" "yes" "$(awaited grow-1)"
+check "reflects exactly once (debounced)" "1" "$(count grow-1)"
+check "reflects on the full transcript, not the early slice" "5" "$(cat "$tmp/lines.grow-1")"
 
-# sentinel: a second stop for the same session is silent
-run sub-2 "$sub" >/dev/null           # first stop banks
-check "second stop for same session does not respawn" "no" "$(run sub-2 "$sub")"
+# not permanently locked (the original bug): a later burst re-arms and reflects again
+prev="$(count grow-1)"
+fire grow-1 "$grow"
+i=0; while [ "$(count grow-1)" = "$prev" ] && [ "$i" -lt 60 ]; do sleep 0.2; i=$((i+1)); done
+check "a later burst re-arms (not permanently locked)" "2" "$(count grow-1)"
 
 rm -rf "$tmp"
 [ "$fails" -eq 0 ] && echo "PASS" || { echo "$fails failed"; exit 1; }
