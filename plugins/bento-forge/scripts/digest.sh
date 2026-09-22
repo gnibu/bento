@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Reduce a Claude Code transcript to the part a retrospective can learn from.
+# Reduce a Claude Code or Codex transcript to the part a retrospective can
+# learn from.
 #
 # Usage: digest.sh <transcript.jsonl>
 #   stdout : the digest (chronological)
@@ -31,11 +32,25 @@ f="${1:?usage: digest.sh <transcript.jsonl>}"
 # ---- gate (pure, cheap: two passes of jq over one file) ----------------------
 gate() { # transcript -> 0 if worth reflecting on
   local turns errs
-  turns=$(jq -r 'select(.type=="user" and (.isMeta|not) and ((.message.content|type)=="string")) | 1' "$1" 2>/dev/null | wc -l)
+  # Codex injects AGENTS.md, environment and system context as user-role
+  # messages; count only those with operator text left after stripping them.
+  turns=$(jq -r '
+    if .type=="user" and (.isMeta|not) and ((.message.content|type)=="string") then 1
+    elif .type=="response_item" and .payload.type=="message" and .payload.role=="user"
+      then ([.payload.content[]? | select(.type=="input_text") | .text] | join("\n")
+      | gsub("(?s)<(system_instruction|environment_context|recommended_plugins|user_instructions)>.*?</\\1>"; "")
+      | gsub("(?s)# AGENTS\\.md instructions for [^\\n]*\\s*<INSTRUCTIONS>.*?</INSTRUCTIONS>"; "")
+      | select(test("\\S")) | 1)
+    else empty end' "$1" 2>/dev/null | wc -l)
   errs=$(jq -r '
     if .type=="user" and ((.message.content|type)=="array")
       then (.message.content[] | select(.type=="tool_result" and .is_error==true) | 1)
     elif .type=="attachment" and (.attachment.type=="hook_blocking_error") then 1
+    elif .type=="event_msg" and .payload.type=="item_completed"
+      and .payload.item.status=="failed" then 1
+    elif .type=="response_item" and .payload.type=="custom_tool_call_output"
+      and (([.payload.output[]?.text] | join("\n"))
+        | test("^(Script failed|Script error:)")) then 1
     else empty end' "$1" 2>/dev/null | wc -l)
   [ "$turns" -ge 3 ] && [ "$errs" -ge 1 ]
 }
@@ -51,16 +66,38 @@ jq -r '
     | gsub("(?s)<system-reminder>.*?</system-reminder>"; "")
     | gsub("(?s)<user-preferences>.*?</user-preferences>"; "")
     | gsub("(?s)<local-command-stdout>.*?</local-command-stdout>"; "")
+    | gsub("(?s)<(environment_context|recommended_plugins|user_instructions)>.*?</\\1>"; "")
+    | gsub("(?s)# AGENTS\\.md instructions for [^\\n]*\\s*<INSTRUCTIONS>.*?</INSTRUCTIONS>"; "")
     | gsub("^\\s+|\\s+$"; "");
 
   if .type=="user" and (.isMeta|not) and ((.message.content|type)=="string")
     then (.message.content | clean | select(length > 0) | "U: " + .[0:2000])
+  elif .type=="response_item" and .payload.type=="message" and .payload.role=="user"
+    then ([.payload.content[]? | select(.type=="input_text") | .text]
+          | join("\n") | clean | select(length > 0) | "U: " + .[0:2000])
   elif .type=="user" and ((.message.content|type)=="array")
     then (.message.content[] | select(.type=="tool_result" and .is_error==true)
           | "ERR: " + (.content|tostring)[0:600])
   elif .type=="assistant"
     then (.message.content[]? | select(.type=="text" or .type=="thinking")
           | ((.text // .thinking) | clean | select(length > 0) | "A: " + .[0:1500]))
+  elif .type=="response_item" and .payload.type=="message" and .payload.role=="assistant"
+    then ([.payload.content[]? | select(.type=="output_text") | .text]
+          | join("\n") | clean | select(length > 0) | "A: " + .[0:1500])
+  elif .type=="response_item" and .payload.type=="reasoning"
+    then (.payload.summary[]? | select(.type=="summary_text")
+          | (.text | clean | select(length > 0) | "A: " + .[0:1500]))
+  elif .type=="event_msg" and .payload.type=="item_completed"
+    and .payload.item.status=="failed"
+    then (.payload.item.aggregated_output // "") as $aggregated
+      | (.payload.item.stderr // "") as $stderr
+      | "ERR: " + ((if ($aggregated | length) > 0 then $aggregated
+          elif ($stderr | length) > 0 then $stderr
+          else (.payload.item | tostring) end) | tostring)[0:600]
+  elif .type=="response_item" and .payload.type=="custom_tool_call_output"
+    then ([.payload.output[]?.text] | join("\n")) as $output
+      | select($output | test("^(Script failed|Script error:)"))
+      | "ERR: " + $output[0:600]
   elif .type=="attachment" and (.attachment.type=="hook_blocking_error")
     then "HOOK: " + ((.attachment|tostring)[0:600])
   else empty end' "$f" 2>/dev/null

@@ -145,6 +145,42 @@ class CodexTests(unittest.TestCase):
         self.assertIn("BENTO_IMPROVE_AUTO_PR=1", data["Stop"][0]["hooks"][0]["command"])
         self.assertNotIn("BENTO_IMPROVE_AUTO_PR", data["SessionStart"][0]["hooks"][0]["command"])
 
+    def test_legacy_duplicate_hooks_are_reconciled(self):
+        unrelated = {"type": "command", "command": "echo keep"}
+        legacy = {
+            "SessionStart": (
+                'repo="$(git rev-parse --show-toplevel 2>/dev/null)"; '
+                'bash "$repo/.bento/plugins/bento-forge/scripts/session-start.sh"'
+            ),
+            "Stop": (
+                'repo="$(git rev-parse --show-toplevel 2>/dev/null)"; '
+                'bash "$repo/.bento/plugins/bento-forge/scripts/session-stop.sh"'
+            ),
+        }
+        hooks = {}
+        for event in ("SessionStart", "Stop"):
+            hooks[event] = [{"hooks": [
+                unrelated,
+                {"type": "command", "command": legacy[event], "timeout": 5},
+                {"type": "command", "command": installer.hook_command(event), "timeout": 5},
+            ]}]
+        hook_path = self.home / "hooks.json"
+        hook_path.write_text(json.dumps({"hooks": hooks}))
+
+        self.install()
+
+        result = json.loads(hook_path.read_text())["hooks"]
+        for event in ("SessionStart", "Stop"):
+            handlers = [handler for group in result[event] for handler in group["hooks"]]
+            self.assertIn(unrelated, handlers)
+            bento = [handler for handler in handlers
+                     if ".bento/plugins/bento-forge/scripts/" in handler.get("command", "")]
+            self.assertEqual(bento, [{
+                "type": "command",
+                "command": installer.hook_command(event),
+                "timeout": 5,
+            }])
+
     def test_hook_commands_run_real_paths_from_nested_directory_and_noop_elsewhere(self):
         self.install()
         nested = self.repo / "src/nested"

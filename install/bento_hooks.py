@@ -13,6 +13,17 @@ def hook_command(event, auto_pr=False):
     )
 
 
+def is_bento_handler(handler, event, command_factory=hook_command):
+    """Recognize current and legacy Bento handlers without owning other hooks."""
+    if handler.get("type") != "command":
+        return False
+    command = handler.get("command", "")
+    if command in {command_factory(event, False), command_factory(event, True)}:
+        return True
+    script = "session-start.sh" if event == "SessionStart" else "session-stop.sh"
+    return f".bento/plugins/bento-forge/scripts/{script}" in command
+
+
 def merge_json_hooks(text, purge, auto_pr, command_factory=hook_command):
     data = json.loads(text) if text else {}
     original = copy.deepcopy(data)
@@ -24,7 +35,6 @@ def merge_json_hooks(text, purge, auto_pr, command_factory=hook_command):
         if not isinstance(groups, list):
             raise ValueError(f"hooks.{event} must be an array")
         kept = []
-        owned = {command_factory(event, False), command_factory(event, True)}
         desired = {"type": "command", "command": command_factory(event, auto_pr), "timeout": 5}
         found = False
         for group in groups:
@@ -32,7 +42,7 @@ def merge_json_hooks(text, purge, auto_pr, command_factory=hook_command):
             remaining = []
             removed = False
             for handler in handlers:
-                if handler.get("type") == "command" and handler.get("command") in owned:
+                if is_bento_handler(handler, event, command_factory):
                     if not purge and not found and not group.get("matcher"):
                         remaining.append(desired)
                         found = True

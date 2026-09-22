@@ -3,7 +3,8 @@
 # session-stop must NOT reflect per turn: it skips trivial sessions, and for a
 # substantive one it debounces to quiescence and reflects ONCE, on the COMPLETE
 # transcript — never the early slice present at the first stop, and never locked
-# out of a later burst. The real quality gate is digest.sh's job (its own test).
+# out of a later burst. The real quality gate is digest.sh's job; this test also
+# pins the Codex transcript schema at that boundary.
 # A stub worker (BENTO_IMPROVE_WORKER) stands in for the real reflect+bank.
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -36,6 +37,16 @@ export BENTO_IMPROVE_WORKER="$stub"
 uturn() { printf '{"type":"user","isMeta":false,"message":{"content":"%s"}}\n' "$1"; }
 tooluse() { printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Edit"}]}}\n'; }
 toolerr() { printf '{"type":"user","message":{"content":[{"type":"tool_result","is_error":true,"content":"boom"}]}}\n'; }
+codex_uturn() { printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"%s"}]}}\n' "$1"; }
+codex_assistant() { printf '{"type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"%s"}]}}\n' "$1"; }
+codex_reasoning() { printf '{"type":"response_item","payload":{"type":"reasoning","summary":[{"type":"summary_text","text":"%s"}]}}\n' "$1"; }
+codex_tooluse() { printf '{"type":"response_item","payload":{"type":"custom_tool_call","name":"exec"}}\n'; }
+codex_toolerr() { printf '{"type":"response_item","payload":{"type":"custom_tool_call_output","output":[{"type":"input_text","text":"Script failed\\nboom"}]}}\n'; }
+# Codex-injected context arrives as user-role messages; it is not an operator turn.
+codex_injected() { printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"# AGENTS.md instructions for /repo\\n\\n<INSTRUCTIONS>\\nrules\\n</INSTRUCTIONS>"},{"type":"input_text","text":"<environment_context>\\n<cwd>/repo</cwd>\\n</environment_context>"}]}}\n'
+  printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<system_instruction>\\nctx\\n</system_instruction>"}]}}\n'; }
+codex_wrapped_uturn() { printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<system_instruction>ctx</system_instruction>\\n%s"}]}}\n' "$1"; }
+codex_command_err() { printf '{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution","status":"failed","aggregated_output":"command failed"}}}\n'; }
 
 fire() { echo "{\"session_id\":\"$1\",\"transcript_path\":\"$2\",\"cwd\":\"$PWD\"}" | ./session-stop.sh; }
 awaited() { # <session> -> yes|no  (poll for the debounced spawn)
@@ -74,6 +85,25 @@ prev="$(count grow-1)"
 fire grow-1 "$grow"
 i=0; while [ "$(count grow-1)" = "$prev" ] && [ "$i" -lt 60 ]; do sleep 0.2; i=$((i+1)); done
 check "a later burst re-arms (not permanently locked)" "2" "$(count grow-1)"
+
+# Codex writes response_item/event_msg records rather than Claude's
+# user/assistant/tool_result schema. It must pass both the cheap Stop pre-check
+# and digest's real signal gate.
+codex_triv="$tmp/codex-triv.jsonl"; { codex_injected; codex_uturn "hi"; } >"$codex_triv"
+fire codex-triv-1 "$codex_triv"; sleep 1.5
+check "Codex injected context is not an operator turn" "0" "$(count codex-triv-1)"
+
+codex="$tmp/codex.jsonl"
+{ codex_injected; codex_wrapped_uturn "a"; codex_tooluse; codex_uturn "b"; codex_assistant "answer";
+  codex_reasoning "reason"; codex_uturn "c"; codex_toolerr; codex_command_err; } >"$codex"
+fire codex-1 "$codex"
+check "Codex session reflects" "yes" "$(awaited codex-1)"
+check "Codex session reflects exactly once" "1" "$(count codex-1)"
+
+codex_digest="$(./digest.sh "$codex")"
+check "Codex digest keeps user turns" "3" "$(printf '%s\n' "$codex_digest" | grep -c '^U: ')"
+check "Codex digest keeps assistant text and reasoning" "2" "$(printf '%s\n' "$codex_digest" | grep -c '^A: ')"
+check "Codex digest keeps both failure forms" "2" "$(printf '%s\n' "$codex_digest" | grep -c '^ERR: ')"
 
 rm -rf "$tmp"
 [ "$fails" -eq 0 ] && echo "PASS" || { echo "$fails failed"; exit 1; }

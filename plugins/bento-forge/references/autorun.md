@@ -4,8 +4,9 @@ The loop is split across two hooks by what each can do — **bank at Stop, surfa
 at SessionStart** — so it needs no env var and works the same on Claude and
 Codex. See `stop-hook.md` for wiring.
 
-- **Stop (`session-stop.sh`)** hands each finished session to a detached worker
-  that reflects + banks candidates to the local ledger. Always-on, silent, no env
+- **Stop (`session-stop.sh`)** debounces per-turn Stop events until the session
+  has been quiet, then hands the complete transcript to a detached worker that
+  reflects + banks candidates to the local ledger. Always-on, silent, no env
   gate. It never opens a PR.
 - **SessionStart (`session-start.sh`)** reads the ledger (no LLM) and, if any
   learning has ripened, injects a model-visible prompt to review them and open a
@@ -22,10 +23,10 @@ Codex. See `stop-hook.md` for wiring.
 ## Pipeline
 
 ```
-Stop hook  (session-stop.sh, once per session_id; skips trivial sessions)
+Stop hook  (session-stop.sh, debounce to quiescence; later bursts re-arm)
   └─ nohup worker.sh --transcript … --session … --cwd …      detached
        │
-       ├─ digest.sh          transcript -> signal only, or exit if below gate
+       ├─ digest.sh          Claude/Codex transcript -> signal, or exit below gate
        ├─ claude -p          read-only reflect  -> candidate JSONL
        ├─ ledger.sh add      bank candidates locally           ← default stops here
        └─ ledger.sh ripe     key recurred in >=N sessions?     ← only if BENTO_IMPROVE_AUTO_PR=1
@@ -43,11 +44,13 @@ the next session inspects the ledger the previous ones filled.
 
 ## Trivial-session skip
 
-`session-stop.sh` spawns the worker only for sessions that could teach something.
-It skips (before spawning, no cost) when the transcript is missing, or the
-session has **fewer than 2 operator turns AND no tool use** — a "say hi" session
-never touched the repo. The `digest.sh` gate inside the worker is the real
-quality filter; this pre-check just avoids paying a worker for nothing.
+`session-stop.sh` first skips transcripts that cannot yet teach anything: a
+missing transcript, or **fewer than 2 operator turns AND no tool use**. The cheap
+check understands both Claude and Codex transcript schemas and sets no permanent
+state, so a later richer turn is reconsidered. Once substantive, Stop events are
+debounced until `BENTO_IMPROVE_QUIESCE_SECS` of inactivity; the worker then sees
+the complete transcript. A later burst re-arms reflection. The `digest.sh` gate
+inside the worker remains the real quality filter.
 
 ## Repo adoption gate
 
@@ -60,7 +63,7 @@ run in any git repo.
 ## The gate
 
 `digest.sh` keeps a session only if it has **≥3 operator turns AND ≥1 failure**
-(`is_error` tool result or `hook_blocking_error`). Measured over 222 transcripts
+(`is_error`/failed tool result or `hook_blocking_error`). Measured over 222 transcripts
 across 7 days, that selects 115 and reduces them to 3.1% of their bytes — 60 KB
 mean, 278 KB worst case. The gate is about *friction*, not effort: a long clean
 session taught nobody anything; a short one that failed twice did.
@@ -151,6 +154,7 @@ worker.sh --preview-issue
 | Env | Default | |
 |---|---|---|
 | `BENTO_IMPROVE_AUTO_PR` | unset | Set on the Stop command for a hands-off worker that opens the PR itself once a learning ripens. Unset = bank only, surface at next SessionStart. |
+| `BENTO_IMPROVE_QUIESCE_SECS` | `300` | Idle window after the latest Stop event before the complete transcript is reflected. |
 | `BENTO_IMPROVE_REPO_MARKER` | `.bento` | Repo-adoption marker; empty runs in any git repo. |
 | `BENTO_IMPROVE_BASE_BRANCH` | `main` | Branch the promotion worktree and PR target. |
 | `BENTO_IMPROVE_THRESHOLD` | `3` | Distinct sessions before a key is promoted. |
