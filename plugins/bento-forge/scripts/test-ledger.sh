@@ -28,5 +28,13 @@ check "promoted key never ripens again"        ""                "$(./ledger.sh 
 check "unpromoted key survives"                "other-thing"     "$(./ledger.sh ripe 1)"
 check "keys feed the prompt"                   "other-thing"     "$(./ledger.sh keys)"
 
+./ledger.sh dismiss other-thing
+check "dismissed key leaves pending"           ""                "$(./ledger.sh pending | awk '$2=="other-thing"{print}')"
+check "dismissed key never ripens again"       ""                "$(./ledger.sh ripe 1 | grep -x other-thing)"
+check "dismissed key leaves prompt keys"       ""                "$(./ledger.sh keys | grep -x other-thing)"
+rec other-thing s2
+check "new records do not revive dismissal"    ""                "$(./ledger.sh ripe 1 | grep -x other-thing)"
+check "dismissal remains visible in history"   "true"            "$(./ledger.sh show other-thing | jq -r 'select(.dismissed==true) | .dismissed')"
+
 rm -rf "$(dirname "$BENTO_IMPROVE_LEDGER")"
 [ "$fails" -eq 0 ] && echo "PASS" || { echo "$fails failed"; exit 1; }

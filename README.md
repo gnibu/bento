@@ -40,7 +40,7 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
 - **`plugins/bento-forge/`** — the learning engine and generator:
   - `bento-improve` — Reflect → Route → Propose: route each session's learnings to their
     cheapest correct home (L1 bento / L2 repo), with an eval-gated keep-or-revert. Ships the
-    **autorun** subsystem (bank at `Stop`, surface ripened at `SessionStart`, PR on your yes).
+    **autorun** subsystem (bank at `Stop`, surface candidates at `SessionStart`, PR on your yes).
   - `bento-init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews,
     with human checkpoints and a generated baseline for later three-way merges.
     See [the workflow and file contract](plugins/bento-forge/references/bento-init.md).

@@ -14,17 +14,16 @@
 # Stop fires at the END OF EVERY TURN, not once at session close, so this does
 # not reflect on each stop. Cheap skips first (no session id, no readable
 # transcript, or a trivial <2-turn/no-tool session cost nothing). Then it
-# debounces: each turn bumps an activity token and arms a single detached waiter
-# that reflects ONCE, on the complete transcript, after the session has been idle
-# for a quiescence window (BENTO_IMPROVE_QUIESCE_SECS, default 300s). A long
-# 60-turn session is therefore learned from in full — not from the early slice
-# present at the first stop. The digest gate inside the worker is the real
-# quality filter; the checks here only decide whether to arm the waiter.
+# persists the job and debounces it to a quiescence window
+# (BENTO_IMPROVE_QUIESCE_SECS, default 300s). A long 60-turn session is therefore
+# learned from in full — not from the early slice present at the first stop. If
+# the detached waiter dies, SessionStart re-arms the durable pending job. The
+# digest gate inside the worker is the real quality filter; the checks here only
+# decide whether to enqueue the session.
 #
-# Why detached, not cron: a scheduler would have to rediscover which sessions
-# ended and when; the Stop hook already knows and hands us the exact transcript.
-# The worker is detached (all fds closed, reparented) so the visible session ends
-# normally while the retrospective runs behind it.
+# Why detached, not cron: the Stop hook already knows the exact transcript. The
+# worker is detached so the visible session ends normally, while the persistent
+# pending record lets SessionStart recover if that best-effort process is lost.
 #
 # Wire it PERSONALLY (not in committed settings): Stop -> session-stop.sh and
 # SessionStart -> session-start.sh. See references/stop-hook.md. Renamed from the
@@ -83,45 +82,10 @@ if command -v jq >/dev/null 2>&1; then
 fi
 
 # Stop fires at the end of EVERY turn, so no single stop is "the session end".
-# Debounce to quiescence: every turn bumps an activity token; the first arms ONE
-# detached waiter (mkdir is the atomic guard) that sleeps a window and re-checks
-# the token, waiting again while turns keep coming. Once the session has been
-# idle for the whole window it reflects ONCE on the now-complete transcript — so
-# a 60-turn session is learned from in full, not from the slice present when it
-# first crossed the gate. No reliable end-of-session hook exists for headless
-# Claude or Codex, so quiescence is the portable stand-in.
-state_dir="${TMPDIR:-/tmp}/bento-improve-${session_id}"
-mkdir -p "$state_dir" 2>/dev/null || true
-# Unique per turn (pid + RANDOM), so the token always changes even within one
-# clock second — the waiter can trust "unchanged" to mean "no turn happened".
-printf '%s.%s.%s\n' "$(date +%s)" "${RANDOM:-0}" "$$" >"$state_dir/gen" 2>/dev/null || true
-
-# A waiter already covers this session → we only needed to bump the token.
-mkdir "$state_dir/waiter" 2>/dev/null || exit 0
-
-quiesce="${BENTO_IMPROVE_QUIESCE_SECS:-300}"
-worker="${BENTO_IMPROVE_WORKER:-$(dirname "$0")/worker.sh}"
-
-# Detached AND in its own process group: all fds closed and the child reparented
-# (survives the parent exiting), nohup ignores SIGHUP, and `set -m` makes the
-# backgrounded job a group leader so a session-close signal aimed at Claude's
-# process group cannot reach the waiter while it sleeps. Verified: without the
-# own-group step the waiter shares — and dies with — the session's group; setsid
-# is absent on macOS, so `set -m` is the portable route. The visible session ends
-# normally while the waiter idles behind it, then hands off to the worker.
-# BENTO_IMPROVE_WORKER overrides the worker (tests use a stub).
-set -m 2>/dev/null || true
-{ nohup bash -c '
-  set -u
-  gen="$1"; lock="$2"; quiesce="$3"; worker="$4"; transcript="$5"; session="$6"; cwd="$7"
-  while :; do
-    mine="$(cat "$gen" 2>/dev/null || true)"
-    sleep "$quiesce"
-    [ "$(cat "$gen" 2>/dev/null || true)" = "$mine" ] && break
-  done
-  rmdir "$lock" 2>/dev/null || true
-  "$worker" --transcript "$transcript" --session "$session" --cwd "$cwd"
-' bento-waiter \
-  "$state_dir/gen" "$state_dir/waiter" "$quiesce" "$worker" \
-  "$transcript" "$session_id" "${cwd:-$PWD}" >/dev/null 2>&1 & } 2>/dev/null
-exit 0
+# pending-session.sh stores the handoff under BENTO_IMPROVE_STATE, bumps its
+# generation token, and maintains one detached runner. The runner waits until
+# the token stays unchanged for the whole window, then reflects. SessionStart
+# calls its recovery entrypoint so a killed process or reboot delays the work
+# instead of losing it.
+here="$(cd "$(dirname "$0")" && pwd)"
+"$here/pending-session.sh" enqueue "$session_id" "$transcript" "${cwd:-$PWD}"

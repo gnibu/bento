@@ -4,6 +4,7 @@ set -uo pipefail
 cd "$(dirname "$0")"
 tmp="$(mktemp -d)"
 export BENTO_IMPROVE_LEDGER="$tmp/ledger.jsonl" BENTO_IMPROVE_THRESHOLD=2
+export BENTO_IMPROVE_STATE="$tmp/state"
 export BENTO_UPDATE_REMINDER_STATE="$tmp/update-reminder" BENTO_UPDATE_REMINDER_DAYS=0
 trap 'rm -rf "$tmp"' EXIT
 fails=0
@@ -14,20 +15,24 @@ rec() { printf '{"key":"%s","session_id":"%s","ts":"t","sink":"code","summary":"
 check "empty ledger -> no output" "" "$(./session-start.sh </dev/null)"
 
 rec zsh-glob s1
-check "one session (below threshold) -> no output" "" "$(./session-start.sh </dev/null)"
+out="$(./session-start.sh </dev/null)"
+has "one-session candidate is surfaced by default" "1 bento learning candidate" "$out"
+check "one-session candidate is not auto-promotion ripe" "" "$(./ledger.sh ripe "$BENTO_IMPROVE_THRESHOLD")"
+check "surface threshold remains configurable" "" \
+      "$(BENTO_IMPROVE_SURFACE_THRESHOLD=2 ./session-start.sh </dev/null)"
 
-rec zsh-glob s2   # second distinct session -> ripe at threshold 2
+rec zsh-glob s2   # second distinct session -> auto-promotion ripe at threshold 2
 out="$(./session-start.sh </dev/null)"
 has "ripe -> emits SessionStart output"  '"hookEventName":"SessionStart"' "$out"
 has "carries additionalContext"          "additionalContext" "$out"
-has "counts the ripened learning"        "1 bento learning" "$out"
+has "counts the reviewable learning"     "1 bento learning candidate" "$out"
 check "output is valid one-line JSON with the right event" "SessionStart" \
       "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.hookEventName')"
 
 rec venv-mypy s1
 rec venv-mypy s3   # second key crosses the threshold
 out="$(./session-start.sh </dev/null)"
-has "two ripened learnings counted" "2 bento learning" "$out"
+has "two reviewable learnings counted" "2 bento learning candidate" "$out"
 
 # Reminders work without learnings and cannot mutate a checkout: the only state
 # they need is the shared local timestamp. All state in this test is isolated.
@@ -59,12 +64,12 @@ printf 'corrupt' >"$BENTO_UPDATE_REMINDER_STATE"
 export BENTO_IMPROVE_LEDGER="$tmp/ledger.jsonl"
 out="$(./session-start.sh </dev/null)"
 has "corrupt timestamp recovers" "A periodic Bento update check is due" "$out"
-has "reminder preserves learning prompt" "2 bento learning" "$out"
+has "reminder preserves learning prompt" "2 bento learning candidate" "$out"
 check "combined output is valid JSON" "SessionStart" \
       "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.hookEventName')"
-has "invalid configuration preserves learning prompt" "2 bento learning" \
+has "invalid configuration preserves learning prompt" "2 bento learning candidate" \
     "$(BENTO_UPDATE_REMINDER_DAYS=invalid ./session-start.sh </dev/null)"
-has "unavailable state preserves learning prompt" "2 bento learning" \
+has "unavailable state preserves learning prompt" "2 bento learning candidate" \
     "$(BENTO_UPDATE_REMINDER_STATE="$tmp/ledger.jsonl/state" ./session-start.sh </dev/null)"
 
 # Exercise a real worker invocation, replacing only Claude with a child that
@@ -92,7 +97,7 @@ run_worker() {
 rm -f "$BENTO_UPDATE_REMINDER_STATE"
 run_worker
 check "worker does not create reminder state" "no" "$([ -e "$BENTO_UPDATE_REMINDER_STATE" ] && echo yes || echo no)"
-has "worker child still receives learning prompt" "2 bento learning" "$(cat "$BENTO_TEST_WORKER_HOOK")"
+has "worker child still receives learning prompt" "2 bento learning candidate" "$(cat "$BENTO_TEST_WORKER_HOOK")"
 check "worker child receives no update-check instructions" "false" \
       "$(jq '.hookSpecificOutput.additionalContext | contains("A periodic Bento update check is due")' "$BENTO_TEST_WORKER_HOOK")"
 has "normal session after worker still receives due check" "A periodic Bento update check is due" \

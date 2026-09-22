@@ -4,13 +4,13 @@ The loop is split across two hooks by what each can do — **bank at Stop, surfa
 at SessionStart** — so it needs no env var and works the same on Claude and
 Codex. See `stop-hook.md` for wiring.
 
-- **Stop (`session-stop.sh`)** debounces per-turn Stop events until the session
-  has been quiet, then hands the complete transcript to a detached worker that
-  reflects + banks candidates to the local ledger. Always-on, silent, no env
-  gate. It never opens a PR.
-- **SessionStart (`session-start.sh`)** reads the ledger (no LLM) and, if any
-  learning has ripened, injects a model-visible prompt to review them and open a
-  PR. It also periodically instructs the agent to check for a newer Bento version
+- **Stop (`session-stop.sh`)** stores a durable pending job, debounces per-turn
+  Stop events until the session has been quiet, then hands the complete transcript
+  to a detached worker that reflects + banks candidates. It never opens a PR.
+- **SessionStart (`session-start.sh`)** re-arms pending jobs whose detached process
+  was lost, then reads the ledger (no LLM) and injects a model-visible prompt for
+  every valid candidate by default. It also periodically instructs the agent to
+  check for a newer Bento version
   and offer a manual update only when one is confirmed. The hook itself uses no
   network; a local timestamp throttles these checks. Worker children inherit
   `BENTO_UPDATE_REMINDER_DAYS=0`, so they cannot consume the reminder window.
@@ -23,8 +23,8 @@ Codex. See `stop-hook.md` for wiring.
 ## Pipeline
 
 ```
-Stop hook  (session-stop.sh, debounce to quiescence; later bursts re-arm)
-  └─ nohup worker.sh --transcript … --session … --cwd …      detached
+Stop hook  (session-stop.sh, durable enqueue; later bursts update generation)
+  └─ pending-session.sh -> quiescence -> worker.sh             detached
        │
        ├─ digest.sh          Claude/Codex transcript -> signal, or exit below gate
        ├─ claude -p          read-only reflect  -> candidate JSONL
@@ -34,13 +34,16 @@ Stop hook  (session-stop.sh, debounce to quiescence; later bursts re-arm)
             └─ scratch worktree -> claude -p (acceptEdits) -> commit -> PR
 
 SessionStart hook  (session-start.sh, next session)
-  └─ ledger.sh ripe -> if >=1, inject a model-visible "N learnings ripened" prompt
+  ├─ pending-session.sh recover -> re-arm jobs without a live waiter
+  └─ ledger.sh ripe 1 -> inject a model-visible "N candidates ready" prompt
 ```
 
-There is no cron and no LaunchAgent. A scheduler would have to rediscover which
-sessions ended and when; the `Stop` hook already knows and hands over the exact
-transcript path. The SessionStart read is what closes the loop with no scheduler:
-the next session inspects the ledger the previous ones filled.
+There is no cron and no LaunchAgent. The `Stop` hook already knows the exact
+transcript path, so it records the handoff under
+`$BENTO_IMPROVE_STATE/pending/`. The detached waiter is the fast path;
+SessionStart is the recovery path after a killed process or reboot. Recovery is
+also detached, so a recovered candidate appears after reflection completes and
+is surfaced by a later SessionStart.
 
 ## Trivial-session skip
 
@@ -89,14 +92,15 @@ and the ledger only counts. A key's weight is its number of **distinct
 observation.
 
 Read by three things: the worker (when `BENTO_IMPROVE_AUTO_PR=1`, to decide what
-to promote), `session-start.sh` at the next session start (to count ripe keys and
-surface them — this is what closes the loop with no scheduler), and you.
+to promote), `session-start.sh` at the next session start (to surface candidates
+for human review), and you.
 
 ```bash
-ledger.sh pending          # key -> distinct-session count, unpromoted only
+ledger.sh pending          # key -> distinct-session count, excluding closed keys
 ledger.sh ripe [N]         # keys at or above the threshold (default 3)
 ledger.sh show <key>       # every record behind a key
 ledger.sh keys             # what gets fed to the next reflect prompt
+ledger.sh dismiss <key>    # permanently hide a rejected candidate
 ledger.sh path             # where it lives
 ```
 
@@ -155,9 +159,10 @@ worker.sh --preview-issue
 |---|---|---|
 | `BENTO_IMPROVE_AUTO_PR` | unset | Set on the Stop command for a hands-off worker that opens the PR itself once a learning ripens. Unset = bank only, surface at next SessionStart. |
 | `BENTO_IMPROVE_QUIESCE_SECS` | `300` | Idle window after the latest Stop event before the complete transcript is reflected. |
+| `BENTO_IMPROVE_SURFACE_THRESHOLD` | `1` | Distinct sessions before a candidate is shown for human review at SessionStart. |
 | `BENTO_IMPROVE_REPO_MARKER` | `.bento` | Repo-adoption marker; empty runs in any git repo. |
 | `BENTO_IMPROVE_BASE_BRANCH` | `main` | Branch the promotion worktree and PR target. |
-| `BENTO_IMPROVE_THRESHOLD` | `3` | Distinct sessions before a key is promoted. |
+| `BENTO_IMPROVE_THRESHOLD` | `3` | Distinct sessions before unattended auto-promotion. It does not delay human review. |
 | `BENTO_IMPROVE_REFLECT_MODEL` | `sonnet` | Runs on every gated session — keep it cheap. |
 | `BENTO_IMPROVE_PROMOTE_MODEL` | `opus` | Runs rarely and writes code. |
 | `BENTO_IMPROVE_STATE` | `~/.claude/bento-improve` | Logs and lock. |
@@ -208,6 +213,9 @@ recurring learning re-surfaces from a cleaner session.
   a commit actually exists.
 - One promoter at a time via a lock dir, broken automatically after 30 minutes so
   a killed worker cannot disable promotion permanently.
+- Pending analyses are persisted under `BENTO_IMPROVE_STATE`; SessionStart
+  atomically re-arms dead jobs. A job is removed after a successful worker
+  handoff or when its transcript/workspace no longer exists and retry cannot help.
 - An in-flight issue is persisted to `inflight.json` keyed to its ripe set and
   reused on the next run, so a repeated push failure cannot file one Triage issue
   per session.
@@ -232,12 +240,13 @@ output as a fixture.
 ## Checks
 
 ```bash
-./test-ledger.sh    # counting, promotion, threshold rules
+./test-ledger.sh    # counting, promotion, dismissal, threshold rules
 ./test-parse.sh     # reflect-output parsing against a real captured response
 ./test-issue.sh     # tracker issue title/body derived from ripe keys (renders only)
 ./test-secret-scan.sh   # credential shapes are dropped, ordinary errors are not
 ./test-session-stop.sh  # Stop hook skips trivial sessions, spawns on substantive ones
-./test-session-start.sh # ripe learnings, throttled update checks, worker children preserve reminder state
+./test-pending-session.sh # retry/recovery, invalid-job cleanup, signal-safe locking
+./test-session-start.sh # candidate surfacing, update checks, worker children preserve reminder state
 ./digest.sh <transcript.jsonl> | head    # eyeball a digest
 ./worker.sh --preview-issue              # what the ledger would file right now
 ```

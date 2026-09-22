@@ -9,9 +9,8 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 tmp="$(mktemp -d)"
-# Isolate TMPDIR so per-session debounce state lives in the throwaway dir — no
-# cross-run contamination from a real ~/TMPDIR, and `rm -rf "$tmp"` wipes it.
-export TMPDIR="$tmp"
+# Durable pending state must be isolated from the operator's real ledger/queue.
+export BENTO_IMPROVE_STATE="$tmp/state"
 # Tiny quiescence window so the debounce resolves within the test.
 export BENTO_IMPROVE_QUIESCE_SECS=1
 fails=0
