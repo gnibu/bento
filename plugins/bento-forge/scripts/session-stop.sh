@@ -61,8 +61,24 @@ cwd="$(field cwd)"
 # (>=3 turns AND >=1 failure) lives in the worker's digest.sh and runs once, at
 # the end, on the complete transcript.
 if command -v jq >/dev/null 2>&1; then
-  uturns="$(jq -r 'select(.type=="user" and (.isMeta|not) and ((.message.content|type)=="string")) | 1' "$transcript" 2>/dev/null | wc -l | tr -d ' ')"
-  tools="$(jq -r 'select(.type=="assistant") | (.message.content[]? | select(.type=="tool_use") | 1)' "$transcript" 2>/dev/null | wc -l | tr -d ' ')"
+  # Claude and Codex write different JSONL schemas. Count both here; otherwise
+  # every Codex session looks empty and the real digest gate is never reached.
+  # Codex also injects AGENTS.md/environment/system context as user-role
+  # messages; only count those with operator text left once they are stripped.
+  uturns="$(jq -r '
+    if .type=="user" and (.isMeta|not) and ((.message.content|type)=="string") then 1
+    elif .type=="response_item" and .payload.type=="message" and .payload.role=="user"
+      then ([.payload.content[]? | select(.type=="input_text") | .text] | join("\n")
+      | gsub("(?s)<(system_instruction|environment_context|recommended_plugins|user_instructions)>.*?</\\1>"; "")
+      | gsub("(?s)# AGENTS\\.md instructions for [^\\n]*\\s*<INSTRUCTIONS>.*?</INSTRUCTIONS>"; "")
+      | select(test("\\S")) | 1)
+    else empty end' "$transcript" 2>/dev/null | wc -l | tr -d ' ')"
+  tools="$(jq -r '
+    if .type=="assistant"
+      then (.message.content[]? | select(.type=="tool_use") | 1)
+    elif .type=="response_item"
+      and (.payload.type=="custom_tool_call" or .payload.type=="function_call") then 1
+    else empty end' "$transcript" 2>/dev/null | wc -l | tr -d ' ')"
   [ "${uturns:-0}" -lt 2 ] && [ "${tools:-0}" -eq 0 ] && exit 0
 fi
 

@@ -4,7 +4,7 @@ The subsystem uses **two** hooks that split the loop by what each can do:
 
 | Hook | Script | Job |
 |---|---|---|
-| **Stop** | `session-stop.sh` | Reflect + bank the finished session to a local ledger. Silent, always-on, no env gate. Never opens a PR by itself. |
+| **Stop** | `session-stop.sh` | Debounce per-turn Stops to quiescence, then reflect + bank the complete session transcript to a local ledger. Silent, always-on, no env gate. Never opens a PR by itself. |
 | **SessionStart** | `session-start.sh` | Offer to review ripened learnings and, at most every 30 days, instruct the agent to check for a newer Bento version before offering an update. Otherwise silent. |
 
 Hook scripts ship with `bento-forge`; setup activates them in the selected scope. Claude
@@ -17,9 +17,11 @@ personal scope can cover the same project's worktrees without changing team sett
 ## The model: bank always, surface at start, PR on your yes
 
 - **Stop → bank.** Every substantive session is reflected on and its candidates
-  banked. This is env-independent and cross-agent (Claude + Codex): no
-  `BENTO_IMPROVE_AUTORUN` to remember. A trivial session (no transcript, or
-  fewer than 2 user turns and no tool use) is skipped so it costs nothing.
+  banked after the Stop stream has been quiet for the quiescence window. The
+  pre-check and digest normalize both Claude and Codex transcripts. This is
+  env-independent and cross-agent: no `BENTO_IMPROVE_AUTORUN` to remember. A
+  trivial session (no transcript, or fewer than 2 user turns and no tool use) is
+  skipped so it costs nothing, without preventing a later richer turn.
 - **SessionStart → surface.** Next time you start a session, if learnings have
   ripened you get a prompt to review them. Say yes and the agent opens the PR via
   the `bento-improve` / session-learn skill. That interactive yes is the approval
