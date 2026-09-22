@@ -66,19 +66,39 @@ preferences.
   (this is `hillclimb` applied to the instruction layer itself).
   Revert the corresponding baseline change too if a managed-file edit is rejected.
 
-## Autorun (optional, recurrence-gated)
+### Reviewing candidates surfaced by SessionStart
+
+When SessionStart names banked candidate keys, do not merely repeat the notification or
+wait for recurrence:
+
+1. Resolve `<forge>`, then read each record with
+   `"<forge>/scripts/ledger.sh" show <key>`. The default human-review threshold is one;
+   `BENTO_IMPROVE_THRESHOLD` applies only to unattended auto-promotion.
+2. Re-verify the evidence and proposed sink against the current repo. For candidates that
+   are one-offs, already handled, or routed incorrectly, run
+   `"<forge>/scripts/ledger.sh" dismiss <key>` so they do not return next session.
+3. Show the concrete diff for every surviving candidate. Do not edit yet.
+4. Apply and verify only after explicit approval. Committing, pushing, and opening a PR
+   remain separate user actions unless they were explicitly requested.
+
+Keep an accepted candidate pending until its durable change exists. The ledger is the retry
+mechanism; a notification is not proof that the learning was applied.
+
+## Autorun (human-reviewed by default, recurrence-gated when unattended)
 
 Two hooks run Reflect+Route headless and split the loop by what each hook can do —
 **bank at Stop, surface at SessionStart** — so it needs no env var and behaves the
 same on Claude and Codex:
 
-- **Stop** reflects on the finished session and banks each candidate in a local ledger,
-  silently. Always-on; it never opens a PR. Trivial sessions ("say hi") are skipped.
-- **SessionStart** reads the ledger (no LLM) and, when a learning has recurred across
-  enough independent sessions, injects a model-visible prompt to review the ripe learnings
-  and open a PR. A single session can't tell a pattern from a one-off, so recurrence is the
-  filter and **your yes to that prompt is the approval gate** that replaces the interactive
-  apply. Fully hands-off? `BENTO_IMPROVE_AUTO_PR=1` lets the Stop worker open the PR itself.
+- **Stop** persistently queues the finished session, reflects after quiescence, and banks
+  each candidate in a local ledger, silently. If the detached process is lost, a later
+  SessionStart re-arms the pending analysis. Trivial sessions ("say hi") are skipped.
+- **SessionStart** reads the ledger (no LLM) and injects a model-visible prompt for every
+  valid candidate by default, including the keys needed for the review flow above. **Your
+  yes to the proposed diff is the approval gate** that replaces interactive apply.
+  Recurrence is a separate safeguard for fully unattended changes:
+  `BENTO_IMPROVE_AUTO_PR=1` lets the Stop worker open a PR only after the auto-promotion
+  threshold is met.
 - **Update checks** are also requested at SessionStart, at most every 30 days. The agent
   checks upstream first and offers a manual update only if a newer version is confirmed.
   Worker children have these checks disabled so they preserve the user's reminder window.
@@ -87,11 +107,12 @@ same on Claude and Codex:
 This is implemented, not just described. The bundle lives beside this command:
 
 ```
-scripts/session-stop.sh    Stop-hook entry: skip trivial, else spawn the worker (reflect + bank)
-scripts/session-start.sh   SessionStart-hook entry: ripe learnings + periodic update-check instructions (no LLM)
+scripts/session-stop.sh    Stop-hook entry: skip trivial, else durably enqueue reflection
+scripts/session-start.sh   recover pending jobs + surface candidates + update-check instructions
+scripts/pending-session.sh persistent debounce/recovery handoff to the worker
 scripts/worker.sh          detached retrospective: digest → reflect → ledger; promote only if AUTO_PR
 scripts/digest.sh          transcript → learnable signal, gated on friction
-scripts/ledger.sh          local per-key recurrence ledger (keys|add|pending|ripe|show|promote|path)
+scripts/ledger.sh          local ledger (keys|add|pending|ripe|show|promote|dismiss|path)
 scripts/secret-scan.sh     fail-closed credential filter on candidates before they are banked
 prompts/reflect.md         read-only Reflect+Route prompt (this command's steps 1–2)
 prompts/promote.md         write-enabled Propose prompt for ripe candidates (this command's step 3)

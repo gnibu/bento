@@ -22,8 +22,10 @@
 # Records:
 #   {"key","session_id","ts","cwd","sink","summary","evidence"}   candidate
 #   {"key","ts","promoted":true}                                  promotion mark
+#   {"key","ts","dismissed":true}                                 dismissal mark
 #
-# Usage: ledger.sh keys | add <<<json | pending | ripe [N] | show <key> | promote <key>
+# Usage: ledger.sh keys | add <<<json | pending | ripe [N] | show <key> |
+#        promote <key> | dismiss <key>
 set -uo pipefail
 
 LEDGER="${BENTO_IMPROVE_LEDGER:-$HOME/.claude/bento-improve/ledger.jsonl}"
@@ -48,17 +50,19 @@ with_lock() {
 
 append() { cat >>"$LEDGER"; }
 
-promoted_keys() { jq -r 'select(.promoted==true) | .key' "$LEDGER" 2>/dev/null | sort -u; }
+terminal_keys() {
+  jq -r 'select(.promoted==true or .dismissed==true) | .key' "$LEDGER" 2>/dev/null | sort -u
+}
 
-# key -> distinct session count, excluding already-promoted keys
+# key -> distinct session count, excluding promoted or explicitly dismissed keys
 counts() {
-  local promoted; promoted=$(promoted_keys)
+  local terminal; terminal=$(terminal_keys)
   jq -r 'select(.promoted != true and (.key//"") != "" and (.session_id//"") != "")
          | [.key, .session_id] | @tsv' "$LEDGER" 2>/dev/null \
     | sort -u \
     | cut -f1 | uniq -c \
     | while read -r n k; do
-        grep -qxF "$k" <<<"$promoted" || printf '%s\t%s\n' "$n" "$k"
+        grep -qxF "$k" <<<"$terminal" || printf '%s\t%s\n' "$n" "$k"
       done \
     | sort -rn
 }
@@ -71,6 +75,8 @@ case "${1:-pending}" in
   show)    jq -c --arg k "${2:?show <key>}" 'select(.key==$k)' "$LEDGER" ;;
   promote) printf '{"key":"%s","ts":"%s","promoted":true}\n' \
              "${2:?promote <key>}" "$(date -u +%FT%TZ)" | with_lock append ;;
+  dismiss) printf '{"key":"%s","ts":"%s","dismissed":true}\n' \
+             "${2:?dismiss <key>}" "$(date -u +%FT%TZ)" | with_lock append ;;
   path)    echo "$LEDGER" ;;
-  *)       echo "usage: ledger.sh keys|add|pending|ripe [N]|show <key>|promote <key>|path" >&2; exit 2 ;;
+  *)       echo "usage: ledger.sh keys|add|pending|ripe [N]|show <key>|promote <key>|dismiss <key>|path" >&2; exit 2 ;;
 esac
