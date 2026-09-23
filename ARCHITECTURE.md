@@ -20,7 +20,7 @@ bento
   conventions/   how to author L2        instruction-file pricing + pointer form,
                                           skill/procedure-routing (incl. "no match → design one"),
                                           what belongs in an AGENTS.md vs a doc vs a comment
-  playbooks/     triggered task skills    eval-blind, hillclimb, … (bento-core plugin)
+  playbooks/     triggered task skills    eval-blind, hillclimb, … (bento plugin)
   forge/         generate + improve       bootstrap a fresh L2; evolve an existing one
 ```
 
@@ -28,20 +28,20 @@ bento
   can't ship always-on text). See `install.sh` / `install/user-claude-md.md`.
 - **Conventions** are the meta-layer: rules about *how the instruction layer itself is
   written*. This is where the instruction-pricing model and skill-routing discipline live.
-- **Playbooks** are triggered skills, shipped by the `bento-core` plugin.
-- **Forge** is the `bento-forge` plugin: `bento-init` (generate) + `bento-improve` (evolve).
+- **Playbooks** are triggered skills, shipped by the `bento` plugin.
+- **Forge** is part of the same `bento` plugin: `/bento:init` (generate) + `/bento:learn` (evolve).
 
-`bento-init` inspects code, docs, and merged PR reviews, then pauses for approval
+`/bento:init` inspects code, docs, and merged PR reviews, then pauses for approval
 of the evidence, file design, and generated diff. Its `l2-state.py` helper refuses
 existing instruction layers and records generated text in the consuming repo's
 `.bento-state/baseline.json`. Both improvement paths use that baseline for
 three-way merges, preserving non-conflicting hand edits and leaving files unchanged
 on conflict. The baseline travels with the L2 in Git; it is not part of vendored
-L1 or private hook state. See [generation and update mechanics](plugins/bento-forge/references/bento-init.md).
+L1 or private hook state. See [generation and update mechanics](plugins/bento/references/init.md).
 
 ## The improve engine (do not rebuild)
 
-`bento-forge improve` **is** Rose's `rose-session-learn` generalized: its Reflect → Route →
+`/bento:learn` **is** Rose's `rose-session-learn` generalized: its Reflect → Route →
 Propose loop and its instruction-file pricing model, run manually or from `ship` at PR time — with
 the Route table's sinks widened from Rose-only (`AGENTS.md`/docs/skills) to **L1 (bento) vs
 L2 (the repo)**. It is the mechanism that keeps factoring generic practices up into bento
@@ -56,7 +56,7 @@ Test for each practice: *would this help an agent in a repo that isn't Rose?*
 - Prove-on-artifact / before-after evidence discipline
 - Instruction-file pricing + pointer form (from `rose-session-learn` Space budget)
 - Skill/procedure-routing discipline, incl. "no match → design one" (`claude-md-improver`)
-- The improve engine (`rose-session-learn`) → `bento-forge improve`
+- The improve engine (`rose-session-learn`) → `/bento:learn`
 - Skill-authoring conventions (`create-skill`)
 - eval-blind, hillclimb
 
@@ -67,21 +67,20 @@ Test for each practice: *would this help an agent in a repo that isn't Rose?*
 
 ## How a project adopts bento
 
-**Playbooks + forge (the plugins) — canonical marketplace install, not a submodule.**
+**Playbooks + forge (the `bento` plugin) — canonical marketplace install, not a submodule.**
 Claude Code manages the clone and updates. Commit the marketplace + enablement to the
 repo's `.claude/settings.json` to declare the team defaults. Each machine still needs
 a registered marketplace and installed plugins; verify with the CLI:
 
 ```
 claude plugin marketplace add gnibu/bento     # resolves from the repo's DEFAULT branch
-claude plugin install bento-core@bento
-claude plugin install bento-forge@bento
+claude plugin install bento@bento
 ```
 
 These commands default to user scope. Team declarations belong in project settings, while
 registration and installed-plugin records live in the machine's Claude config directory.
 Upgrade by rerunning `bash .bento/install.sh` (it runs `claude plugin marketplace update bento`
-and `claude plugin update` for each plugin). Plugins are versioned by commit SHA (no
+and `claude plugin update bento@bento`). The plugin is versioned by commit SHA (no
 `version` field), so every merged commit is an update. The marketplace resolves
 from the repo's **default branch**, so `marketplace.json` must live there — not just on a
 feature branch.
@@ -120,17 +119,17 @@ The cross-agent install vendors Bento as a pinned submodule:
 | principles | `.bento/principles/PRINCIPLES.md` | `CLAUDE.md` `@import` | distilled into `AGENTS.md` |
 | conventions | `.bento/conventions/*` | referenced | `AGENTS.md` pointer |
 | playbooks | `.bento/plugins/**/SKILL.md` | native plugin skills | native skills via relative links |
-| setup / improve | plugin `references/bento-setup.md` / `bento-improve.md` | command wrappers | `SKILL.md` wrappers |
+| setup / learn | plugin `references/setup.md` / `learn.md` | command wrappers | `SKILL.md` wrappers |
 
 `bash .bento/install.sh --codex` runs `install/bento-codex.py` without requiring Claude.
-It discovers every core skill directory and the forge `bento-improve` entrypoint, preflights
+It discovers every bento skill directory, preflights
 collisions and hook configuration, then creates missing relative links and merges hooks.
 Unrelated links, files, settings, and hook handlers are preserved. Reruns are idempotent;
 purge removes only exact owned links (including dangling links) and owned hook entries.
 Each mutation is reported. The links follow the current checkout's submodule pin.
 
-Codex surfaces **`bento-core:<name>`**, including `bento-core:bento-setup`, and
-`bento-forge:bento-improve` (verified with codex-cli 0.153.4's `debug prompt-input`). The
+Codex surfaces **`bento:<name>`**, including `bento:setup`, and
+`bento:learn` (verified with codex-cli 0.153.4's `debug prompt-input`). The
 `AGENTS.md` block stays as an always-on principles and legacy fallback layer, not the primary
 skill loader. **Start a fresh Codex session after setup.**
 
@@ -138,7 +137,7 @@ Personal hooks are merged into `${CODEX_HOME:-~/.codex}/hooks.json`; committed h
 `.codex/config.toml`. Choose one scope; hook sources are additive. Legacy hand-written
 hooks are preserved, so remove obsolete Bento entries through review when migrating.
 Generated hooks resolve the current Git root and use the real
-`.bento/plugins/bento-forge/scripts/session-start.sh` path, silently
+`.bento/plugins/bento/scripts/session-start.sh` path, silently
 skipping repos without the script. Reruns remove the retired `session-stop.sh` learning
 hook. Setup respects an explicit hooks disable and Codex's
 hook review flow. See [Codex hooks](https://developers.openai.com/codex/hooks).
@@ -160,11 +159,11 @@ Choose one scope to avoid duplicate execution from additive hook sources.
 ### Vendored bootstrap and machine state
 
 Run `git submodule update --init .bento` and `bash .bento/install.sh` in each consumer checkout
-on each machine before invoking `/bento-setup`. The installer checks the real CLI state,
-registers a directory marketplace when bento is absent, and installs/enables both plugins
+on each machine before invoking `/bento:setup`. The installer checks the real CLI state,
+registers a directory marketplace when bento is absent, and installs/enables the plugin
 at user scope. Committed `extraKnownMarketplaces.bento` and `enabledPlugins` declarations
 alone do not establish that the directory marketplace or plugin cache exists on a machine.
-`/bento-setup` prefers the consumer's submodule and repeats this check idempotently.
+`/bento:setup` prefers the consumer's submodule and repeats this check idempotently.
 
 The CLI persists a local source as an **absolute path** in
 `$CLAUDE_CONFIG_DIR/plugins/known_marketplaces.json` (default `~/.claude`), shared across
@@ -181,9 +180,9 @@ source. One machine cannot have multiple independent sources under the name `ben
 
 Claude copies plugins into a separate versioned cache recorded in `installed_plugins.json`.
 Changing the submodule pin changes Codex's files immediately, but does **not** update Claude's
-installed skills. Refresh the registered marketplace, update both plugins, and restart
+installed skills. Refresh the registered marketplace, update the plugin, and restart
 Claude (README **Update**). Setup installs missing plugins and updates installed ones from the
-registered marketplace source, which is not necessarily the submodule pin. Verify marketplace/plugin lists, then confirm the 14 core playbooks plus setup
+registered marketplace source, which is not necessarily the submodule pin. Verify marketplace/plugin lists, then confirm the 14 playbooks plus setup, learn and init
 in a fresh session.
 
 Updates are manual. On first use and at most every 30 days afterward, the shared
@@ -199,7 +198,7 @@ workspaces; `BENTO_UPDATE_REMINDER_DAYS=0` disables it. See README **Update** fo
    dev-loadable; `install.sh` wires principles into the user `CLAUDE.md`.
 2. **Conventions:** extract the pricing/pointer/routing discipline from `rose-session-learn`
    + `claude-md-improver` into `conventions/`. Extraction, not authoring.
-3. **Engine:** implement `bento-forge improve` = session-learn router with L1/L2 sinks.
+3. **Engine:** implement `/bento:learn` = session-learn router with L1/L2 sinks.
 4. **Adopt into Rose:** merge bento to its default branch; add the marketplace + enable the
    plugins in a committed `.claude/settings.json`, as a draft PR to `develop` for team
    review. Principles (the always-on `@import`) follow separately.

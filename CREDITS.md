@@ -10,5 +10,5 @@ ever lifted verbatim, retain its notice.
   (`figure-it-out`, `investigate`, `checkpoint`, `authoring-a-playbook`).
   <https://github.com/cursor/plugins/tree/main/pstack/skills/poteto-mode>
 - **potion** (Aurélien Sibiril) — a Claude Code plugin that analyzes a codebase and
-  generates a project-specific skill pack. Inspired `bento-forge` (generate/improve).
+  generates a project-specific skill pack. Inspired bento's `init`/`learn` (generate/improve).
   <https://github.com/aureliensibiril/potion>

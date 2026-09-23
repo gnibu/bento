@@ -54,6 +54,10 @@ class InstallTests(unittest.TestCase):
             return [row.copy() for row in self.plugins]
         if args[:2] == ("marketplace", "update") or args[0] == "update":
             return None
+        if args[0] == "uninstall":
+            self.plugins = [row for row in self.plugins
+                            if not (row["id"] == args[1] and row["scope"] == args[3])]
+            return None
         if args[:2] == ("marketplace", "add"):
             self.markets.append({"name": "bento", "source": "directory", "path": args[2]})
         elif args[0] == "install":
@@ -75,15 +79,25 @@ class InstallTests(unittest.TestCase):
 
     def test_bootstrap_and_rerun_skip_mutations(self):
         self.assertEqual(installer.bootstrap(self.bento), self.bento)
-        self.assertEqual(len(self.plugins), 2)
+        self.assertEqual(len(self.plugins), 1)
         self.calls.clear()
         installer.bootstrap(self.bento)
         reads = {("list",), ("marketplace", "list")}
         self.assertEqual([call for call in self.calls if call not in reads], [
             ("marketplace", "update", "bento"),
             ("update", installer.PLUGINS[0], "--scope", "user"),
-            ("update", installer.PLUGINS[1], "--scope", "user"),
         ])
+
+    def test_legacy_two_plugin_install_is_replaced(self):
+        cache = self.root / "cache/legacy"
+        cache.mkdir(parents=True)
+        self.markets = [{"name": "bento", "source": "github", "repo": "gnibu/bento"}]
+        self.plugins = [{"id": plugin, "scope": scope, "enabled": True, "installPath": str(cache),
+                         **({"projectPath": str(self.repo)} if scope == "project" else {})}
+                        for plugin in installer.LEGACY_PLUGINS for scope in ("user", "project")]
+        installer.bootstrap(self.bento)
+        self.assertEqual([row["id"] for row in self.plugins], ["bento@bento"])
+        self.assertIn(("uninstall", "bento-forge@bento", "--scope", "project"), self.calls)
 
     def test_disabled_plugin_is_enabled_without_reinstall(self):
         installer.bootstrap(self.bento)

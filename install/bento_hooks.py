@@ -3,9 +3,10 @@ import copy
 import json
 
 
-SCRIPTS = ".bento/plugins/bento-forge/scripts/"
-# Bento wires SessionStart only. Stop is still scanned so reruns remove the
-# retired learning hook (session-stop.sh) from older installs.
+SCRIPTS = ".bento/plugins/bento/scripts/"
+# Bento wires SessionStart only. Stop and the former bento-forge path are still
+# recognized so reruns remove retired hooks from older installs.
+LEGACY_SCRIPTS = ".bento/plugins/bento-forge/scripts/"
 EVENTS = ("SessionStart", "Stop")
 
 
@@ -21,7 +22,8 @@ def is_bento_handler(handler):
     """Recognize current and legacy Bento handlers without owning other hooks."""
     command = handler.get("command", "")
     return handler.get("type") == "command" and any(
-        f"{SCRIPTS}{script}" in command for script in ("session-start.sh", "session-stop.sh"))
+        f"{root}{script}" in command for root in (SCRIPTS, LEGACY_SCRIPTS)
+        for script in ("session-start.sh", "session-stop.sh"))
 
 
 def merge_json_hooks(text, purge, command_factory=hook_command):

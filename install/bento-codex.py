@@ -14,8 +14,9 @@ from bento_hooks import hook_command, merge_json_hooks
 
 START = "# bento:hooks:start"
 END = "# bento:hooks:end"
-CORE = ".bento/plugins/bento-core/skills"
-FORGE = ".bento/plugins/bento-forge/skills"
+SKILLS = ".bento/plugins/bento/skills"
+# Links from the former two-plugin layout; recognized so reruns replace them.
+LEGACY = (".bento/plugins/bento-core/skills", ".bento/plugins/bento-forge/skills")
 
 
 def legacy_team_hooks(auto_pr):
@@ -60,11 +61,8 @@ def team_hooks(text, purge):
 def owned_link(path):
     if not path.is_symlink():
         return False
-    target = os.readlink(path)
     # Exact relative targets remain identifiable even after submodule deinit/removal.
-    return target in (f"../../{CORE}/{path.name}", f"../../{FORGE}/bento-improve") and (
-        target.startswith(f"../../{CORE}/") or path.name == "bento-improve"
-    )
+    return os.readlink(path) in {f"../../{root}/{path.name}" for root in (SKILLS, *LEGACY)}
 
 
 def install(repo, codex_home, hooks="personal", purge=False):
@@ -75,27 +73,25 @@ def install(repo, codex_home, hooks="personal", purge=False):
             raise ValueError(f"refusing linked/non-directory destination: {directory}")
     links = []
     removals = []
+    owned = sorted(path for path in skills.iterdir() if owned_link(path)) if skills.is_dir() else []
     if purge:
-        if skills.is_dir():
-            removals = sorted(path for path in skills.iterdir() if owned_link(path))
+        removals = owned
     else:
-        source = repo / CORE
+        source = repo / SKILLS
         if not source.is_dir():
             raise ValueError(f"initialize the vendored submodule first: {source}")
-        targets = sorted(path for path in source.iterdir() if path.is_dir())
-        targets.append(repo / FORGE / "bento-improve")
-        names = set()
-        for target in targets:
+        desired = {}
+        for target in sorted(path for path in source.iterdir() if path.is_dir()):
             if not (target / "SKILL.md").is_file():
                 raise ValueError(f"missing SKILL.md: {target}")
-            dest = skills / target.name
-            relative = os.path.relpath(target, skills)
-            if target.name in names:
-                raise ValueError(f"duplicate skill name: {target.name}")
-            names.add(target.name)
+            desired[target.name] = f"../../{SKILLS}/{target.name}"
+        # Owned links that are stale (legacy layout, renamed skill) are replaced.
+        removals = [path for path in owned if desired.get(path.name) != os.readlink(path)]
+        for name, relative in desired.items():
+            dest = skills / name
             if dest.is_symlink() and os.readlink(dest) == relative:
                 continue
-            if dest.is_symlink() or dest.exists():
+            if (dest.is_symlink() or dest.exists()) and dest not in removals:
                 raise ValueError(f"skill collision at {dest}; move it yourself before installing")
             links.append((dest, relative))
     hook_path = None
@@ -108,13 +104,13 @@ def install(repo, codex_home, hooks="personal", purge=False):
         transform = merge_json_hooks if hooks == "personal" else team_hooks
         after = transform(before, purge)
     # All collisions and config parsing are checked before changing any files.
+    for dest in removals:
+        dest.unlink()
+        print(f"bento: removed link {dest}")
     for dest, relative in links:
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.symlink_to(relative, target_is_directory=True)
         print(f"bento: linked {dest} -> {relative}")
-    for dest in removals:
-        dest.unlink()
-        print(f"bento: removed link {dest}")
     if after != before:
         hook_path.parent.mkdir(parents=True, exist_ok=True)
         hook_path.write_text(after)

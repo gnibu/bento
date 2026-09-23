@@ -19,8 +19,8 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
   subtract-before-add). Delivered via a `CLAUDE.md` `@import`.
 - **`conventions/instruction-layer.md`** — how to author a repo's L2: instruction-file
   pricing, pointer form, where each fact goes, task-triggered links, "no match → design one".
-- **`plugins/bento-core/`** — triggered playbooks (skills), each a pasteable checklist that
-  proves its work on a real artifact:
+- **`plugins/bento/`** — one plugin, invoked as `/bento:<name>`. Triggered playbooks
+  (skills), each a pasteable checklist that proves its work on a real artifact:
   - `eval-blind` — compare models/prompts without bias leaking into the verdict.
   - `hillclimb` — tune a metric one variable at a time, keep-or-revert, logged.
   - `figure-it-out` — fallback for a task no playbook covers; frame it, then maybe capture it.
@@ -36,19 +36,20 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
   - `spec` — turn vague intent into a precise, executable spec before building.
   - `cso` — security audit against common vuln classes; evidenced, confidence-calibrated.
   - `docs` — write/update docs to match current code; release notes.
-  - `bento-setup` — wire bento into the environment (vendored plugins, principles, Codex block, hooks).
-- **`plugins/bento-forge/`** — the learning engine and generator:
-  - `bento-improve` — Reflect → Route → Propose: route each session's learnings to their
+  - `/bento:setup` — wire bento into the environment (vendored plugin, principles, Codex block, hooks).
+
+  Plus the learning engine and generator:
+  - `/bento:learn` — Reflect → Route → Propose: route each session's learnings to their
     cheapest correct home (L1 bento / L2 repo), with an eval-gated keep-or-revert. Run it
     manually, or let `ship` call it before final checks. Repo-specific learnings can ride in
     the same PR; generic bento learnings are reported for a separate bento PR.
-  - `bento-init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews,
+  - `/bento:init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews,
     with human checkpoints and a generated baseline for later three-way merges.
-    See [the workflow and file contract](plugins/bento-forge/references/bento-init.md).
+    See [the workflow and file contract](plugins/bento/references/init.md).
 
 Quality is built in: an **eval harness** (`claude plugin eval` with with/without ablation +
 a `tool_used` firing indicator) proves whether a skill actually changes behavior — see
-`plugins/bento-core/evals/`.
+`plugins/bento/evals/`.
 
 ## Install
 
@@ -56,12 +57,11 @@ a `tool_used` firing indicator) proves whether a skill actually changes behavior
 
 ```bash
 claude plugin marketplace add gnibu/bento
-claude plugin install bento-core@bento
-claude plugin install bento-forge@bento
-/bento-setup                               # wire principles + update hook (interactive; --yes for defaults)
+claude plugin install bento@bento
+/bento:setup                               # wire principles + update hook (interactive; --yes for defaults)
 ```
 
-Marketplace install gives Claude the **playbooks**; `/bento-setup` wires what a plugin can't:
+Marketplace install gives Claude the **playbooks**; `/bento:setup` wires what a plugin can't:
 the always-on **principles** (`@import` into your user `CLAUDE.md`), **Codex native skills**
 (in vendored repos), the **AGENTS.md principles/fallback block**, and the **update-check hook**
 (SessionStart). It asks hook scope (project/personal); `--yes` takes defaults (Claude project
@@ -77,12 +77,12 @@ git submodule update --init .bento                        # also after cloning
 bash .bento/install.sh                                    # Claude plugins + principles
 bash .bento/install.sh --claude-hooks                      # project hooks, inherited by worktrees
 bash .bento/install.sh --codex --hooks none                # Codex skill links
-# Start fresh Claude/Codex sessions, then invoke bento-setup to finish wiring.
+# Start fresh Claude/Codex sessions, then invoke /bento:setup to finish wiring.
 ```
 
 **Committed `extraKnownMarketplaces` / `enabledPlugins` settings are not proof of a local
-install.** Before `/bento-setup` can load, `install.sh` registers the directory marketplace
-and installs both `bento-core@bento` and `bento-forge@bento` at user scope. It skips installed,
+install.** Before `/bento:setup` can load, `install.sh` registers the directory marketplace
+and installs `bento@bento` at user scope (removing the former `bento-core`/`bento-forge` plugins). It skips installed,
 enabled plugins, enables disabled ones, and honors `$CLAUDE_CONFIG_DIR`. It needs no prompt
 or `--yes` flag; each CLI operation has a five-minute timeout and failures exit nonzero.
 
@@ -97,10 +97,10 @@ Verify from the consumer repo:
 
 ```bash
 claude plugin marketplace list  # bento must appear
-claude plugin list              # both plugins must be installed and enabled
+claude plugin list              # bento@bento must be installed and enabled
 ```
 
-Restart Claude and confirm the 14 core playbooks plus `bento-setup` are available. The plugin cache is
+Restart Claude and confirm the 14 playbooks plus `/bento:setup`, `/bento:learn` and `/bento:init` are available. The plugin cache is
 separate from the submodule pin; rerunning setup refreshes it from the registered marketplace.
 See **Update** below, `ARCHITECTURE.md`, and `install/agents-md-snippet.md`.
 
@@ -138,10 +138,10 @@ bash .bento/install.sh --codex                  # relative skill links + persona
 python3 .bento/install/bento-agents.py AGENTS.md # always-on principles + legacy fallback
 ```
 
-It links every directory under `.bento/plugins/bento-core/skills/` into
-`.codex/skills/<skill>` and adds `bento-improve` from forge. Codex discovers the playbooks
-as **`bento-core:<name>`**, plus `bento-core:bento-setup` and `bento-forge:bento-improve`.
-The Claude commands and Codex entrypoints use the same shared setup/improve instructions.
+It links every directory under `.bento/plugins/bento/skills/` into
+`.codex/skills/<skill>`. Codex discovers the playbooks
+as **`bento:<name>`**, including `bento:setup` and `bento:learn`.
+Claude and Codex use the same shared setup/learn instructions.
 `AGENTS.md` remains the always-on principles and legacy fallback layer.
 
 The installer preserves unrelated skills and hooks, refuses file/directory/link collisions
@@ -157,7 +157,7 @@ consumer checkout, so they follow its submodule pin and can be committed for the
 
 Use one hook scope to avoid duplicate execution. Existing hand-written hook wiring is
 preserved; inspect `/hooks` and remove obsolete Bento entries when migrating from user
-`config.toml`. The generated hook uses `.bento/plugins/bento-forge/scripts/session-start.sh`,
+`config.toml`. The generated hook uses `.bento/plugins/bento/scripts/session-start.sh`,
 with a guard for repos where that script is absent. Existing
 `features.hooks = false` settings are respected; review/trust new hooks in `/hooks` if prompted.
 See the [Codex hook documentation](https://developers.openai.com/codex/hooks).
@@ -165,18 +165,18 @@ See the [Codex hook documentation](https://developers.openai.com/codex/hooks).
 **Start a fresh Codex session after setup or purge.** Verify discovery from the consumer repo:
 
 ```bash
-codex debug prompt-input "List Bento skills"  # includes bento-core:<name>
+codex debug prompt-input "List Bento skills"  # includes bento:<name>
 ```
 
 The `.codex/skills` link and namespace behavior is tested with codex-cli 0.153.4.
 
-Dev-load while iterating: `claude --plugin-dir plugins/bento-core`. See
+Dev-load while iterating: `claude --plugin-dir plugins/bento`. See
 `install/user-claude-md.md`.
 
 ## Update (manual)
 
 Bento updates are manual: choose when to pull a newer version and reconcile the wiring.
-With the forge hook enabled, the session-start hook asks the agent to check upstream
+With the bento hook enabled, the session-start hook asks the agent to check upstream
 automatically, at most once every 30 days (including the first session). The agent prompts
 you only after confirming a newer version is available, showing the installed and available
 revisions/versions. It stays silent when current, offline, or unable to verify an update.
@@ -193,12 +193,12 @@ the latest version" until someone bumped it.)
   ```bash
   git submodule update --remote .bento      # pull latest bento
   git add .bento && git commit -m "chore: bump .bento"
-  bash .bento/install.sh                    # refreshes marketplace + both plugins; restart
+  bash .bento/install.sh                    # refreshes the marketplace + plugin; restart
   ```
-  Then re-run `bento-setup` (or `$bento-core:bento-setup` in Codex) to reconcile skill links,
+  Then re-run `/bento:setup` (or `$bento:setup` in Codex) to reconcile skill links,
   the `AGENTS.md` block, and hooks. Codex's linked files follow the submodule pin directly.
 - **Marketplace install (Claude-only):** `claude plugin marketplace update bento`, then
-  `claude plugin update bento-core@bento` and `bento-forge@bento`; restart.
+  `claude plugin update bento@bento`; restart.
 
 Both paths use the **registered marketplace source**. If it is GitHub, Claude gets GitHub's
 default branch regardless of the submodule pin. Setup reports the source; switching it
@@ -206,11 +206,11 @@ requires removing `bento` and rerunning `bash .bento/install.sh`.
 
 Pin/roll back by checking the submodule out at a specific bento SHA.
 
-**Content self-update:** bento also improves *itself* — `bento-improve` routes generic
+**Content self-update:** bento also improves *itself* — `/bento:learn` routes generic
 learnings back into bento (L1) as PRs. That's the framework evolving from real use, not just
 version bumps.
 
-Use potion off-the-shelf when it meets your generation needs; use `bento-init` when
+Use potion off-the-shelf when it meets your generation needs; use `/bento:init` when
 you need bento's reviewed generation and baseline-aware updates.
 
 ## Installer checks

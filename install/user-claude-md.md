@@ -18,7 +18,7 @@ Versioned + synced with the rest of bento; update by pulling the repo.
 Dev-load while iterating (no install needed):
 
 ```
-claude --plugin-dir /absolute/path/to/bento/plugins/bento-core
+claude --plugin-dir /absolute/path/to/bento/plugins/bento
 ```
 
 SKILL.md text hot-reloads; `/reload-plugins` for the rest.

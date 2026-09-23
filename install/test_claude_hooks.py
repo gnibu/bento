@@ -26,7 +26,7 @@ class ClaudeHooksTests(unittest.TestCase):
         self.git(self.repo, "init", "-q")
         self.git(self.repo, "config", "user.email", "test@example.com")
         self.git(self.repo, "config", "user.name", "Test")
-        scripts = self.repo / ".bento/plugins/bento-forge/scripts"
+        scripts = self.repo / ".bento/plugins/bento/scripts"
         scripts.mkdir(parents=True)
         (scripts / "session-start.sh").write_text('cat > "$BENTO_TEST_MARKER"\n')
 
