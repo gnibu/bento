@@ -28,9 +28,18 @@ session/turn/command:
 - **Reusable gotchas** — a command, env quirk, or non-obvious pattern the next agent trips on.
 - **Repeatable workflows** — a multi-step procedure that will recur.
 
-**Reuse gate (hard filter):** keep a candidate only if you can name a concrete recurring
-trigger. Default to dropping. Surfacing nothing is a valid outcome — don't manufacture
-learnings. Ignore anything already documented (grep first).
+**Reuse gate (hard filter):** keep a candidate only if all of these hold. Default to dropping.
+
+- **Cited evidence** — a transcript path plus the failing command/error or operator turn, or
+  a reproduction you ran now. No citation → drop it; never propose it "pending evidence".
+- **Recurs** — a concrete recurring trigger, checked across all local transcripts, not only
+  this branch's: `rg -l --fixed-strings "<error text>" ~/.claude/projects ~/.codex/sessions`
+  (`grep -rlF` without rg). Report the hit count with the proposal.
+- **Not already handled** — grep the current repo; drop anything documented or fixed.
+
+Proposals from an earlier learn run (seen via `sessions.py`) are candidates, not approvals:
+re-verify each against the current repo and its evidence; never relay them as-is. Surfacing
+nothing is a valid outcome — don't manufacture learnings.
 
 ## 2. Route — one destination per learning
 
@@ -56,6 +65,7 @@ preferences.
 ## 3. Propose, then apply
 
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
+  End each with one line: `evidence: <transcript path> — <error or operator turn> · <n> transcript hits`.
 - Apply on explicit go-ahead. Leave commits/PRs to the user (or to `ship`, when it called you).
 - **Preserve generated-file ownership.** If `.bento-state/baseline.json` lists the
   destination, build a proposal from its last-generated text plus this learning,
