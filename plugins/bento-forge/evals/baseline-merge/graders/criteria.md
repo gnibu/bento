@@ -18,8 +18,8 @@ Full credit requires:
 - Save merged output in the target file and proposed generated text in the next
   baseline only after a successful merge.
 - On conflict, leave both files and baseline unchanged, show the conflict, and
-  seek a revised proposal/review. Unattended promotion skips it rather than
-  forcing a merge. Never re-run init over the existing L2.
+  seek a revised proposal/review rather than forcing a merge. Never re-run init
+  over the existing L2.
 
 Partial credit for correct high-level merge advice missing operational details.
 Low credit for direct overwrites, replacing the baseline with current hand edits,

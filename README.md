@@ -39,8 +39,8 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
   - `bento-setup` — wire bento into the environment (vendored plugins, principles, Codex block, hooks).
 - **`plugins/bento-forge/`** — the learning engine and generator:
   - `bento-improve` — Reflect → Route → Propose: route each session's learnings to their
-    cheapest correct home (L1 bento / L2 repo), with an eval-gated keep-or-revert. Ships the
-    **autorun** subsystem (bank at `Stop`, surface candidates at `SessionStart`, PR on your yes).
+    cheapest correct home (L1 bento / L2 repo), with an eval-gated keep-or-revert. Run it
+    manually, or let `ship` call it before the commit so learnings ride in the same PR.
   - `bento-init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews,
     with human checkpoints and a generated baseline for later three-way merges.
     See [the workflow and file contract](plugins/bento-forge/references/bento-init.md).
@@ -57,14 +57,15 @@ a `tool_used` firing indicator) proves whether a skill actually changes behavior
 claude plugin marketplace add gnibu/bento
 claude plugin install bento-core@bento
 claude plugin install bento-forge@bento
-/bento-setup                               # wire principles + hooks (interactive; --yes for defaults)
+/bento-setup                               # wire principles + update hook (interactive; --yes for defaults)
 ```
 
 Marketplace install gives Claude the **playbooks**; `/bento-setup` wires what a plugin can't:
 the always-on **principles** (`@import` into your user `CLAUDE.md`), **Codex native skills**
-(in vendored repos), the **AGENTS.md principles/fallback block**, and **learn hooks** (Stop + SessionStart). It asks scope
-(project/personal) and auto-PR (off/on); `--yes` takes defaults (Claude project hooks, Codex
-personal hooks, no auto-PR), and `--purge` unwires.
+(in vendored repos), the **AGENTS.md principles/fallback block**, and the **update-check hook**
+(SessionStart). It asks hook scope (project/personal); `--yes` takes defaults (Claude project
+hook, Codex personal hook), and `--purge` unwires. Rerunning it removes the retired Bento
+`Stop` learning hook from older installs.
 
 **Cross-agent (Claude + Codex), vendored in a repo:** run from the consumer repo's root
 (requires Git, Python 3.11+, and the Claude Code CLI):
@@ -108,18 +109,18 @@ See **Update** below, `ARCHITECTURE.md`, and `install/agents-md-snippet.md`.
 bash .bento/install.sh --claude-hooks  # merge into .claude/settings.json
 ```
 
-Commit the resulting `.claude/settings.json` so every new worktree inherits `SessionStart`
-and `Stop` hooks. Existing worktrees need the commit too. No per-worktree
+Commit the resulting `.claude/settings.json` so every new worktree inherits the `SessionStart`
+hook. Existing worktrees need the commit too. No per-worktree
 `.claude/settings.local.json` is required. Keep `.bento` initialized in each checkout;
 the hook resolves its scripts from that checkout's Git root. This also activates hooks
 for teammates who use the committed configuration.
 
 For personal activation across the same project's worktrees, use
 `bash .bento/install.sh --claude-hooks --scope personal` instead. It merges into user
-`settings.json` (honors `$CLAUDE_CONFIG_DIR`) and guards both hooks to the repository's shared
+`settings.json` (honors `$CLAUDE_CONFIG_DIR`) and guards the hook to the repository's shared
 Git directory, so unrelated projects are skipped. Run once per repository on each machine.
 Use one scope and remove obsolete Bento handlers from old local settings to avoid duplicates.
-The installer preserves unrelated settings/hooks and supports `--purge` and `--auto-pr`.
+The installer preserves unrelated settings/hooks and supports `--purge`.
 
 In Conductor, committed project settings travel with the branch. If new workspaces need
 submodule initialization, add `git submodule update --init .bento` to the consumer repo's
@@ -149,15 +150,14 @@ consumer checkout, so they follow its submodule pin and can be committed for the
 - `--hooks personal` (default): merge hooks into `~/.codex/hooks.json` (honors `$CODEX_HOME`).
 - `--hooks team`: merge a marked block into committed `.codex/config.toml`.
 - `--hooks none`: install only skill links.
-- `--auto-pr`: opt in to unattended learning PRs; default is off.
 - `--purge`: remove only Bento-owned links and hooks in the selected scope. For example,
   `bash .bento/install.sh --codex --purge --hooks personal`; repeat with `--hooks team` to
   remove team hooks too. Personal hook removal applies to every repo for this operator.
 
 Use one hook scope to avoid duplicate execution. Existing hand-written hook wiring is
 preserved; inspect `/hooks` and remove obsolete Bento entries when migrating from user
-`config.toml`. Both generated hooks use `.bento/plugins/bento-forge/scripts/session-start.sh`
-and `session-stop.sh`, with guards for repos where those scripts are absent. Existing
+`config.toml`. The generated hook uses `.bento/plugins/bento-forge/scripts/session-start.sh`,
+with a guard for repos where that script is absent. Existing
 `features.hooks = false` settings are respected; review/trust new hooks in `/hooks` if prompted.
 See the [Codex hook documentation](https://developers.openai.com/codex/hooks).
 
@@ -175,7 +175,7 @@ Dev-load while iterating: `claude --plugin-dir plugins/bento-core`. See
 ## Update (manual)
 
 Bento updates are manual: choose when to pull a newer version and reconcile the wiring.
-With the forge hooks enabled, the session-start hook asks the agent to check upstream
+With the forge hook enabled, the session-start hook asks the agent to check upstream
 automatically, at most once every 30 days (including the first session). The agent prompts
 you only after confirming a newer version is available, showing the installed and available
 revisions/versions. It stays silent when current, offline, or unable to verify an update.

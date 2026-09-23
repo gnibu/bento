@@ -1,7 +1,8 @@
 # bento setup
 
 Set up Bento for the requested agents. Claude uses a marketplace and plugin cache; Codex
-uses native skill links. Both use shared principles and the forge learning hooks.
+uses native skill links. Both use shared principles and the forge update-check hook
+(SessionStart). Learning has no hook: `bento-improve` runs manually or from `ship`.
 All installer steps are idempotent. Report failures instead of claiming setup completed.
 
 ## Bootstrap before this entrypoint is available
@@ -18,9 +19,9 @@ The shell installer checks the actual machine-local CLI state before installing 
 ## Modes and choices
 
 - **Interactive:** establish which agents to configure and use the host's question prompt
-  for scope and auto-PR choices that the user has not already specified.
-- **Batch (`--yes` / non-interactive / no TTY):** use defaults: Claude hooks = project,
-  Codex hooks = personal, auto-PR = off. Configure the current agent unless both are requested.
+  for the hook scope when the user has not already specified it.
+- **Batch (`--yes` / non-interactive / no TTY):** use defaults: Claude hook = project,
+  Codex hook = personal. Configure the current agent unless both are requested.
 - **Purge (`--purge`):** go directly to Purge; do not run installation steps first.
 
 Scope choices:
@@ -32,11 +33,9 @@ Scope choices:
   unrelated projects are skipped. This replaces repeated `.claude/settings.local.json` setup.
 - **Codex personal (default):** `${CODEX_HOME:-~/.codex}/hooks.json`; guarded to no-op in repos
   without the vendored scripts. **Codex team:** committed `.codex/config.toml` instead.
-- **Auto-PR:** off by default (bank now, offer ripe learnings next session). Enable only when
-  requested, by passing `--auto-pr` to the hook installers.
-
 Choose one hook scope per agent. Hooks from multiple locations are additive. Preserve
 unrelated hooks; report obsolete hand-written Bento hooks for removal to avoid duplicates.
+The installers also remove the retired Bento `Stop` learning hook (`session-stop.sh`).
 
 ## Locate the source
 
@@ -63,8 +62,7 @@ The steps below use `<bento>` for that source checkout.
 
 2. **Codex native skills + hooks** (Codex, vendored mode, Python 3.11+): run
    `python3 <bento>/install/bento-codex.py --repo . --hooks personal`, or `--hooks team`.
-   Append `--auto-pr` only when chosen. It links every core skill and forge `bento-improve`
-   into `.codex/skills/`, preflights collisions, merges hooks, and reports each change.
+   It links every core skill and forge `bento-improve` into `.codex/skills/`, preflights collisions, merges hooks, and reports each change.
    Skills appear as `bento-core:<name>` and `bento-forge:bento-improve`; links follow the
    current checkout's submodule pin. Do not hand-write the links or Codex hook configuration.
 
@@ -74,15 +72,15 @@ The steps below use `<bento>` for that source checkout.
 
 4. **Claude hooks** (Claude, vendored mode): run
    `python3 <bento>/install/bento-claude-hooks.py --repo . --scope project`, or `--scope personal`.
-   Append `--auto-pr` only when chosen. The installer preserves unrelated settings and hook
-   handlers. Commit project settings so future worktrees inherit the hooks. Do not create a
+   The installer preserves unrelated settings and hook handlers. Commit project settings so
+   future worktrees inherit the hook. Do not create a
    new `.claude/settings.local.json` in each worktree.
 
-Both hook installers use `.bento/plugins/bento-forge/scripts/session-start.sh` and
-`session-stop.sh`, resolved from the session's Git root and guarded when scripts are absent.
+Both hook installers use `.bento/plugins/bento-forge/scripts/session-start.sh`, resolved
+from the session's Git root and guarded when the script is absent.
 Keep `.bento` initialized in each checkout (`git submodule update --init .bento`). For
-marketplace-only Claude hook wiring, use the installed forge script paths described in
-`<bento>/plugins/bento-forge/references/stop-hook.md`.
+marketplace-only Claude installs, point the SessionStart hook at the installed forge
+`scripts/session-start.sh` instead.
 
 ## Verify
 
@@ -91,7 +89,7 @@ source, verify `claude plugin marketplace list` and `claude plugin list`, then r
 confirm the 14 core playbooks plus setup. For Codex, **start a fresh Codex session after
 setup**, and verify the names with `codex debug prompt-input` from the consumer repo.
 If Codex requests hook review, use `/hooks`. Respect `features.hooks = false`; do not override
-it silently. Do not claim that a running session reloaded skills or that a configured Stop
+it silently. Do not claim that a running session reloaded skills or that a configured
 hook has already executed.
 
 ## Purge

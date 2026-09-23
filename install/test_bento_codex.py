@@ -79,21 +79,21 @@ class CodexTests(unittest.TestCase):
         unrelated.symlink_to(self.root / "missing-personal-skill")
         handler = {"type": "command", "command": "echo unrelated"}
         original = {"description": "keep metadata", "hooks": {
-            "Stop": [{"matcher": "*", "hooks": [handler]}],
+            "SessionStart": [{"matcher": "*", "hooks": [handler]}],
             "PreToolUse": [{"hooks": [handler]}]}}
         hook_path = self.home / "hooks.json"
         hook_path.write_text(json.dumps(original))
         self.install()
         # Preserve an unrelated handler added to the same group as our own hook.
         mixed = json.loads(hook_path.read_text())
-        mixed["hooks"]["Stop"][-1]["hooks"].append(handler)
+        mixed["hooks"]["SessionStart"][-1]["hooks"].append(handler)
         hook_path.write_text(json.dumps(mixed))
         self.install(purge=True)
         result = json.loads(hook_path.read_text())
         self.assertEqual(result["description"], original["description"])
         self.assertEqual(result["hooks"]["PreToolUse"], original["hooks"]["PreToolUse"])
-        self.assertEqual(result["hooks"]["Stop"][0], original["hooks"]["Stop"][0])
-        self.assertEqual(result["hooks"]["Stop"][1]["hooks"], [handler])
+        self.assertEqual(result["hooks"]["SessionStart"][0], original["hooks"]["SessionStart"][0])
+        self.assertEqual(result["hooks"]["SessionStart"][1]["hooks"], [handler])
         self.assertEqual(list(self.skills.iterdir()), [unrelated])
         self.assertIn("no changes needed", self.install(purge=True))
 
@@ -112,7 +112,8 @@ class CodexTests(unittest.TestCase):
         original = '# user comment\nmodel = "example"\n[features]\nhooks = true\n[[hooks.Stop]]\n[[hooks.Stop.hooks]]\ntype = "command"\ncommand = "echo keep"\n'
         config.write_text(original)
         self.install(hooks="team")
-        self.assertEqual(len(tomllib.loads(config.read_text())["hooks"]["Stop"]), 2)
+        hooks = tomllib.loads(config.read_text())["hooks"]
+        self.assertEqual((len(hooks["Stop"]), len(hooks["SessionStart"])), (1, 1))
         self.assertTrue(config.read_text().startswith(original))
         self.assertFalse((self.home / "hooks.json").exists())
         self.assertIn("no changes needed", self.install(hooks="team"))
@@ -137,13 +138,18 @@ class CodexTests(unittest.TestCase):
             self.assertEqual(config.read_text(), custom)
             self.assertTrue((self.skills / "ship").is_symlink())
 
-    def test_auto_pr_updates_only_stop_hook(self):
-        self.install()
-        self.install(auto_pr=True)
-        data = json.loads((self.home / "hooks.json").read_text())["hooks"]
-        self.assertEqual(len(data["Stop"]), 1)
-        self.assertIn("BENTO_IMPROVE_AUTO_PR=1", data["Stop"][0]["hooks"][0]["command"])
-        self.assertNotIn("BENTO_IMPROVE_AUTO_PR", data["SessionStart"][0]["hooks"][0]["command"])
+    def test_legacy_team_block_is_rewritten_without_stop(self):
+        config = self.repo / ".codex/config.toml"
+        config.parent.mkdir()
+        lines = [installer.START]
+        for event, script in (("SessionStart", "session-start.sh"), ("Stop", "session-stop.sh")):
+            command = installer.hook_command().replace("session-start.sh", script)
+            lines += [f"[[hooks.{event}]]", f"[[hooks.{event}.hooks]]", 'type = "command"',
+                      "command = " + json.dumps(command), "timeout = 5", ""]
+        config.write_text("\n".join(lines) + installer.END + "\n")
+        self.install(hooks="team")
+        hooks = tomllib.loads(config.read_text())["hooks"]
+        self.assertEqual(list(hooks), ["SessionStart"])
 
     def test_legacy_duplicate_hooks_are_reconciled(self):
         unrelated = {"type": "command", "command": "echo keep"}
@@ -162,7 +168,7 @@ class CodexTests(unittest.TestCase):
             hooks[event] = [{"hooks": [
                 unrelated,
                 {"type": "command", "command": legacy[event], "timeout": 5},
-                {"type": "command", "command": installer.hook_command(event), "timeout": 5},
+                {"type": "command", "command": installer.hook_command(), "timeout": 5},
             ]}]
         hook_path = self.home / "hooks.json"
         hook_path.write_text(json.dumps({"hooks": hooks}))
@@ -175,11 +181,8 @@ class CodexTests(unittest.TestCase):
             self.assertIn(unrelated, handlers)
             bento = [handler for handler in handlers
                      if ".bento/plugins/bento-forge/scripts/" in handler.get("command", "")]
-            self.assertEqual(bento, [{
-                "type": "command",
-                "command": installer.hook_command(event),
-                "timeout": 5,
-            }])
+            expected = {"type": "command", "command": installer.hook_command(), "timeout": 5}
+            self.assertEqual(bento, [expected] if event == "SessionStart" else [])
 
     def test_hook_commands_run_real_paths_from_nested_directory_and_noop_elsewhere(self):
         self.install()
@@ -187,16 +190,15 @@ class CodexTests(unittest.TestCase):
         nested.mkdir(parents=True)
         marker = self.root / "fired"
         env = {**os.environ, "BENTO_TEST_MARKER": str(marker)}
-        for event, script in (("SessionStart", "session-start.sh"), ("Stop", "session-stop.sh")):
-            (self.repo / ".bento/plugins/bento-forge/scripts" / script).write_text(
-                '#!/bin/bash\ncat > "$BENTO_TEST_MARKER"\n')
-            subprocess.run(["bash", "-c", installer.hook_command(event)], cwd=nested,
-                           input=event, text=True, env=env, check=True)
-            self.assertEqual(marker.read_text(), event)
-            marker.unlink()
-            subprocess.run(["bash", "-c", installer.hook_command(event)], cwd=self.root,
-                           input=event, text=True, env=env, check=True)
-            self.assertFalse(marker.exists())
+        (self.repo / ".bento/plugins/bento-forge/scripts/session-start.sh").write_text(
+            '#!/bin/bash\ncat > "$BENTO_TEST_MARKER"\n')
+        subprocess.run(["bash", "-c", installer.hook_command()], cwd=nested,
+                       input="SessionStart", text=True, env=env, check=True)
+        self.assertEqual(marker.read_text(), "SessionStart")
+        marker.unlink()
+        subprocess.run(["bash", "-c", installer.hook_command()], cwd=self.root,
+                       input="SessionStart", text=True, env=env, check=True)
+        self.assertFalse(marker.exists())
 
     @unittest.skipUnless(os.environ.get("BENTO_TEST_CODEX") == "1" and shutil.which("codex"),
                          "set BENTO_TEST_CODEX=1 with codex installed")

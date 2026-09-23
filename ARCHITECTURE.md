@@ -42,7 +42,7 @@ L1 or private hook state. See [generation and update mechanics](plugins/bento-fo
 ## The improve engine (do not rebuild)
 
 `bento-forge improve` **is** Rose's `rose-session-learn` generalized: its Reflect → Route →
-Propose loop, its instruction-file pricing model, and its recurrence-gated autorun — with
+Propose loop and its instruction-file pricing model, run manually or from `ship` at PR time — with
 the Route table's sinks widened from Rose-only (`AGENTS.md`/docs/skills) to **L1 (bento) vs
 L2 (the repo)**. It is the mechanism that keeps factoring generic practices up into bento
 over time, instead of a one-time manual port.
@@ -137,13 +137,14 @@ Personal hooks are merged into `${CODEX_HOME:-~/.codex}/hooks.json`; committed h
 `.codex/config.toml`. Choose one scope; hook sources are additive. Legacy hand-written
 hooks are preserved, so remove obsolete Bento entries through review when migrating.
 Generated hooks resolve the current Git root and use the real
-`.bento/plugins/bento-forge/scripts/session-start.sh` and `session-stop.sh` paths, silently
-skipping repos without the scripts. Setup respects an explicit hooks disable and Codex's
+`.bento/plugins/bento-forge/scripts/session-start.sh` path, silently
+skipping repos without the script. Reruns remove the retired `session-stop.sh` learning
+hook. Setup respects an explicit hooks disable and Codex's
 hook review flow. See [Codex hooks](https://developers.openai.com/codex/hooks).
 
 ### Claude hooks across worktrees
 
-`bash .bento/install.sh --claude-hooks` merges the two hooks into committed project
+`bash .bento/install.sh --claude-hooks` merges the SessionStart hook into committed project
 `.claude/settings.json`, the default Claude scope in setup. Once committed, new worktrees
 inherit the definitions. Hook commands resolve each session's Git root, so there is no
 per-worktree absolute path or manual `settings.local.json` setup. Each checkout still needs
@@ -152,7 +153,7 @@ its `.bento` submodule initialized.
 The personal alternative (`--scope personal`) merges into user Claude settings and guards
 execution using the repository's common Git directory. All worktrees share that identity;
 unrelated projects do not activate these hooks. This is one setup per repo per machine.
-Both scopes preserve unrelated settings/handlers, support purge, and keep auto-PR opt-in.
+Both scopes preserve unrelated settings/handlers and support purge.
 Choose one scope to avoid duplicate execution from additive hook sources.
 
 ### Vendored bootstrap and machine state

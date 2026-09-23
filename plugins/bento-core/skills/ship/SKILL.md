@@ -25,16 +25,19 @@ repo's own checks and your own diff review.
    failures. Green is the gate; "it compiles" is not.
 4. **Review your own diff.** Read `git diff <base>...HEAD` end to end. Check: scope matches
    the task (no stray files, no debug code, no secrets), and every change is intended.
-5. **Version + changelog, if the repo has them.** Bump the version and add a changelog entry
+5. **Capture learnings.** Run `bento-improve` (bento-forge) on this session and the diff.
+   Approved learnings land as their own commit in this PR; nothing survives → move on.
+   Skip if bento-forge isn't installed.
+6. **Version + changelog, if the repo has them.** Bump the version and add a changelog entry
    matching the repo's convention. Skip cleanly if neither exists.
-6. **Commit** in conventional style, one logical change per commit. If a commit hook
+7. **Commit** in conventional style, one logical change per commit. If a commit hook
    reformats files, re-stage and retry.
-7. **Ticket, per the repo's policy** (step 1). If the repo says to open/track a ticket and one
+8. **Ticket, per the repo's policy** (step 1). If the repo says to open/track a ticket and one
    isn't already in context, create it and follow its status/branch rules. No tracker → skip.
-8. **Push and open the PR** against the base branch, with a title/body derived from the actual
+9. **Push and open the PR** against the base branch, with a title/body derived from the actual
    diff (not the branch name). Create a PR only when the user asked — a commit is not a PR
    request. Use the repo's forge (`gh`, or another the repo names).
-9. **Prove it.** Report the PR URL and that checks passed. If CI runs, note its status.
+10. **Prove it.** Report the PR URL and that checks passed. If CI runs, note its status.
 
 ## Guardrails
 
