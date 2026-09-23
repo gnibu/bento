@@ -101,7 +101,7 @@ claude plugin list              # both plugins must be installed and enabled
 ```
 
 Restart Claude and confirm the 14 core playbooks plus `bento-setup` are available. The plugin cache is
-separate from the submodule pin: rerunning setup does not refresh already-installed content.
+separate from the submodule pin; rerunning setup refreshes it from the registered marketplace.
 See **Update** below, `ARCHITECTURE.md`, and `install/agents-md-snippet.md`.
 
 ### Claude hooks: configure once per project
@@ -185,32 +185,26 @@ agent performs the read-only check. Its timestamp lives in `~/.bento/update-remi
 across agents and workspaces. Set `BENTO_UPDATE_REMINDER_DAYS=0` in the hook environment to disable it, or
 set a different interval in days. `BENTO_UPDATE_REMINDER_STATE` overrides the timestamp path.
 
-Same repo, two install modes:
+Plugins carry no `version` field, so Claude versions them by **git commit SHA**: every merged
+commit is an update. (A pinned `version` would make `claude plugin update` report "already at
+the latest version" until someone bumped it.)
 
-- **Marketplace install (Claude-only):**
-  ```bash
-  claude plugin marketplace update bento
-  claude plugin update bento-core@bento
-  claude plugin update bento-forge@bento     # restart to apply
-  ```
-- **Vendored (`.bento` submodule, cross-agent):**
+- **Vendored (`.bento` submodule, cross-agent)** — to update, run from the durable main checkout:
   ```bash
   git submodule update --remote .bento      # pull latest bento
   git add .bento && git commit -m "chore: bump .bento"
-  # From the durable main checkout, refresh Claude's separate marketplace/cache:
-  claude plugin marketplace update bento
-  claude plugin update bento-core@bento
-  claude plugin update bento-forge@bento     # restart to apply
+  bash .bento/install.sh                    # refreshes marketplace + both plugins; restart
   ```
-  These CLI updates use the **registered marketplace source**. If it is GitHub, they
-  fetch GitHub content, regardless of the submodule pin. Setup reports the source;
-  switching it requires explicitly removing `bento` and rerunning `bash .bento/install.sh`.
-- **After either, re-run `bento-setup`** — idempotent; reconciles plugins, skill links,
-  principles, the `AGENTS.md` block, and hooks. In Codex, invoke `$bento-core:bento-setup`.
-  Codex-only installs can rerun `bash .bento/install.sh --codex`; their linked files follow
-  the submodule pin directly and do not require Claude cache updates. Start a fresh session.
+  Then re-run `bento-setup` (or `$bento-core:bento-setup` in Codex) to reconcile skill links,
+  the `AGENTS.md` block, and hooks. Codex's linked files follow the submodule pin directly.
+- **Marketplace install (Claude-only):** `claude plugin marketplace update bento`, then
+  `claude plugin update bento-core@bento` and `bento-forge@bento`; restart.
 
-Pin/roll back by checking the submodule out at a specific bento SHA (or a `plugin@version`).
+Both paths use the **registered marketplace source**. If it is GitHub, Claude gets GitHub's
+default branch regardless of the submodule pin. Setup reports the source; switching it
+requires removing `bento` and rerunning `bash .bento/install.sh`.
+
+Pin/roll back by checking the submodule out at a specific bento SHA.
 
 **Content self-update:** bento also improves *itself* — `bento-improve` routes generic
 learnings back into bento (L1) as PRs. That's the framework evolving from real use, not just

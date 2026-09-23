@@ -2,8 +2,7 @@
   "name": "bento",
   "owner": { "name": "Ben Pothier" },
   "metadata": {
-    "description": "Ben's personal agent kit — how I work, packed into portable compartments.",
-    "version": "0.1.1"
+    "description": "Ben's personal agent kit — how I work, packed into portable compartments."
   },
   "plugins": [
     {

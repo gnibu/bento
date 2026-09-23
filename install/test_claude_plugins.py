@@ -52,6 +52,8 @@ class InstallTests(unittest.TestCase):
             return self.markets.copy()
         if args == ("list",):
             return [row.copy() for row in self.plugins]
+        if args[:2] == ("marketplace", "update") or args[0] == "update":
+            return None
         if args[:2] == ("marketplace", "add"):
             self.markets.append({"name": "bento", "source": "directory", "path": args[2]})
         elif args[0] == "install":
@@ -76,7 +78,12 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(len(self.plugins), 2)
         self.calls.clear()
         installer.bootstrap(self.bento)
-        self.assertTrue(all(call in (("list",), ("marketplace", "list")) for call in self.calls))
+        reads = {("list",), ("marketplace", "list")}
+        self.assertEqual([call for call in self.calls if call not in reads], [
+            ("marketplace", "update", "bento"),
+            ("update", installer.PLUGINS[0], "--scope", "user"),
+            ("update", installer.PLUGINS[1], "--scope", "user"),
+        ])
 
     def test_disabled_plugin_is_enabled_without_reinstall(self):
         installer.bootstrap(self.bento)
