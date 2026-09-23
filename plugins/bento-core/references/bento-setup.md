@@ -57,8 +57,9 @@ The steps below use `<bento>` for that source checkout.
    the main checkout's initialized `.bento` for marketplace and principles; both copies must
    be clean and at the same commit. Missing/mismatched copies stop with repair instructions.
    Existing valid marketplace sources (including GitHub) are preserved and reported. Stale
-   or worktree-based registrations require explicit repair. Setup does not update existing
-   caches to the submodule pin; see README **Update**.
+   or worktree-based registrations require explicit repair. For installed plugins, setup
+   refreshes the marketplace and runs `claude plugin update` for each; versions are commit
+   SHAs, so any merged change updates. See README **Update**.
 
 2. **Codex native skills + hooks** (Codex, vendored mode, Python 3.11+): run
    `python3 <bento>/install/bento-codex.py --repo . --hooks personal`, or `--hooks team`.

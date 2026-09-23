@@ -83,7 +83,7 @@ def claude(repo, *args, json_output=False):
 def check_marketplace(marketplace):
     source = marketplace.get("source")
     location = marketplace.get("path") or marketplace.get("repo") or source
-    note(f"keeping registered marketplace bento ({source}: {location}); cached plugins are not updated")
+    note(f"keeping registered marketplace bento ({source}: {location})")
     if source != "directory":
         return
     path = Path(marketplace.get("path", "")).resolve()
@@ -122,6 +122,7 @@ def bootstrap(root):
     existing = next((row for row in marketplaces if row.get("name") == "bento"), None)
     if existing:
         check_marketplace(existing)
+        claude(repo, "marketplace", "update", "bento")
     else:
         note(f"registering durable directory marketplace {stable}")
         claude(repo, "marketplace", "add", str(stable))
@@ -131,7 +132,11 @@ def bootstrap(root):
         if not installed(matches):
             note(f"installing {plugin} at user scope (up to {CLI_TIMEOUT}s)")
             claude(repo, "install", plugin, "--scope", "user")
-        elif all(row.get("enabled") is True for row in matches):
+        else:
+            # Versions are commit SHAs, so this picks up every merged change.
+            for scope in sorted({row.get("scope") for row in matches} - {"managed", None}):
+                claude(repo, "update", plugin, "--scope", scope)
+        if installed(matches) and all(row.get("enabled") is True for row in matches):
             note(f"{plugin} already installed and enabled")
             continue
         # A project/local disable can override a new user installation.
@@ -146,7 +151,7 @@ def bootstrap(root):
         matches = applicable(rows, plugin, repo)
         if not installed(matches) or not all(row.get("enabled") is True for row in matches):
             raise RuntimeError(f"{plugin} is not installed and enabled in {repo}; inspect claude plugin list --json")
-    note("both plugins installed and enabled; restart Claude to load the skills")
+    note("both plugins installed, updated and enabled; restart Claude to load the skills")
     return stable
 
 

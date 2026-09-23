@@ -1,5 +1,4 @@
 {
   "name": "bento-forge",
-  "description": "Generate a fresh repo's project layer (L2), or improve an existing one — diff-and-propose, never regenerate over hand edits.",
-  "version": "0.1.1"
+  "description": "Generate a fresh repo's project layer (L2), or improve an existing one — diff-and-propose, never regenerate over hand edits."
 }

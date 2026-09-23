@@ -80,8 +80,9 @@ claude plugin install bento-forge@bento
 
 These commands default to user scope. Team declarations belong in project settings, while
 registration and installed-plugin records live in the machine's Claude config directory.
-Upgrade with `claude plugin marketplace update bento`, then `claude plugin update` for each
-plugin. The marketplace resolves
+Upgrade by rerunning `bash .bento/install.sh` (it runs `claude plugin marketplace update bento`
+and `claude plugin update` for each plugin). Plugins are versioned by commit SHA (no
+`version` field), so every merged commit is an update. The marketplace resolves
 from the repo's **default branch**, so `marketplace.json` must live there — not just on a
 feature branch.
 
@@ -181,8 +182,8 @@ source. One machine cannot have multiple independent sources under the name `ben
 Claude copies plugins into a separate versioned cache recorded in `installed_plugins.json`.
 Changing the submodule pin changes Codex's files immediately, but does **not** update Claude's
 installed skills. Refresh the registered marketplace, update both plugins, and restart
-Claude (README **Update**). Setup installs missing plugins; it does not synchronize existing
-caches to the submodule pin. Verify marketplace/plugin lists, then confirm the 14 core playbooks plus setup
+Claude (README **Update**). Setup installs missing plugins and updates installed ones from the
+registered marketplace source, which is not necessarily the submodule pin. Verify marketplace/plugin lists, then confirm the 14 core playbooks plus setup
 in a fresh session.
 
 Updates are manual. On first use and at most every 30 days afterward, the shared
