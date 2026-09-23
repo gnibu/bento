@@ -20,8 +20,8 @@ repo's own checks and your own diff review.
 2. **Sync the base branch.** Use the base the repo names (its default/integration branch — not
    `main` if the repo integrates elsewhere, e.g. `develop`). Fetch and merge/rebase it into
    your branch; resolve conflicts before anything else.
-3. **Capture learnings.** Run `bento-improve` (bento-forge) on this session and the full
-   branch diff, including uncommitted changes.
+3. **Capture learnings.** Run `bento-improve` (bento-forge) on every session of this
+   worktree's branch (Claude and Codex) and the full branch diff, including uncommitted changes.
    Apply approved repo-specific (L2) learnings to this branch; commit them separately from
    the task change. Report generic (L1) proposals separately for a bento PR. Do not edit
    `.bento`, an installed plugin copy, or this repo's submodule pin for an L1 learning.

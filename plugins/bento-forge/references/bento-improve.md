@@ -11,7 +11,15 @@ plugin. The shared instructions and scripts live in that same plugin directory.
 
 ## 1. Reflect
 
-Scan the session for signal, citing the turn/command:
+Read **every session that built this branch**, not just this conversation — work often spans
+several Claude and Codex sessions. From the consumer repo root run
+`python3 "<forge>/scripts/sessions.py"`: it prints each worktree session since the branch was
+created (operator turns, failed tool calls, blocking hook errors), oldest first, with its
+transcript path. Pass `--since <epoch>` to widen the window. Open a printed transcript only
+when a line needs more context.
+
+Scan those sessions, this conversation, and the branch diff for signal, citing the
+session/turn/command:
 
 - **Friction** — anything slow, retried, or failed before it worked. Trace the *root cause*.
 - **Operator corrections** — a redirect/reminder is a signal even with no error: something you
@@ -70,8 +78,8 @@ preferences.
 No hook runs this — it is a deliberate step, run two ways:
 
 - **At PR time** — the `ship` playbook calls it before final verification and diff review.
-  Reflect on this session **and** the full branch diff (committed and uncommitted), so
-  learnings from earlier sessions that shaped it are covered too. Apply approved L2 edits in
+  Reflect on the branch's sessions (`sessions.py`) **and** the full branch diff (committed and
+  uncommitted), so learnings from earlier Claude and Codex sessions are covered too. Apply approved L2 edits in
   the consumer repo; `ship` verifies and reviews them with the full change, then commits them
   separately in that PR.
   Report L1 proposals for a separate bento PR. Do not edit the consumer's `.bento` submodule,
