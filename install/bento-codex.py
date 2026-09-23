@@ -9,13 +9,24 @@ import subprocess
 import sys
 import tomllib
 
-from bento_hooks import hook_command, is_bento_handler, merge_json_hooks
+from bento_hooks import hook_command, merge_json_hooks
 
 
 START = "# bento:hooks:start"
 END = "# bento:hooks:end"
 CORE = ".bento/plugins/bento-core/skills"
 FORGE = ".bento/plugins/bento-forge/skills"
+
+
+def legacy_team_hooks(auto_pr):
+    """The two generated hook commands from before Stop learning was removed."""
+    start = hook_command()
+    stop = start.replace("session-start.sh", "session-stop.sh")
+    if auto_pr:
+        stop = stop.replace('bash "$bento_hook"', 'BENTO_IMPROVE_AUTO_PR=1 bash "$bento_hook"')
+    return {"hooks": {event: [{"hooks": [{"type": "command", "command": command,
+                                             "timeout": 5}]}]
+                      for event, command in (("SessionStart", start), ("Stop", stop))}}
 
 
 def team_hooks(text, purge):
@@ -27,11 +38,9 @@ def team_hooks(text, purge):
         raise ValueError("invalid bento hook block in config.toml")
     if START in text:
         existing = tomllib.loads(pattern.search(text).group())
-        groups = [group for event in existing.get("hooks", {}).values()
-                  for group in (event if isinstance(event, list) else [None])]
-        if set(existing) != {"hooks"} or not all(
-                isinstance(group, dict) and set(group) == {"hooks"}
-                and all(map(is_bento_handler, group["hooks"])) for group in groups):
+        current = {"hooks": {"SessionStart": [{"hooks": [
+            {"type": "command", "command": hook_command(), "timeout": 5}]}]}}
+        if existing not in (current, legacy_team_hooks(False), legacy_team_hooks(True)):
             raise ValueError("Bento hook block was edited; move custom entries outside its markers before rerunning")
     block = ""
     if not purge:

@@ -69,11 +69,14 @@ preferences.
 
 No hook runs this — it is a deliberate step, run two ways:
 
-- **At PR time** — the `ship` playbook calls it after its self-review and before its commit.
-  Reflect on this session **and** `git diff <base>...HEAD`, so learnings from earlier sessions
-  that shaped the diff are covered too. Approved edits land as their own commit on the same
-  branch and are reviewed with the code in that PR. Nothing survives the reuse gate → say so
-  in one line and let `ship` continue.
+- **At PR time** — the `ship` playbook calls it before final verification and diff review.
+  Reflect on this session **and** the full branch diff (committed and uncommitted), so
+  learnings from earlier sessions that shaped it are covered too. Apply approved L2 edits in
+  the consumer repo; `ship` verifies and reviews them with the full change, then commits them
+  separately in that PR.
+  Report L1 proposals for a separate bento PR. Do not edit the consumer's `.bento` submodule,
+  installed plugin copy, or submodule pin for an L1 learning. Nothing survives the reuse gate
+  → say so in one line and let `ship` continue.
 - **Manually** — `/bento-improve` (Claude) or `$bento-forge:bento-improve` (Codex), for
   sessions that end without a PR (debugging, investigation). Same steps; committing the
   result is the user's call.

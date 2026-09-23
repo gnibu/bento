@@ -138,18 +138,38 @@ class CodexTests(unittest.TestCase):
             self.assertEqual(config.read_text(), custom)
             self.assertTrue((self.skills / "ship").is_symlink())
 
+    def test_edited_bento_handler_inside_team_block_is_never_overwritten(self):
+        self.install(hooks="team")
+        config = self.repo / ".codex/config.toml"
+        original = config.read_text()
+        for edited in (original.replace("timeout = 5", "timeout = 60"),
+                       original.replace('bash \\"$bento_hook\\"',
+                                        'bash \\"$bento_hook\\"; echo extra')):
+            with self.subTest(edited=edited):
+                self.assertNotEqual(edited, original)
+                config.write_text(edited)
+                for purge in (False, True):
+                    with self.assertRaisesRegex(ValueError, "block was edited"):
+                        self.install(hooks="team", purge=purge)
+                    self.assertEqual(config.read_text(), edited)
+
     def test_legacy_team_block_is_rewritten_without_stop(self):
         config = self.repo / ".codex/config.toml"
         config.parent.mkdir()
-        lines = [installer.START]
-        for event, script in (("SessionStart", "session-start.sh"), ("Stop", "session-stop.sh")):
-            command = installer.hook_command().replace("session-start.sh", script)
-            lines += [f"[[hooks.{event}]]", f"[[hooks.{event}.hooks]]", 'type = "command"',
-                      "command = " + json.dumps(command), "timeout = 5", ""]
-        config.write_text("\n".join(lines) + installer.END + "\n")
-        self.install(hooks="team")
-        hooks = tomllib.loads(config.read_text())["hooks"]
-        self.assertEqual(list(hooks), ["SessionStart"])
+        for auto_pr in (False, True):
+            with self.subTest(auto_pr=auto_pr):
+                lines = [installer.START]
+                for event, script in (("SessionStart", "session-start.sh"), ("Stop", "session-stop.sh")):
+                    command = installer.hook_command().replace("session-start.sh", script)
+                    if event == "Stop" and auto_pr:
+                        command = command.replace('bash "$bento_hook"',
+                                                  'BENTO_IMPROVE_AUTO_PR=1 bash "$bento_hook"')
+                    lines += [f"[[hooks.{event}]]", f"[[hooks.{event}.hooks]]", 'type = "command"',
+                              "command = " + json.dumps(command), "timeout = 5", ""]
+                config.write_text("\n".join(lines) + installer.END + "\n")
+                self.install(hooks="team")
+                hooks = tomllib.loads(config.read_text())["hooks"]
+                self.assertEqual(list(hooks), ["SessionStart"])
 
     def test_legacy_duplicate_hooks_are_reconciled(self):
         unrelated = {"type": "command", "command": "echo keep"}

@@ -20,18 +20,23 @@ repo's own checks and your own diff review.
 2. **Sync the base branch.** Use the base the repo names (its default/integration branch — not
    `main` if the repo integrates elsewhere, e.g. `develop`). Fetch and merge/rebase it into
    your branch; resolve conflicts before anything else.
-3. **Verify — the repo's own checks.** Run whatever exists: tests, lint, type-check, build
+3. **Capture learnings.** Run `bento-improve` (bento-forge) on this session and the full
+   branch diff, including uncommitted changes.
+   Apply approved repo-specific (L2) learnings to this branch; commit them separately from
+   the task change. Report generic (L1) proposals separately for a bento PR. Do not edit
+   `.bento`, an installed plugin copy, or this repo's submodule pin for an L1 learning.
+   Nothing survives → move on. Skip if bento-forge isn't installed.
+4. **Version + changelog, if the repo has them.** Bump the version and add a changelog entry
+   matching the repo's convention. Skip cleanly if neither exists.
+5. **Verify — the repo's own checks.** Run whatever exists: tests, lint, type-check, build
    (`just check`, `npm test`, `pytest`, etc. — discover from the repo, don't assume). Fix
    failures. Green is the gate; "it compiles" is not.
-4. **Review your own diff.** Read `git diff <base>...HEAD` end to end. Check: scope matches
-   the task (no stray files, no debug code, no secrets), and every change is intended.
-5. **Capture learnings.** Run `bento-improve` (bento-forge) on this session and the diff.
-   Approved learnings land as their own commit in this PR; nothing survives → move on.
-   Skip if bento-forge isn't installed.
-6. **Version + changelog, if the repo has them.** Bump the version and add a changelog entry
-   matching the repo's convention. Skip cleanly if neither exists.
-7. **Commit** in conventional style, one logical change per commit. If a commit hook
-   reformats files, re-stage and retry.
+6. **Review your own diff.** Read `git diff <base>...HEAD` and the staged and unstaged diffs,
+   including changes from steps 3–4. Check: scope matches the task (no stray files, no debug
+   code, no secrets), and every change is intended.
+7. **Commit** in conventional style, one logical change per commit. Keep approved L2 learning
+   edits in their own commit in this PR. If a commit hook reformats files, re-stage, rerun
+   steps 5–6 on the changed files, and retry.
 8. **Ticket, per the repo's policy** (step 1). If the repo says to open/track a ticket and one
    isn't already in context, create it and follow its status/branch rules. No tracker → skip.
 9. **Push and open the PR** against the base branch, with a title/body derived from the actual

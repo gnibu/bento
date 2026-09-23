@@ -40,7 +40,8 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
 - **`plugins/bento-forge/`** — the learning engine and generator:
   - `bento-improve` — Reflect → Route → Propose: route each session's learnings to their
     cheapest correct home (L1 bento / L2 repo), with an eval-gated keep-or-revert. Run it
-    manually, or let `ship` call it before the commit so learnings ride in the same PR.
+    manually, or let `ship` call it before final checks. Repo-specific learnings can ride in
+    the same PR; generic bento learnings are reported for a separate bento PR.
   - `bento-init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews,
     with human checkpoints and a generated baseline for later three-way merges.
     See [the workflow and file contract](plugins/bento-forge/references/bento-init.md).
