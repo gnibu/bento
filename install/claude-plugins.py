@@ -7,7 +7,9 @@ import subprocess
 import sys
 
 
-PLUGINS = ("bento-core@bento", "bento-forge@bento")
+PLUGINS = ("bento@bento",)
+# The former two-plugin layout; setup uninstalls these so skills do not load twice.
+LEGACY_PLUGINS = ("bento-core@bento", "bento-forge@bento")
 CLI_TIMEOUT = 300  # Local installs are fast; existing GitHub sources can need minutes.
 
 
@@ -127,6 +129,10 @@ def bootstrap(root):
         note(f"registering durable directory marketplace {stable}")
         claude(repo, "marketplace", "add", str(stable))
     rows = claude(repo, "list", json_output=True)
+    for plugin in LEGACY_PLUGINS:
+        for scope in sorted({row.get("scope") for row in applicable(rows, plugin, repo)} - {"managed", None}):
+            note(f"removing {plugin} ({scope} scope); replaced by {PLUGINS[0]}")
+            claude(repo, "uninstall", plugin, "--scope", scope)
     for plugin in PLUGINS:
         matches = applicable(rows, plugin, repo)
         if not installed(matches):
@@ -151,7 +157,7 @@ def bootstrap(root):
         matches = applicable(rows, plugin, repo)
         if not installed(matches) or not all(row.get("enabled") is True for row in matches):
             raise RuntimeError(f"{plugin} is not installed and enabled in {repo}; inspect claude plugin list --json")
-    note("both plugins installed, updated and enabled; restart Claude to load the skills")
+    note("bento plugin installed, updated and enabled; restart Claude to load the skills")
     return stable
 
 

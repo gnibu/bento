@@ -39,8 +39,8 @@ class CodexTests(unittest.TestCase):
 
     def test_install_repeat_and_relative_links(self):
         output = self.install()
-        targets = list((self.repo / installer.CORE).iterdir())
-        self.assertEqual(len(list(self.skills.iterdir())), len(targets) + 1)
+        targets = list((self.repo / installer.SKILLS).iterdir())
+        self.assertEqual(len(list(self.skills.iterdir())), len(targets))
         for source in targets:
             link = self.skills / source.name
             self.assertTrue(link.is_symlink())
@@ -96,6 +96,15 @@ class CodexTests(unittest.TestCase):
         self.assertEqual(result["hooks"]["SessionStart"][1]["hooks"], [handler])
         self.assertEqual(list(self.skills.iterdir()), [unrelated])
         self.assertIn("no changes needed", self.install(purge=True))
+
+    def test_legacy_two_plugin_links_are_replaced(self):
+        self.skills.mkdir(parents=True)
+        (self.skills / "ship").symlink_to("../../.bento/plugins/bento-core/skills/ship")
+        (self.skills / "bento-improve").symlink_to("../../.bento/plugins/bento-forge/skills/bento-improve")
+        self.install(hooks="none")
+        self.assertEqual(os.readlink(self.skills / "ship"), f"../../{installer.SKILLS}/ship")
+        self.assertFalse((self.skills / "bento-improve").is_symlink())
+        self.assertTrue((self.skills / "learn" / "SKILL.md").is_file())
 
     def test_purge_after_submodule_removal_preserves_replaced_skill(self):
         self.install()
@@ -200,7 +209,7 @@ class CodexTests(unittest.TestCase):
             handlers = [handler for group in result[event] for handler in group["hooks"]]
             self.assertIn(unrelated, handlers)
             bento = [handler for handler in handlers
-                     if ".bento/plugins/bento-forge/scripts/" in handler.get("command", "")]
+                     if ".bento/plugins/bento" in handler.get("command", "")]
             expected = {"type": "command", "command": installer.hook_command(), "timeout": 5}
             self.assertEqual(bento, [expected] if event == "SessionStart" else [])
 
@@ -210,7 +219,7 @@ class CodexTests(unittest.TestCase):
         nested.mkdir(parents=True)
         marker = self.root / "fired"
         env = {**os.environ, "BENTO_TEST_MARKER": str(marker)}
-        (self.repo / ".bento/plugins/bento-forge/scripts/session-start.sh").write_text(
+        (self.repo / ".bento/plugins/bento/scripts/session-start.sh").write_text(
             '#!/bin/bash\ncat > "$BENTO_TEST_MARKER"\n')
         subprocess.run(["bash", "-c", installer.hook_command()], cwd=nested,
                        input="SessionStart", text=True, env=env, check=True)
@@ -231,13 +240,12 @@ class CodexTests(unittest.TestCase):
                                     check=True, timeout=60)
             return json.dumps(json.loads(result.stdout))
         before = prompt()
-        for path in (self.repo / installer.CORE).iterdir():
-            self.assertIn(f"bento-core:{path.name}", before)
-        self.assertIn("bento-forge:bento-improve", before)
+        for path in (self.repo / installer.SKILLS).iterdir():
+            self.assertIn(f"bento:{path.name}", before)
         self.install(purge=True)
         after = prompt()
-        self.assertNotIn("bento-core:checkpoint", after)
-        self.assertNotIn("bento-forge:bento-improve", after)
+        self.assertNotIn("bento:checkpoint", after)
+        self.assertNotIn("bento:learn", after)
 
 
 if __name__ == "__main__":

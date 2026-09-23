@@ -48,11 +48,11 @@ def build_block() -> str:
 
 {principles}
 
-**Native skills:** use `bento-core:<name>` when available. Legacy fallback — read the
+**Native skills:** use `bento:<name>` when available. Legacy fallback — read the
 file when its trigger fires:
 
-- Comparing models/prompts, "which variant is better?" -> `.bento/plugins/bento-core/skills/eval-blind/SKILL.md`
-- Tuning a metric, stuck score, retrieval/latency -> `.bento/plugins/bento-core/skills/hillclimb/SKILL.md`
+- Comparing models/prompts, "which variant is better?" -> `.bento/plugins/bento/skills/eval-blind/SKILL.md`
+- Tuning a metric, stuck score, retrieval/latency -> `.bento/plugins/bento/skills/hillclimb/SKILL.md`
 - Authoring instruction files, capturing learnings -> `.bento/conventions/instruction-layer.md`
 {END}"""
 
