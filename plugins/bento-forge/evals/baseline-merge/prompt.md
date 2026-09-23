@@ -14,5 +14,4 @@ gotcha in AGENTS.md. This repo was initialized with bento-init and has
 .bento-state/baseline.json. A teammate has since hand-edited the relevant
 AGENTS.md paragraph. The learning changes that same paragraph, so the generated
 change may conflict. Explain the precise preview/apply sequence, which content
-becomes the next baseline, and what happens if it conflicts, including in unattended
-promotion. Don't edit anything.
+becomes the next baseline, and what happens if it conflicts. Don't edit anything.

@@ -98,7 +98,7 @@ include only the affected baseline paths; untouched entries remain unchanged.
 
 ```sh
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/l2-state.py" --repo . merge "$proposal"
-# After reviewing the merged diff (or in the already-authorized autorun scratch worktree):
+# After the user approves the merged diff:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/l2-state.py" --repo . merge "$proposal" --apply
 ```
 
@@ -115,7 +115,7 @@ including other conflict-free files in that proposal. Revise the generated propo
 to avoid the conflict, preview again, and get approval for the revised diff. Do not
 resolve it by copying current text into the baseline or overwriting the target.
 If the learning cannot be separated from a conflicting hand edit, leave it unapplied
-for human review. Unattended promotion must skip it and explain why in the PR body.
+for human review.
 
 An absent baseline means the repo was not initialized here: use normal targeted
 diff-and-propose, never initialize over it or manufacture a baseline from current
