@@ -6,7 +6,7 @@ Current Codex supports native skills. Install Bento's relative skill links with:
 bash .bento/install.sh --codex
 ```
 
-Bento playbooks appear as `bento:<name>`; setup and improve share their instructions
+Bento playbooks appear as `bento:<name>`; setup and learn share their instructions
 with the Claude commands. Start a fresh Codex session after setup.
 
 The marker-bounded `AGENTS.md` block remains the always-on principles layer and a legacy

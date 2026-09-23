@@ -1,8 +1,8 @@
-# bento improve
+# bento learn
 
 The learning engine. Turn what a session surfaced into durable improvements, each routed to
 one home. Generalizes a session-learning router to two layers: **L1 (bento, generic)** and
-**L2 (this repo, specific)**. This is *improve* — evolve what exists, diff and propose; for a
+**L2 (this repo, specific)**. This is *learn* — evolve what exists, diff and propose; for a
 greenfield repo with no layer, see `/bento:init`.
 
 Resolve `<plugin>` before running helpers: use `.bento/plugins/bento` from the

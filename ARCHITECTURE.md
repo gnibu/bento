@@ -21,7 +21,7 @@ bento
                                           skill/procedure-routing (incl. "no match → design one"),
                                           what belongs in an AGENTS.md vs a doc vs a comment
   playbooks/     triggered task skills    eval-blind, hillclimb, … (bento plugin)
-  forge/         generate + improve       bootstrap a fresh L2; evolve an existing one
+  forge/         init + learn             bootstrap a fresh L2; evolve an existing one
 ```
 
 - **Principles** are always-on → delivered via a committed `CLAUDE.md` `@import` (a plugin
@@ -39,7 +39,7 @@ three-way merges, preserving non-conflicting hand edits and leaving files unchan
 on conflict. The baseline travels with the L2 in Git; it is not part of vendored
 L1 or private hook state. See [generation and update mechanics](plugins/bento/references/init.md).
 
-## The improve engine (do not rebuild)
+## The learn engine (do not rebuild)
 
 `/bento:learn` **is** Rose's `rose-session-learn` generalized: its Reflect → Route →
 Propose loop and its instruction-file pricing model, run manually or from `ship` at PR time — with
@@ -56,7 +56,7 @@ Test for each practice: *would this help an agent in a repo that isn't Rose?*
 - Prove-on-artifact / before-after evidence discipline
 - Instruction-file pricing + pointer form (from `rose-session-learn` Space budget)
 - Skill/procedure-routing discipline, incl. "no match → design one" (`claude-md-improver`)
-- The improve engine (`rose-session-learn`) → `/bento:learn`
+- The learn engine (`rose-session-learn`) → `/bento:learn`
 - Skill-authoring conventions (`create-skill`)
 - eval-blind, hillclimb
 

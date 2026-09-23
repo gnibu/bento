@@ -29,5 +29,5 @@ it follows you into every project.
 ## Scope rule
 
 bento is **personal**. Never commit it into a team repo (e.g. Rose). Keep the install
-user-scope, or project-local and gitignored. The `generate`/`improve` commands (later)
+user-scope, or project-local and gitignored. The `/bento:init` and `/bento:learn` commands
 *produce* committed team files (L2) — but bento itself stays yours.
