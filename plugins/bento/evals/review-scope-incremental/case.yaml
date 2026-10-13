@@ -1,0 +1,20 @@
+schema_version: "1.0"
+name: review-scope-incremental
+tags: [review-scope]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Run an adversarial review of my branch. First step only: tell me which commits you will send to the reviewer, why, and the exact diff command. Stop before launching the reviewer."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: scope
+    criteria: |
+      The recorded reviewed sha is 6b19bde, an ancestor of HEAD with no merges since. PASS only if the
+      chosen scope is the commits since 6b19bde (a diff like `git diff 6b19bde..HEAD`, full or short
+      sha), not the whole branch against origin/master.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

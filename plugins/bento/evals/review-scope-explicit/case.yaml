@@ -1,0 +1,22 @@
+schema_version: "1.0"
+name: review-scope-explicit
+tags: [review-scope]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Run an adversarial review of the commits since 6b19bde on my branch. First step only: tell me the exact diff command you will send to the reviewer. Stop before launching the reviewer."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: scope
+    criteria: |
+      The user gave an explicit scope (commits since 6b19bde) while the recorded reviewed sha equals
+      HEAD. PASS only if the response uses that explicit scope (a diff like `git diff 6b19bde..HEAD`)
+      and does not report the branch as already reviewed or ask whether to skip.
+      Mentioning the recorded review, or waiting for the user's go before launching the reviewer,
+      is fine.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only
