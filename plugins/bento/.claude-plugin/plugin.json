@@ -1,4 +1,5 @@
 {
   "name": "bento",
+  "version": "0.2.0",
   "description": "bento playbooks as a skills-dir plugin, for `claude plugin eval` and `claude --plugin-dir` development. Install with `npx skills add gnibu/bento`."
 }
