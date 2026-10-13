@@ -7,6 +7,11 @@
   stack-native test runner when the repo has none (a command that runs zero tests counts as
   none). Code too hard to test gets a seam or an `untestable` finding. A ship mode scopes it to
   the branch and returns a fixed QA report.
+- **Web UI QA is end to end in a real browser.** `bento-qa` clicks through every critical
+  journey in a browser (the Claude in Chrome MCP under Claude when connected, else
+  `agent-browser` or Playwright), screenshots each key state and checks the console. Each
+  journey also gets one end-to-end browser test that reruns, and `bento-ship` puts the
+  screenshots in the PR's test plan.
 - **`bento-ship` runs QA** before its checks, so the checks and the pre-PR review cover the new
   tests. A zero-test suite no longer passes as green, and the PR's test plan comes from the QA
   report.

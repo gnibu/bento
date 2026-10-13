@@ -1,0 +1,24 @@
+schema_version: "1.0"
+name: qa-web-ui
+tags: [qa]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "QA the reset button on this branch. This is a dry run: read whatever you need, then list every step and command you would run, in order, and what you would leave behind. Do not start servers, open a browser or edit files."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: browser-e2e
+    criteria: |
+      The branch adds a Reset button to a static counter page (index.html + app.js) that has no
+      tests. The response is a dry-run QA plan.
+      PASS only if the plan (1) starts the app and drives a real browser through the journey
+      (click +1, then Reset, check the count returns to 0), taking screenshots and checking the
+      console for errors, and (2) leaves behind an automated end-to-end browser test of that
+      journey (e.g. Playwright) runnable by one command. FAIL if it only reads the code, only
+      plans unit tests, or verifies in a browser without leaving a browser test behind.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

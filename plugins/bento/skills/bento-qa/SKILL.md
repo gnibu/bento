@@ -1,12 +1,12 @@
 ---
 name: bento-qa
 description: |
-  Exercise a change on its real surface (browser, CLI, or API), then pin every changed behavior
-  with an automated test, bootstrapping the repo's test system if it has none. Interactive mode
-  (default) reports defects; ship mode (called by a ship flow) scopes itself to the branch,
-  fixes verified defects and returns a QA report. Triggers: "QA this", "test the site/app",
-  "find bugs", "does this actually work", "smoke test the change", "add tests",
-  "make this testable".
+  Exercise a change end to end on its real surface (a real browser for web UI, else CLI or
+  API), then pin every changed behavior with an automated test, bootstrapping the repo's test
+  system if it has none. Interactive mode (default) reports defects; ship mode (called by a
+  ship flow) scopes itself to the branch, fixes verified defects and returns a QA report.
+  Triggers: "QA this", "test the site/app", "visual QA", "find bugs", "does this actually
+  work", "smoke test the change", "add tests", "make this testable".
 ---
 
 # QA
@@ -42,21 +42,29 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    once for a baseline; tests already red are pre-existing, report them as such.
    A command that runs zero tests is no test system. **None → bootstrap the smallest one**
    native to the stack: the stdlib runner first (`python3 -m unittest`, `node --test`,
-   `go test`, `cargo test`, a `tests/run.sh` of asserting commands for shell); a browser runner
-   (Playwright) only when the change is web UI. One command runs everything; record it as the
-   checks line in `AGENTS.md`. Commit the bootstrap on its own (`test: add <runner> harness`).
+   `go test`, `cargo test`, a `tests/run.sh` of asserting commands for shell); for a web UI,
+   also a headless browser runner (the one the repo already has, else Playwright) that starts
+   the app itself. One command runs everything; record it as the checks line in `AGENTS.md`.
+   Commit the bootstrap on its own (`test: add <runner> harness`).
 2. **List the behaviors the scope changes** — each user-visible path plus its edge cases
    (empty, error, boundary, unauthorized). Map each to the test that covers it, or "none".
-3. **Exercise each path on the real surface.** Web UI → a browser driver available in the
-   environment (`agent-browser`, Playwright; use what's installed). CLI/TUI → run the binary.
-   API → curl/HTTP. Library → call it from a scratch script. Name the driver. Capture evidence:
+3. **Exercise each path on the real surface, end to end.** Name the driver. Capture evidence:
    screenshot, console/network log, exit code, response body.
+   - **Web UI → a real browser, always.** Start the app and click through every critical
+     journey the scope touches as a user would. Driver: under Claude, the Claude in Chrome MCP
+     (`mcp__claude-in-chrome__*`) when connected; otherwise a browser CLI in the environment
+     (`agent-browser`, Playwright). Screenshot each key state, and read console and network
+     errors on every page. Unit tests alone never verify a UI change.
+   - CLI/TUI → run the binary. API → curl/HTTP against the running service. Library → call it
+     from a scratch script.
+   Save screenshots outside tracked files (a gitignored dir or tmp).
 4. **Record defects with evidence.** For each: the steps, expected vs actual, and the captured
    artifact. No repro/artifact → not a confirmed defect.
 5. **Pin each behavior with a test** in the repo's layout and style, at the cheapest level
-   that catches it (unit before integration before end-to-end). See it fail: write it against
-   the defect before the fix, or break the code under it once. A test never seen red proves
-   nothing. **Hard to test → the code needs a seam** (inject the clock, randomness or network;
+   that catches it (unit before integration before end-to-end). Web UI: each critical journey
+   also gets one end-to-end browser test in the runner from step 1. The Chrome MCP explores;
+   only a runner test reruns on the next change. See it fail: write it against the defect
+   before the fix, or break the code under it once. A test never seen red proves nothing. **Hard to test → the code needs a seam** (inject the clock, randomness or network;
    split logic from I/O). A small, behavior-preserving seam follows the mode table; anything
    larger is a finding: `untestable: <behavior> — needs <seam>`.
 6. **Fix defects per the mode.** Root cause (see `bento-investigate`), the pinning test turns
@@ -68,7 +76,7 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    ```
    QA: <pass | defects open | no behavior changed>
    Harness: <existing `<cmd>` | bootstrapped `<cmd>` in <sha>>
-   Exercised: <path> — <driver> — <evidence>
+   Exercised: <path> — <driver> — <evidence: screenshot paths for web UI>
    Tests added: <file::test> — <behavior>
    Defects: <severity> <path>: expected / actual — <artifact> — <fixed in <sha> | open>
    Untested: <behavior> — <reason>
@@ -83,6 +91,8 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
 - Never weaken, skip or delete an existing test to get green.
 - "Untested" needs a reason. A behavior that silently ends up with neither a test nor a reason
   is a QA failure.
+- A web UI change isn't verified until a real browser has run its journeys and shown no
+  console errors.
 - Bootstrap a test runner only: no CI pipeline, coverage gate or test framework beyond it.
 - Don't trigger destructive or irreversible actions (deletes, real payments, emails) on the
   real surface. Test them against a fake or sandbox, and list the real path as untested.

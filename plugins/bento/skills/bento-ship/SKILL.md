@@ -91,7 +91,8 @@ In every message, call the adversarial review the "pre-PR review (local)", never
     characters; a conventional prefix only if every change fits one scope. Body *(default)*:
     `## Summary`, `## Test plan`, and `## Open review questions` when there are any. The test
     plan comes from the QA report: tests added, paths exercised with their evidence, and every
-    untested behavior with its reason.
+    untested behavior with its reason. Web UI: embed the screenshots when the forge CLI can
+    upload images; otherwise list each one's path and what it shows.
 14. **Update the ticket** *(default)*. Comment the PR link and 1–3 bullets on what the PR
     actually does, then move the ticket to the repo's review status. Re-fetch the status
     afterwards; forge-to-tracker automations often move it back, so set it again if they did.
