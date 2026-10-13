@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 — 2026-10-13
+
+- **`bento-qa` leaves tests behind.** After exercising a change on its real surface, it pins
+  each changed behavior with an automated test it has seen fail, and bootstraps the smallest
+  stack-native test runner when the repo has none (a command that runs zero tests counts as
+  none). Code too hard to test gets a seam or an `untestable` finding. A ship mode scopes it to
+  the branch and returns a fixed QA report.
+- **`bento-ship` runs QA** before its checks, so the checks and the pre-PR review cover the new
+  tests. A zero-test suite no longer passes as green, and the PR's test plan comes from the QA
+  report.
+- **Tests are planned up front.** `bento-spec` criteria and `bento-multi-phase-plan` PRs name
+  their tests, and `bento-init` flags a repo with no test command as a gap.
+
 ## 0.2.0 — 2026-10-13
 
 First versioned release since 0.1.1. It also carries the npx-skills install and `bento-*`
