@@ -87,10 +87,11 @@ defaulting to `~/.claude` / `~/.codex`, for a global install).
 ## Update
 
 ```bash
-npx skills update            # add -g for a global install, -p for project only
+npx skills add gnibu/bento --skill '*' -a claude-code codex -y   # add -g for global
 ```
 
-Then rerun `bento-setup` to refresh the distilled `AGENTS.md` block (the `CLAUDE.md` import
+Re-add rather than `npx skills update`: update only refreshes skills already installed, so a
+playbook that starts calling a new bento skill would find it missing. Then rerun `bento-setup` to refresh the distilled `AGENTS.md` block (the `CLAUDE.md` import
 follows the installed file automatically). For a project install, commit the updated skills
 and `skills-lock.json`; that commit is the version bump. Roll back with git.
 
