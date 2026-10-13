@@ -65,11 +65,12 @@ This writes `.agents/skills/bento-*` (read by Codex), `.claude/skills/bento-*` (
 Claude; add `--copy` for real files) and `skills-lock.json`. Commit them.
 
 **Per machine** (personal, every repo): add `-g`. Skills land in `~/.agents/skills/` and
-`~/.claude/skills/`.
+`~/.claude/skills/` (`$CLAUDE_CONFIG_DIR/skills/` when set).
 
 Then start a fresh session and run **`/bento-setup`** (Claude) or **`$bento-setup`** (Codex). It
 adds the principles import to `CLAUDE.md` and the principles block to `AGENTS.md` (project
-files, or `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` for a global install).
+files, or the user `CLAUDE.md` / `AGENTS.md` under `$CLAUDE_CONFIG_DIR` / `$CODEX_HOME`,
+defaulting to `~/.claude` / `~/.codex`, for a global install).
 
 ## Update
 

@@ -15,9 +15,12 @@ Report failures instead of claiming setup completed.
 
 Match where bento's skills are installed:
 
-- **project** — `.agents/skills/bento-setup/` exists in the repo (committed with
-  `skills-lock.json`, so the repo pins its bento version).
-- **global** — `~/.agents/skills/bento-setup/` or `~/.claude/skills/bento-setup/`.
+- **project** — `.agents/skills/bento-setup/` or `.claude/skills/bento-setup/` exists in the
+  repo (committed with `skills-lock.json`, so the repo pins its bento version).
+- **global** — `~/.agents/skills/bento-setup/` or `<claude-dir>/skills/bento-setup/`.
+
+`<claude-dir>` is `$CLAUDE_CONFIG_DIR` if set, else `~/.claude`, resolved to an absolute
+path (npx skills uses the same rule; `CLAUDE.md` imports don't expand variables).
 
 Both present → ask (`--yes`: project). Neither → stop and tell the user to run
 `npx skills add gnibu/bento --skill '*'` (add `-g` for global).
@@ -34,7 +37,7 @@ Both present → ask (`--yes`: project). Neither → stop and tell the user to r
    ```
 
    - project: `./CLAUDE.md`, import `.claude/skills/bento-setup/PRINCIPLES.md`
-   - global: `${CLAUDE_CONFIG_DIR:-~/.claude}/CLAUDE.md`, import `~/.claude/skills/bento-setup/PRINCIPLES.md`
+   - global: `<claude-dir>/CLAUDE.md`, import `<claude-dir>/skills/bento-setup/PRINCIPLES.md`
 
    Skip if the line is present. Check the import target exists; if it doesn't, Claude
    wasn't an install target (`npx skills add ... -a claude-code`).
@@ -55,7 +58,9 @@ Detect each legacy piece; remove only what is present. Report each removal.
 
 1. **Submodule** (`.bento` in `.gitmodules`):
    `git submodule deinit -f .bento && git rm -f .bento`, then
-   `rm -rf "$(git rev-parse --git-common-dir)/modules/.bento"`. Remove
+   `rm -rf "$(git rev-parse --git-dir)/modules/.bento"`. Use `--git-dir`, never
+   `--git-common-dir`: from a linked worktree the latter is the main checkout's submodule
+   repository, still used by its checkout. Remove
    `git submodule update --init .bento` from any setup script (e.g. Conductor's).
 2. **Claude plugin and marketplace** (`claude plugin list` shows `bento@bento`,
    `bento-core@bento` or `bento-forge@bento`): `claude plugin uninstall <id>` for each, then
@@ -64,12 +69,12 @@ Detect each legacy piece; remove only what is present. Report each removal.
    Remove `bento` from committed `extraKnownMarketplaces` / `enabledPlugins` in `.claude/settings.json`.
 3. **Old hooks.** Delete `SessionStart`/`Stop` handlers whose command mentions
    `.bento/plugins/` from `.claude/settings.json`, `.claude/settings.local.json`,
-   `${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json` and `${CODEX_HOME:-~/.codex}/hooks.json`, and the
+   `<claude-dir>/settings.json` and `${CODEX_HOME:-~/.codex}/hooks.json`, and the
    `# bento:hooks:start` … `# bento:hooks:end` block from `.codex/config.toml`. Keep unrelated
    handlers. Then `rm -f ~/.bento/update-reminder` and remove `~/.bento` if empty.
 4. **Codex links.** Delete symlinks in `.codex/skills/` whose target contains `/.bento/`.
 5. **Old principles import.** Remove the `# bento (personal agent kit — always-on principles)`
-   heading and its `@…/principles/PRINCIPLES.md` line from the user `CLAUDE.md`.
+   heading and its `@…/principles/PRINCIPLES.md` line from `<claude-dir>/CLAUDE.md`.
    Apply step 2 writes the new one. The `AGENTS.md` block keeps its markers, so Apply step 3
    rewrites it in place.
 

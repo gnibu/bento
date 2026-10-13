@@ -76,7 +76,7 @@ directory, and `ship`, `qa` or `setup` would collide.
 | scope | where skills land | pinning | principles wiring |
 |---|---|---|---|
 | project (default) | `.agents/skills/bento-*` (Codex), `.claude/skills/bento-*` (Claude, links) | committed files + `skills-lock.json` | repo `CLAUDE.md` import + `AGENTS.md` block |
-| global (`-g`) | `~/.agents/skills/`, `~/.claude/skills/` | none — `npx skills update` | `~/.claude/CLAUDE.md` import + `~/.codex/AGENTS.md` block |
+| global (`-g`) | `~/.agents/skills/`, `${CLAUDE_CONFIG_DIR:-~/.claude}/skills/` | none — `npx skills update` | user `CLAUDE.md` import + `${CODEX_HOME:-~/.codex}/AGENTS.md` block |
 
 Project scope is the team path: the committed skills *are* the pin, and a committed
 `@.claude/skills/bento-setup/PRINCIPLES.md` import finally gives principles a stable in-repo
