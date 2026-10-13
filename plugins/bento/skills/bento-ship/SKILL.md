@@ -28,13 +28,15 @@ In every message, call the adversarial review the "pre-PR review (local)", never
 1. **Commit the task's work first.** Uncommitted task changes → commit them now; every step
    after reads `HEAD` only.
 2. **One PR per ticket.** Find the ticket (in context, or the id in the branch name). If an open
-   PR for it exists on any branch, this work goes there: push to that PR's branch, and if you
-   can't, stop and ask. If the repo's policy says to open a ticket and none exists, create it.
+   PR for it exists on any branch, this work goes there: note that PR's branch as the push
+   target for step 11 (it can't take this work → stop and ask). If the repo's policy says to open a ticket and none exists, create it.
    No tracker → skip.
 3. **Sync with the current base.** `git fetch origin <base>`, and always compare against
    `origin/<base>`, never a local base branch. If `git log origin/<base>..HEAD` lists commits
-   you didn't write, the branch was rebased onto a stale base and carries copies of merged PRs:
-   rebuild it on `origin/<base>` with only this task's commits. Then merge or rebase
+   you didn't write, the branch was rebased onto a stale base and may carry copies of merged
+   PRs. Rebuild it on `origin/<base>` with only this task's commits when each foreign commit
+   already landed (`-` in `git cherry -v origin/<base>`, or its PR is merged); otherwise stop
+   and ask, since it may be a collaborator's or a dependency's work. Then merge or rebase
    `origin/<base>` in; resolve conflicts before anything else.
 4. **Capture learnings.** Run `/bento-learn` on every session of this worktree's branch (Claude
    and Codex) and the full branch diff. Hold its repo-specific (L2) proposals for step 10.
@@ -66,15 +68,18 @@ In every message, call the adversarial review the "pre-PR review (local)", never
     ```
 
     After the reply, commit approved learnings on their own and each decision as its own
-    verified commit, then rerun the pre-PR review on the new commits only. Never stop a second
+    verified commit, then rerun the pre-PR review with the explicit scope "commits since
+    `<reviewed>`" (the sha step 9 returned). Never stop a second
     time: anything it raises, and every skipped decision with its default, goes under
     `## Open review questions` in the PR body.
 11. **Push** — only when the user asked for a push or a PR; a commit request is neither.
-    `git push -u origin HEAD`. An SSH push fails → retry through the forge CLI's auth. Rejected
-    as non-fast-forward → fetch, then `git cherry -v HEAD origin/<branch>`: every remote-only
-    commit marked `-` (it has a local equivalent) → `git push --force-with-lease`; any `+` →
-    stop and ask.
-12. **Open the PR** against `<base>` with the forge's CLI, unless step 2 found one. Title: covers
+    `git push -u origin HEAD`, or `HEAD:<branch>` for step 2's PR branch. An SSH push fails →
+    retry through the forge CLI's auth. Rejected as non-fast-forward → fetch, then
+    `git cherry -v HEAD origin/<branch>`: every remote-only commit marked `-` (it has a local
+    equivalent) and `git log --merges HEAD..origin/<branch>` empty (`git cherry` skips merges)
+    → `git push --force-with-lease`; otherwise stop and ask.
+12. **Open the PR** against `<base>` with the forge's CLI. Step 2 found one → update its title
+    and body to match the whole diff instead. Title: covers
     the whole diff, not the branch name, the ticket title or the last commit; under 70
     characters; a conventional prefix only if every change fits one scope. Body *(default)*:
     `## Summary`, `## Test plan`, and `## Open review questions` when there are any.

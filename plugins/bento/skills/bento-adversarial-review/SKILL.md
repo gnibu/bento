@@ -227,7 +227,9 @@ else.
 ## Record the review
 
 Before phase 1, note `git rev-parse HEAD` as `<reviewed>`: the last commit the reviewer saw.
-For a branch or since-`<sha>` review, record it once **no finding is left open** — every
+For a branch review, or a since-`<sha>` review whose `<sha>` was itself reviewed (the recorded
+sha, or a `<reviewed>` a ship flow got back from an earlier run), record it once **no finding
+is left open** — every
 NEEDS HUMAN / NEEDS INFO question answered or carried into the PR body (in ship mode, by
 the ship flow) — so the next run doesn't review the same commits twice:
 
@@ -238,7 +240,9 @@ echo <reviewed> > "$(git rev-parse --git-path adversarial-review.head)"
 Record `<reviewed>`, never the current `HEAD`: fix commits made in phase 3 haven't been
 reviewed, and the next review must see them. With open findings, record nothing; a later run
 re-reviews and surfaces them again rather than skipping past a pending decision. Never record
-an `empty-diff` run, a failed reviewer, or a working-tree or single-commit review.
+an `empty-diff` run, a failed reviewer, a working-tree or single-commit review, or a
+since-`<sha>` review starting from an unreviewed commit: earlier commits would be skipped
+unreviewed.
 
 ## Guardrails
 
