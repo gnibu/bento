@@ -32,8 +32,10 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-refactor` — change structure while holding behavior; pin first, prove equivalence.
   - `bento-prototype` — throwaway spike to make a design decision cheaply; decide by observation.
   - `bento-multi-phase-plan` — plan a large change as verifiable units before implementing.
-  - `bento-ship` — land a change: sync base, verify, review diff, commit/push/PR (defers to the
-    repo's AGENTS.md for base branch, PR, and ticket policy).
+  - `bento-ship` — land a change: sync base, verify, review diff, adversarial review,
+    commit/push/PR (defers to the repo's AGENTS.md for base branch, PR, and ticket policy).
+  - `bento-adversarial-review` — the other model family (Codex under Claude, Claude under
+    Codex) reviews the diff; every finding is triaged against the code before any fix.
   - `bento-qa` — exercise a change on its real surface (browser/CLI/API); report evidenced defects.
   - `bento-spec` — turn vague intent into a precise, executable spec before building.
   - `bento-cso` — security audit against common vuln classes; evidenced, confidence-calibrated.
