@@ -8,9 +8,9 @@ Full credit requires all of:
 
 - Inspect code, documentation, and merged PR review comments as separate evidence
   sources, flag unavailable sources, and corroborate historical reviews in code.
-- Check for an existing instruction layer and route it to /bento:learn rather
+- Check for an existing instruction layer and route it to /bento-learn rather
   than regenerate it. Explain the potion off-the-shelf option without stopping
-  at the old claim that /bento:init is unimplemented.
+  at the old claim that /bento-init is unimplemented.
 - Separate human approval of evidence, file design, and the exact generated diff.
   No writing final files or committing before the appropriate checkpoint.
 - Use AGENTS.md as shared routing content with a CLAUDE.md import and pointers
