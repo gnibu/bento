@@ -125,8 +125,8 @@ you need bento's reviewed generation and baseline-aware updates.
 ## Not built yet (deliberately)
 
 - More playbooks — add only when a real recurring task needs one, never speculatively.
-- Eval cases for the ported playbooks (ship/qa/spec/cso/docs) — the harness exists; cases for
-  eval-blind and hillclimb are in place, the rest are follow-ups.
+- Eval cases for the ported playbooks (qa/spec/cso/docs) — the harness exists; cases for
+  eval-blind, hillclimb and ship are in place, the rest are follow-ups.
 
 ## Credits
 
