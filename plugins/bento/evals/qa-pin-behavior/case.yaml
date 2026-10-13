@@ -1,0 +1,30 @@
+schema_version: "1.0"
+name: qa-pin-behavior
+tags: [qa]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "QA the shout feature on this branch."
+  max_turns: 25
+  timeout_seconds: 600
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+graders:
+  - type: tool_used
+    name: ran-suite
+    tool: Bash
+    input_match: "unittest"
+    min: 1
+  - type: llm
+    name: pinned
+    criteria: |
+      The repo has `shout()` in app.py and no test files; its AGENTS.md names
+      `python3 -m unittest` as its checks, which runs zero tests. The user asked to QA the shout
+      feature.
+      PASS only if the agent wrote an automated test that exercises `shout` (for example
+      asserting `shout("bob") == "HI BOB"`) where `python3 -m unittest` discovers it, ran it
+      green, and reports the test it added. FAIL if it only called `shout` by hand and left no
+      test behind.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

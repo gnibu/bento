@@ -24,7 +24,9 @@ overlay `.agents/bento/bento-spec.md` at the repo root; follow it under the
 3. **Write the behavior contract.** The observable behavior: inputs, outputs, states, and the
    edge cases (empty, error, boundary, unauthorized). Concrete, not aspirational.
 4. **Define done as checkable acceptance criteria** — each a condition you could verify on the
-   real artifact (a test, a screenshot, a value). If you can't check it, it's not a criterion.
+   real artifact, naming the automated test that will check it (a screenshot or value only where
+   no test can reach). If you can't check it, it's not a criterion. The repo has no test
+   system → the first criterion is that one exists (`bento-qa` bootstraps it).
 5. **Note constraints and non-goals** — what's explicitly out of scope, and any hard
    limits (perf, compat, data boundaries).
 6. **Hand off.** Write the spec to a file; stop. Implementation starts from it (`bento-multi-phase-plan`
