@@ -56,6 +56,9 @@ lands.
 4. **Verify.** Show the diff of each file touched. Start a fresh Claude/Codex session and
    confirm the `bento-*` skills are listed (Claude: `/bento-`; Codex: `$bento-`). Don't claim
    a running session reloaded anything.
+5. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
+   each one's `##` rule headings, so the user sees which bento skills are customised here.
+   None → say so.
 
 Project-scope changes (`CLAUDE.md`, `AGENTS.md`, `.agents/`, `.claude/skills/`,
 `skills-lock.json`) are for the user to review and commit. Setup, migrate and purge never

@@ -14,7 +14,7 @@ reader.** Price the sink before you write, and put each fact in its cheapest cor
 | Code comment / the fix itself | when that code is opened | ~free | a paragraph, if useful |
 | Shared doc (guide / README) | when its linked task starts | low | as long as it earns |
 | Skill (`SKILL.md`) | when its task triggers | low | a sentence per point |
-| bento overlay (`.agents/bento/<skill>.md`) | when that bento skill runs | low | a bullet per rule |
+| bento overlay (`.agents/bento/<skill>.md`) | when that bento skill runs | low | a `##` section per rule (trigger, action, approval) |
 | `AGENTS.md` | **every** agent working in that directory tree (root = repo-wide) | **highest** | **one bullet, ≤2 wrapped lines** |
 
 An `AGENTS.md` line is written once and paid for indefinitely by everyone — including the
