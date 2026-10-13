@@ -1,8 +1,8 @@
 ---
 name: bento-ship
 description: |
-  Land a change safely: sync base, verify, review the diff, then commit/push/PR. Use when
-  finishing a piece of work. Triggers: "ship it", "land this", "open a PR", "create a PR",
+  Land a change safely: sync base, verify, review the diff (self + adversarial), then
+  commit/push/PR. Use when finishing a piece of work. Triggers: "ship it", "land this", "open a PR", "create a PR",
   "commit and push", "ready to merge".
 ---
 
@@ -10,7 +10,7 @@ description: |
 
 Take work from "done on my machine" to a reviewable PR, git/file-only so it runs the same
 under any agent. Consolidates commit + PR into one flow. Nothing lands without passing the
-repo's own checks and your own diff review.
+repo's own checks, your own diff review, and an adversarial review by the other model family.
 
 ## Steps (paste as todos)
 
@@ -37,12 +37,26 @@ repo's own checks and your own diff review.
 7. **Commit** in conventional style, one logical change per commit. Keep approved L2 learning
    edits in their own commit in this PR. If a commit hook reformats files, re-stage, rerun
    steps 5–6 on the changed files, and retry.
-8. **Ticket, per the repo's policy** (step 1). If the repo says to open/track a ticket and one
+8. **Adversarial review, unless already done.** Read the reviewed sha from
+   `"$(git rev-parse --git-path adversarial-review.head)"`:
+   - it equals `HEAD` → already reviewed, skip;
+   - it is an ancestor of `HEAD` and `git rev-list --merges <sha>..HEAD` is empty → review only
+     the commits since `<sha>`;
+   - otherwise (missing, rebased away, base merged in) → review the whole branch.
+
+   Run `/bento-adversarial-review` in **ship mode** on that scope. It commits verified fixes
+   and returns questions for findings that need a human. If there are any, stop once before
+   pushing and ask them; implement each answer as its own verified commit, then re-run the
+   review on the commits since the reviewed sha without stopping again. Unanswered questions
+   go under `## Open review questions` in the PR body. Record the reviewed sha (per the
+   skill) only once every question is answered or in the PR body. Skip only if the user says
+   "skip adversarial review" or the skill isn't installed.
+9. **Ticket, per the repo's policy** (step 1). If the repo says to open/track a ticket and one
    isn't already in context, create it and follow its status/branch rules. No tracker → skip.
-9. **Push and open the PR** against the base branch, with a title/body derived from the actual
-   diff (not the branch name). Create a PR only when the user asked — a commit is not a PR
-   request. Use the repo's forge (`gh`, or another the repo names).
-10. **Prove it.** Report the PR URL and that checks passed. If CI runs, note its status.
+10. **Push and open the PR** against the base branch, with a title/body derived from the
+    actual diff (not the branch name). Create a PR only when the user asked — a commit is not
+    a PR request. Use the repo's forge (`gh`, or another the repo names).
+11. **Prove it.** Report the PR URL and that checks passed. If CI runs, note its status.
 
 ## Guardrails
 
