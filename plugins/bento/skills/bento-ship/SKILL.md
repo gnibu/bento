@@ -47,9 +47,10 @@ repo's own checks, your own diff review, and an adversarial review by the other 
    Run `/bento-adversarial-review` in **ship mode** on that scope. It commits verified fixes
    and returns questions for findings that need a human. If there are any, stop once before
    pushing and ask them; implement each answer as its own verified commit, then re-run the
-   review on the commits since the recorded sha without stopping again. Unanswered questions
-   go under `## Open review questions` in the PR body. Skip only if the user says "skip
-   adversarial review" or the skill isn't installed.
+   review on the commits since the reviewed sha without stopping again. Unanswered questions
+   go under `## Open review questions` in the PR body. Record the reviewed sha (per the
+   skill) only once every question is answered or in the PR body. Skip only if the user says
+   "skip adversarial review" or the skill isn't installed.
 9. **Ticket, per the repo's policy** (step 1). If the repo says to open/track a ticket and one
    isn't already in context, create it and follow its status/branch rules. No tracker → skip.
 10. **Push and open the PR** against the base branch, with a title/body derived from the

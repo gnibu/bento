@@ -205,14 +205,19 @@ Calling `bento-ship` is standing approval to fix verified defects. It covers not
 
 ## Record the review
 
-After phase 3 of a branch or since-`<sha>` review, in either mode, record the reviewed `HEAD`
-so `bento-ship` doesn't review the same commits twice:
+Before phase 1, note `git rev-parse HEAD` as `<reviewed>`: the last commit the reviewer saw.
+For a branch or since-`<sha>` review, record it once **no finding is left open** — every
+NEEDS HUMAN / NEEDS INFO question answered or carried into the PR body (in ship mode, by
+`bento-ship`) — so `bento-ship` doesn't review the same commits twice:
 
 ```bash
-git rev-parse HEAD > "$(git rev-parse --git-path adversarial-review.head)"
+echo <reviewed> > "$(git rev-parse --git-path adversarial-review.head)"
 ```
 
-Never record an `empty-diff` run, a failed reviewer, or a working-tree or single-commit review.
+Record `<reviewed>`, never the current `HEAD`: fix commits made in phase 3 haven't been
+reviewed, and the next review must see them. With open findings, record nothing; a later run
+re-reviews and surfaces them again rather than skipping past a pending decision. Never record
+an `empty-diff` run, a failed reviewer, or a working-tree or single-commit review.
 
 ## Guardrails
 
