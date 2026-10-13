@@ -25,7 +25,9 @@ repo's own checks and your own diff review.
    Apply approved repo-specific (L2) learnings to this branch; commit them separately from
    the task change. Report generic (L1) proposals separately for a bento PR. Do not edit
    the installed `bento-*` skills for an L1 learning.
-   Nothing survives → move on. Skip if `bento-learn` isn't installed.
+   Always run it when it's installed, even when the session looked uneventful or an outer PR
+   checklist omits it: don't predict its outcome, its reuse gate decides. "Nothing survives"
+   is a result you report after running it, never a reason to skip it.
 4. **Version + changelog, if the repo has them.** Bump the version and add a changelog entry
    matching the repo's convention. Skip cleanly if neither exists.
 5. **Verify — the repo's own checks.** Run whatever exists: tests, lint, type-check, build
@@ -42,7 +44,9 @@ repo's own checks and your own diff review.
 9. **Push and open the PR** against the base branch, with a title/body derived from the actual
    diff (not the branch name). Create a PR only when the user asked — a commit is not a PR
    request. Use the repo's forge (`gh`, or another the repo names).
-10. **Prove it.** Report the PR URL and that checks passed. If CI runs, note its status.
+10. **Prove it.** Report the PR URL, that checks passed, and one line per step: what ran and
+    its result (step 3: sessions scanned, learnings kept or dropped). A skipped step names the
+    playbook's own skip condition that allowed it. If CI runs, note its status.
 
 ## Guardrails
 
