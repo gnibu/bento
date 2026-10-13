@@ -1,0 +1,19 @@
+schema_version: "1.0"
+name: review-scope-missing
+tags: [review-scope]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Run an adversarial review of my branch. First step only: tell me which commits you will send to the reviewer, why, and the exact diff command. Stop before launching the reviewer."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: scope
+    criteria: |
+      No reviewed sha is recorded. PASS only if the chosen scope is the whole branch against origin/master (a diff like
+      `git diff origin/master...HEAD`). FAIL if the scope is limited to commits since a recorded sha.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

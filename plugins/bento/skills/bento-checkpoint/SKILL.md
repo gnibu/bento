@@ -11,6 +11,10 @@ description: |
 Write down enough that a fresh session (you or someone else) can resume without re-deriving
 what you already know. State lives in the repo, not in your head.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-checkpoint.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **State the goal** and the done-condition in one line.

@@ -9,6 +9,10 @@ description: Wire bento's always-on principles into Claude Code (CLAUDE.md impor
 the always-on principles in `PRINCIPLES.md` (next to this file). Every step is idempotent.
 Report failures instead of claiming setup completed.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-setup.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 `<skill>` is this skill's directory. Run from the consumer repo root.
 
 ## Scope
@@ -50,7 +54,8 @@ Both present → ask (`--yes`: project). Neither → stop and tell the user to r
    a running session reloaded anything.
 
 Project-scope changes (`CLAUDE.md`, `AGENTS.md`, `.agents/`, `.claude/skills/`,
-`skills-lock.json`) are for the user to review and commit.
+`skills-lock.json`) are for the user to review and commit. Setup, migrate and purge never
+create or delete the repo's overlays in `.agents/bento/`.
 
 ## Migrate from the submodule/plugin install
 

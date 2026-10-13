@@ -11,6 +11,10 @@ description: |
 A bug report names a symptom. Find the cause and fix it where all callers route through, so
 no sibling path stays broken.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-investigate.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Reproduce first.** Get a deterministic repro before theorizing. Can't reproduce →

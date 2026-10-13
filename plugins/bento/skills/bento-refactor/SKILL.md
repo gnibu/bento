@@ -12,6 +12,10 @@ You own the contract. The structure changes; the behavior does not. If the clean
 missing feature or a real bug, split it out and ship the structural change first against the
 pinned contract.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-refactor.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Pin the behavior first.** Before moving anything, capture current behavior: a

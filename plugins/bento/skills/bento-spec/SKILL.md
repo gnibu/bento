@@ -11,6 +11,10 @@ description: |
 Convert "I want X" into a spec precise enough that implementation is mechanical and success is
 checkable. The spec is the deliverable — don't implement here.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-spec.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **State the goal and the user** in one or two lines — what changes, for whom, and why now.

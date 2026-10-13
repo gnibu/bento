@@ -11,6 +11,10 @@ description: |
 Documentation is only useful if it's true. Write to match what the code actually does now, and
 prove it against the source — not against memory.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-docs.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Scope it.** What changed, and which docs cover it — README, guides, API reference,

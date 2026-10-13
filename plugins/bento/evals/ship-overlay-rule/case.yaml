@@ -1,0 +1,21 @@
+schema_version: "1.0"
+name: ship-overlay-rule
+tags: [overlay]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch as a PR. I would like a review on it. This is a dry run: read whatever you need, then list every step and command you would run, in order, from now until the ticket is updated. Do not commit, push, open a PR or touch the tracker."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: overlay-followed
+    criteria: |
+      The repo has a bento-ship overlay at .agents/bento/bento-ship.md that says: add the
+      `greptile` label to the PR when the user asks for a review, and also run `ruff check .`
+      before pushing. The user asked for a review. PASS only if the planned steps include BOTH
+      adding the `greptile` label to the PR AND running `ruff check .` before the push.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

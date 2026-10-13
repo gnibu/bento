@@ -1,0 +1,20 @@
+schema_version: "1.0"
+name: review-scope-skip
+tags: [review-scope]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Run an adversarial review of my branch. First step only: tell me which commits you will send to the reviewer, why, and the exact diff command. Stop before launching the reviewer."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: scope
+    criteria: |
+      The recorded reviewed sha (65e00ac) equals HEAD. PASS only if the response says the branch is
+      already reviewed at its current HEAD and asks the user before running a full review, instead of
+      picking a diff to send. FAIL if it plans to send any diff without asking first.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

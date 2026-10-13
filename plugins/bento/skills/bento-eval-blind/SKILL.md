@@ -13,6 +13,10 @@ Framing leaks into verdicts. If the judge knows which side is "the new one" — 
 grade the candidate's own claim instead of its behavior — you measure the framing, not the
 quality. Blind it.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-eval-blind.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Name the decision.** One sentence: what are you choosing between, on what metric?

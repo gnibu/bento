@@ -12,6 +12,10 @@ You own the design decision, not the code. The prototype is a throwaway instrume
 build follows afterward. This is the one place the usual bars invert: **speed over polish,
 code quality does not matter, no planning.** The rigor is in picking the right design cheaply.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-prototype.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Scope the decision** the prototype exists to make — which layout, interaction, or (for

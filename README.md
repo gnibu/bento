@@ -32,10 +32,12 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-refactor` — change structure while holding behavior; pin first, prove equivalence.
   - `bento-prototype` — throwaway spike to make a design decision cheaply; decide by observation.
   - `bento-multi-phase-plan` — plan a large change as verifiable units before implementing.
-  - `bento-ship` — land a change: sync base, verify, review diff, adversarial review,
-    commit/push/PR (defers to the repo's AGENTS.md for base branch, PR, and ticket policy).
+  - `bento-ship` — the whole PR flow: commit, sync on the current base, verify, pre-PR
+    review, one stop for decisions, push/PR, ticket update. Reads the base branch, forge and
+    tracker from the repo's AGENTS.md, so a repo needs no PR skill of its own.
   - `bento-adversarial-review` — the other model family (Codex under Claude, Claude under
     Codex) reviews the diff; every finding is triaged against the code before any fix.
+    Reviews only the commits since its last recorded review.
   - `bento-qa` — exercise a change on its real surface (browser/CLI/API); report evidenced defects.
   - `bento-spec` — turn vague intent into a precise, executable spec before building.
   - `bento-cso` — security audit against common vuln classes; evidenced, confidence-calibrated.
@@ -52,6 +54,14 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
 Quality is built in: an **eval harness** (`claude plugin eval` with with/without ablation +
 a `tool_used` firing indicator) proves whether a skill actually changes behavior — see
 `plugins/bento/evals/`.
+
+## Repo overlays
+
+A repo adds rules to a bento skill without copying it: `.agents/bento/<skill-name>.md` at the
+repo root (e.g. `.agents/bento/bento-ship.md`), read by that skill after `AGENTS.md`. An
+overlay adds steps and may replace steps marked *(default)*; it never relaxes a guardrail.
+`bento-learn` routes repo-specific learnings about a bento skill there. See
+[the overlay rules](plugins/bento/skills/bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
 
 ## Install
 
@@ -118,7 +128,8 @@ claude --plugin-dir plugins/bento            # dev-load the skills
 npx skills add . --list                      # what npx skills will install
 python3 -m unittest discover -s plugins/bento/skills/bento-init/scripts -p 'test_*.py'
 python3 -m unittest discover -s plugins/bento/skills/bento-learn/scripts -p 'test_*.py'
-claude plugin eval ./plugins/bento --runs 3 --ablation with-without --no-publish
+claude plugin eval ./plugins/bento --runs 3 --ablation with-without --no-publish \
+  --scaffold --allow-tools Bash               # scaffolded cases build a git repo per run
 ```
 
 Use potion off-the-shelf when it meets your generation needs; use `bento-init` when
@@ -127,8 +138,7 @@ you need bento's reviewed generation and baseline-aware updates.
 ## Not built yet (deliberately)
 
 - More playbooks — add only when a real recurring task needs one, never speculatively.
-- Eval cases for the ported playbooks (ship/qa/spec/cso/docs) — the harness exists; cases for
-  eval-blind and hillclimb are in place, the rest are follow-ups.
+- Eval cases for qa/spec/cso/docs — the harness exists; the rest have cases.
 
 ## Credits
 

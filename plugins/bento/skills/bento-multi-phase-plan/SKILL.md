@@ -11,6 +11,10 @@ description: |
 You own the plan, not the code. **The plan is the deliverable — do not implement here.** It's
 a checklist an owner runs box by box and an auditor can check from the evidence.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-multi-phase-plan.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Skip if small.** One or two files with an obvious approach → say so and just do it. No

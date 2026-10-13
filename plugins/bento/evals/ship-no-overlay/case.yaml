@@ -1,0 +1,32 @@
+schema_version: "1.0"
+name: ship-no-overlay
+tags: [overlay]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch as a PR. I would like a review on it. This is a dry run: read whatever you need, then list every step and command you would run, in order, from now until the ticket is updated. Do not commit, push, open a PR or touch the tracker."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: pre-pr-review
+    criteria: |
+      The repo has no bento overlay; its AGENTS.md names base `master`, GitHub, Linear (ticket ENG-42, from the branch name) and review status `In Review`. The response is a dry-run plan of steps.
+      PASS if the plan runs a local pre-PR review by another model (an adversarial review)
+      before the push step.
+  - type: llm
+    name: pr-body
+    criteria: |
+      The repo has no bento overlay; its AGENTS.md names base `master`, GitHub, Linear (ticket ENG-42, from the branch name) and review status `In Review`. The response is a dry-run plan of steps.
+      PASS if the planned PR targets `master` and its body has Summary and Test plan sections,
+      and the plan adds no `greptile` label.
+  - type: llm
+    name: ticket
+    criteria: |
+      The repo has no bento overlay; its AGENTS.md names base `master`, GitHub, Linear (ticket ENG-42, from the branch name) and review status `In Review`. The response is a dry-run plan of steps.
+      PASS if, after the PR is opened, the plan comments on ENG-42 with the PR link and a short
+      summary, moves ENG-42 to `In Review`, and checks the status again afterwards.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only
