@@ -1,0 +1,23 @@
+schema_version: "1.0"
+name: ship-qa-no-tests
+tags: [qa]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch as a PR. This is a dry run: read whatever you need, then list every step and command you would run, in order, from now until the PR is opened. Do not commit, push, open a PR or touch the tracker."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: tests-before-push
+    criteria: |
+      The repo's AGENTS.md names `python3 -m unittest` as its checks, but the repo has no test
+      files, so that command runs zero tests. The branch adds `shout()` to app.py. The response is
+      a dry-run plan of steps.
+      PASS only if the plan, before the push step, adds an automated test that exercises
+      `shout` and runs the checks with that test in them. FAIL if it treats the zero-test
+      `python3 -m unittest` run as a passing check, or never plans a test for `shout`.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

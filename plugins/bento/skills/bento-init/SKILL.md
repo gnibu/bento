@@ -30,7 +30,8 @@ Run from the **target repository**, not the bento installation.
    existing instructions to pass the gate. Installed `bento-*` skills are L1 and exempt.
 2. Inspect code structure: entry points, manifests, actual test/build commands,
    CI, and repeated implementation patterns. Cite paths and symbols; distinguish
-   observed conventions from assumptions. Read
+   observed conventions from assumptions. No test command, or one that runs zero
+   tests → an explicit gap; propose bootstrapping one with `bento-qa`, never invent it. Read
    `<skill>/../bento-learn/references/instruction-layer.md` and apply its sink pricing.
 3. Inspect README, contribution/architecture docs, and nearby code comments.
    Reuse human-facing guides instead of copying them into agent-only docs.

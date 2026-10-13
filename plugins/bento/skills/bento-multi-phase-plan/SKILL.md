@@ -35,7 +35,8 @@ overlay `.agents/bento/bento-multi-phase-plan.md` at the repo root; follow it un
    run, or a SHA. A box is checked only when that evidence exists.
 7. **State the verification rule per PR:** tests alone are not sufficient. A PR is verified
    only when its unit test, a live run on the real surface, and a regression check vs the
-   current baseline all pass. Name the metric/scenario for each.
+   current baseline all pass. Name the metric/scenario for each. Each PR adds the tests that
+   pin its behavior; the repo has no test system → the first PR creates it (`bento-qa`).
 8. **Hand back.** Post the plan path and stop. Implementation starts only on the operator's
    explicit go, under whichever execution flow the plan names.
 

@@ -32,13 +32,14 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-refactor` — change structure while holding behavior; pin first, prove equivalence.
   - `bento-prototype` — throwaway spike to make a design decision cheaply; decide by observation.
   - `bento-multi-phase-plan` — plan a large change as verifiable units before implementing.
-  - `bento-ship` — the whole PR flow: commit, sync on the current base, verify, pre-PR
+  - `bento-ship` — the whole PR flow: commit, sync on the current base, QA, verify, pre-PR
     review, one stop for decisions, push/PR, ticket update. Reads the base branch, forge and
     tracker from the repo's AGENTS.md, so a repo needs no PR skill of its own.
   - `bento-adversarial-review` — the other model family (Codex under Claude, Claude under
     Codex) reviews the diff; every finding is triaged against the code before any fix.
     Reviews only the commits since its last recorded review.
-  - `bento-qa` — exercise a change on its real surface (browser/CLI/API); report evidenced defects.
+  - `bento-qa` — exercise a change on its real surface (browser/CLI/API), pin each changed
+    behavior with a test, and bootstrap a test system when the repo has none. `bento-ship` runs it.
   - `bento-spec` — turn vague intent into a precise, executable spec before building.
   - `bento-cso` — security audit against common vuln classes; evidenced, confidence-calibrated.
   - `bento-docs` — write/update docs to match current code; release notes.
@@ -139,7 +140,7 @@ you need bento's reviewed generation and baseline-aware updates.
 ## Not built yet (deliberately)
 
 - More playbooks — add only when a real recurring task needs one, never speculatively.
-- Eval cases for qa/spec/cso/docs — the harness exists; the rest have cases.
+- Eval cases for spec/cso/docs — the harness exists; the rest have cases.
 
 ## Credits
 
