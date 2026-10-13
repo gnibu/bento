@@ -11,6 +11,10 @@ description: |
 The catch-all so an unmatched task still gets a frame instead of being improvised. Sequence
 it explicitly, do it, then decide whether it's worth capturing.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-figure-it-out.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **State the goal and the done-condition** in one line. What does success look like, and

@@ -11,6 +11,10 @@ description: |
 Drive the real surface the way a user would and report what actually breaks — prove-on-artifact
 for behavior. Default is find-and-report; fix only when asked (`--fix`).
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-qa.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Pick the surface and driver.** Web UI → a browser CLI available in the environment

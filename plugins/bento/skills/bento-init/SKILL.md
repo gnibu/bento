@@ -11,6 +11,10 @@ Use [potion](https://github.com/aureliensibiril/potion) off-the-shelf when it me
 the need. Use this workflow when the repo needs bento's reviewed phases and
 baseline-aware updates. Do not install potion or change the repo just to compare.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-init.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 Paste these phases as todos. **Stop at each checkpoint and wait for the user's
 answer before the next phase.** One initial request to initialize is not approval
 of unseen evidence, a file design, or generated content. Never auto-commit or push.

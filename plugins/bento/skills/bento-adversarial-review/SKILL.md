@@ -4,8 +4,9 @@ description: |
   Run an adversarial code review of a diff by the other model family, then triage every
   finding against the real code. Under Claude the reviewer is `codex exec` (gpt-6-astra);
   under Codex it is headless `claude -p` (opus). Interactive mode (default) gets explicit
-  human sign-off before fixing anything; ship mode (called by bento-ship) fixes verified
-  findings itself and returns only the ones that need a human decision. Triggers:
+  human sign-off before fixing anything; ship mode (called by a ship flow) fixes verified
+  findings itself and returns only the ones that need a human decision. Skips commits it
+  already reviewed. Triggers:
   "adversarial review", "codex review", "claude review", "second opinion on my diff",
   "outside review".
 ---
@@ -15,6 +16,10 @@ description: |
 A reviewer that assumes the code is wrong finds issues. You verify each one. The operator
 decides what gets fixed; in ship mode, that means anything beyond a verified local fix.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-adversarial-review.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 Three phases, in order. Never merge them, never skip phase 2.
 
 ## Mode
@@ -22,22 +27,35 @@ Three phases, in order. Never merge them, never skip phase 2.
 | Mode | When | Phase 3 |
 |---|---|---|
 | **interactive** (default) | the user runs the review directly | present, block, fix only approved numbers |
-| **ship** | only when called by `bento-ship` | fix verified findings, return the human-decision ones |
+| **ship** | only when called by a ship flow: `bento-ship`, or a repo skill that plays its role | fix verified findings, return the human-decision ones |
 
 Phases 1 and 2 are identical in both modes.
 
 ## Scope
 
 `<base>` is the base branch the repo's `AGENTS.md`/`CLAUDE.md` names; otherwise
-`git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix. Pick the scope
-from what was asked. Every review path uses the same diff command:
+`git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix. A scope the
+caller or user gives explicitly is used as is. Otherwise it is the branch scope, narrowed by
+the last recorded review. Every review path uses the same diff command:
 
 | Intent | Diff command (`<SCOPE_CMD>`) |
 |---|---|
-| default / "review my branch" | `git diff origin/<base>...HEAD` |
+| default / "review my branch" | branch scope, after the check below |
 | "review my working tree" / uncommitted work | the untracked-aware command below |
 | "review commit X" | `git show <sha>` |
-| commits since `<sha>` (ship re-review) | `git diff <sha>..HEAD` |
+| "commits since `<sha>`" | `git diff <sha>..HEAD` |
+
+**Branch scope: skip what was already reviewed.** Before phase 1, read the reviewed sha from
+`"$(git rev-parse --git-path adversarial-review.head)"`:
+
+- it equals `HEAD` → already reviewed. Ship mode: return "already reviewed" with that sha and
+  stop. Interactive: say so, and ask before running a full review.
+- it is an ancestor of `HEAD` (`git merge-base --is-ancestor <sha> HEAD`) and
+  `git rev-list --merges <sha>..HEAD` is empty → `git diff <sha>..HEAD`.
+- otherwise (missing, rebased away, base merged in) → the whole branch,
+  `git diff origin/<base>...HEAD`.
+
+Say which case applied and the diff command before phase 1.
 
 Uncommitted diff command, including untracked files. Its exit status is meaningless, because
 `--no-index` exits 1 on any difference:
@@ -51,7 +69,8 @@ commits that already landed.
 
 ## Phase 1 — Produce the findings
 
-**The reviewer is always the other model family.** A different model is the point.
+**The reviewer is always the other model family.** A different model is the point. The
+models below are *(default)*.
 
 | You are | Reviewer | Path |
 |---|---|---|
@@ -191,7 +210,8 @@ the rest "while you're in there". Report what changed and what you skipped and w
 
 ## Phase 3 (ship) — Fix, then hand back the rest
 
-Calling `bento-ship` is standing approval to fix verified defects. It covers nothing else.
+Being called by a ship flow is standing approval to fix verified defects. It covers nothing
+else.
 
 1. Apply every **AGREE**, and every **PARTLY** with your corrected fix. Skip NEEDS HUMAN and
    NEEDS INFO; drop DISAGREE with its reason.
@@ -199,16 +219,17 @@ Calling `bento-ship` is standing approval to fix verified defects. It covers not
    reverted and goes back as NEEDS HUMAN.
 3. Commit the fixes on their own: `fix: address adversarial review findings`. Stage only the
    hunks you changed.
-4. Return the table with an `Outcome` column (`fixed` / `dropped` / `needs human`), plus one
-   one-line-answerable question per NEEDS HUMAN or NEEDS INFO finding ("keep X or switch to
-   Y?"). The caller asks them; don't guess and don't block.
+4. Return `<reviewed>` (below), the table with an `Outcome` column (`fixed` / `dropped` /
+   `needs human`), and one one-line-answerable question per NEEDS HUMAN or NEEDS INFO finding,
+   with the default you'd pick ("keep X or switch to Y? default: keep"). The caller asks them;
+   don't guess and don't block.
 
 ## Record the review
 
 Before phase 1, note `git rev-parse HEAD` as `<reviewed>`: the last commit the reviewer saw.
 For a branch or since-`<sha>` review, record it once **no finding is left open** — every
 NEEDS HUMAN / NEEDS INFO question answered or carried into the PR body (in ship mode, by
-`bento-ship`) — so `bento-ship` doesn't review the same commits twice:
+the ship flow) — so the next run doesn't review the same commits twice:
 
 ```bash
 echo <reviewed> > "$(git rev-parse --git-path adversarial-review.head)"

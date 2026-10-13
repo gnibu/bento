@@ -11,6 +11,10 @@ description: |
 Review the code/change against the common vulnerability classes and report real, evidenced
 findings. Confidence-calibrated: don't surface what you can't point to.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-cso.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Scope the surface.** What's exposed — endpoints, inputs, auth boundaries, data access,

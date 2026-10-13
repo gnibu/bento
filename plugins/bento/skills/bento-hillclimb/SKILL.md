@@ -14,6 +14,10 @@ The failure mode: change three things at once, the number moves, you don't know 
 tweak did it — or whether it was noise. Next week it drops and you can't retrace. One
 variable at a time, logged, keep-or-revert.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-hillclimb.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Steps (paste as todos)
 
 1. **Freeze the harness first.** Fix the dataset, the metric, and how it's measured

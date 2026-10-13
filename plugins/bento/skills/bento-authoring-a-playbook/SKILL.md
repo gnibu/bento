@@ -11,6 +11,10 @@ description: |
 A bento playbook is a triggered skill that opens with a pasteable checklist and proves its
 work on a real artifact. Keep them few and earned.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-authoring-a-playbook.md` at the repo root; follow it under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Gate first — should it exist?
 
 Add a playbook only when the same task shape has recurred (≥2–3 times) and you can name a

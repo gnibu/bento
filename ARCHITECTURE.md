@@ -12,6 +12,11 @@ L2  project layer → how THIS repo works    (the repo's own skills + CLAUDE.md,
 
 Precedence: **L2 > L1.** bento is the floor; the repo overrides it where they overlap.
 
+A repo shapes a bento skill through L2 only: facts in `AGENTS.md`, extra rules in that skill's
+overlay `.agents/bento/<skill-name>.md`. Overlays add steps or replace steps marked *(default)*,
+never guardrails, and never touch the installed skill, so `npx skills update` can't clobber
+them. Rules: [instruction-layer.md](plugins/bento/skills/bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 ## Four pillars
 
 ```

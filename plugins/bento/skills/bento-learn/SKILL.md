@@ -10,6 +10,10 @@ one home. Generalizes a session-learning router to two layers: **L1 (bento, gene
 **L2 (this repo, specific)**. This is *improve* — evolve what exists, diff and propose; for a
 greenfield repo with no layer, see `bento-init`.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
+overlay `.agents/bento/bento-learn.md` at the repo root; follow it under the
+[overlay rules](references/instruction-layer.md#repo-overlays-for-bento-skills).
+
 Paths below are relative to this skill's directory (`<skill>`); `bento-init` is its
 sibling, installed alongside it.
 
@@ -45,6 +49,9 @@ Pick the cheapest correct home. Price the sink first (see [instruction-layer.md]
 - Cross-role procedure → **existing docs** + a task-triggered link from the instruction file.
 - Agent orchestration / tool choice / review behavior → a **skill** (amend the owner; create
   one only if none fits — see `bento-authoring-a-playbook`).
+- How a bento skill should run in this repo (an extra step, a different default) → that
+  skill's **overlay**, `.agents/bento/<skill-name>.md` (create it if missing). Never edit the
+  installed `bento-*` skill.
 - Code-scoped gotcha / command / env quirk → the **nearest `AGENTS.md`** to that code.
 - Human-facing architecture / decision → **docs** (or an ADR).
 - One-off → **drop it.**
@@ -82,9 +89,9 @@ No hook runs this — it is a deliberate step, run two ways:
 
 - **At PR time** — the `bento-ship` playbook calls it before final verification and diff review.
   Reflect on the branch's sessions (`sessions.py`) **and** the full branch diff (committed and
-  uncommitted), so learnings from earlier Claude and Codex sessions are covered too. Apply approved L2 edits in
-  the consumer repo; `bento-ship` verifies and reviews them with the full change, then commits them
-  separately in that PR.
+  uncommitted), so learnings from earlier Claude and Codex sessions are covered too. Return the
+  L2 proposals with their diffs and apply nothing yet: `bento-ship` asks for approval at its
+  single stop before pushing, then applies, verifies and commits them separately in that PR.
   Report L1 proposals for a separate bento PR. Do not edit the consumer's installed bento skills
   (`.agents/skills/bento-*`, `.claude/skills/bento-*`) for an L1 learning. Nothing survives the reuse gate
   → say so in one line and let `bento-ship` continue.
