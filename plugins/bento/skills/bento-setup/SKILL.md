@@ -29,6 +29,10 @@ path (npx skills uses the same rule; `CLAUDE.md` imports don't expand variables)
 Both present → ask (`--yes`: project). Neither → stop and tell the user to run
 `npx skills add gnibu/bento --skill '*'` (add `-g` for global).
 
+To update, tell the user to rerun that same command, not `npx skills update`: update refreshes
+only installed skills, so a skill added to bento since (one an updated playbook calls) never
+lands.
+
 ## Apply
 
 1. **Migrate** if any legacy install is detected (next section). Do it first.

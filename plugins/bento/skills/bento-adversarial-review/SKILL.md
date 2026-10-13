@@ -57,11 +57,11 @@ the last recorded review. Every review path uses the same diff command:
 
 Say which case applied and the diff command before phase 1.
 
-Uncommitted diff command, including untracked files. Its exit status is meaningless, because
-`--no-index` exits 1 on any difference:
+Uncommitted diff command, including untracked files. Its exit status is `git diff HEAD`'s; the
+untracked part's is dropped, because `--no-index` exits 1 on any difference:
 
 ```bash
-{ git diff HEAD; git ls-files -o --exclude-standard -z | xargs -0 -r -n1 git diff --no-index -- /dev/null; }
+{ git diff HEAD && { git ls-files -o --exclude-standard -z | xargs -0 -r -n1 git diff --no-index -- /dev/null || true; }; }
 ```
 
 For the branch scope, run `git fetch -q origin <base>` first. A stale base means re-reviewing
@@ -103,8 +103,8 @@ cannot point at a specific line for is not a finding.* Require the CLI output sh
 
 ### Paths B and C — the other model family's CLI
 
-The block writes the diff to a file first, so a bad ref or an empty scope can't pass as "no
-findings". Substitute `<SCOPE_CMD>`, `<CUSTOM FOCUS>` (what the user asked to focus on, or
+The block writes the diff to a file first, so a failed diff command or an empty scope can't
+pass as "no findings". Substitute `<SCOPE_CMD>`, `<CUSTOM FOCUS>` (what the user asked to focus on, or
 nothing), and `<REVIEWER>` from your path below. Run it in the **background**: a review takes
 2–5 minutes and will blow a foreground timeout on a large diff.
 
@@ -114,7 +114,6 @@ x="$(git rev-parse --git-path adversarial-review.exit)"
 o="$(git rev-parse --git-path adversarial-review.md)"
 l="$(git rev-parse --git-path adversarial-review.log)"
 rm -f "$x" "$o"
-<SCOPE_CMD> > "$d"
 p="$(cat <<'PROMPT'
 You are an adversarial code reviewer. Assume the diff is broken and find where. Report
 correctness bugs first, then code that duplicates an existing helper or could be simpler, then
@@ -126,7 +125,8 @@ Output only findings, each as '- [P1|P2|P3] Title — path/file:start-end' plus 
 rationale, or 'no findings'. <CUSTOM FOCUS>
 PROMPT
 )"
-if [ ! -s "$d" ]; then echo "EXIT=empty-diff" > "$x"; else
+if ! <SCOPE_CMD> > "$d" 2> "$l"; then echo "EXIT=diff-failed" > "$x"
+elif [ ! -s "$d" ]; then echo "EXIT=empty-diff" > "$x"; else
 <REVIEWER>
 echo "EXIT=$?" > "$x"; fi
 ```
@@ -161,8 +161,9 @@ Poll until the `.exit` file exists, then read the findings — and **only** the 
 cat "$(git rev-parse --git-path adversarial-review.exit)" "$(git rev-parse --git-path adversarial-review.md)"
 ```
 
-`EXIT=empty-diff` means the scope resolved to nothing: stop and report it, never count it as a
-clean review. Open the `.log` (thousands of lines of traces) only if the `.md` is empty or the
+`EXIT=diff-failed` means the scope command failed (bad ref, missing base); the `.log` has git's
+error. `EXIT=empty-diff` means the scope resolved to nothing. Either way stop and report it,
+never count it as a clean review. Open the `.log` (thousands of lines of traces) only if the `.md` is empty or the
 exit code is non-zero.
 
 The paths come from `git rev-parse --git-path`, not a shell variable or `/tmp`: polling runs in
@@ -238,10 +239,11 @@ echo <reviewed> > "$(git rev-parse --git-path adversarial-review.head)"
 ```
 
 Record `<reviewed>`, never the current `HEAD`: fix commits made in phase 3 haven't been
-reviewed, and the next review must see them. With open findings, record nothing; a later run
+reviewed, and the next review must see them. With open findings, delete the marker instead
+(`rm -f` the same path), so an earlier review's sha can't mark these commits reviewed; a later run
 re-reviews and surfaces them again rather than skipping past a pending decision. Never record
-an `empty-diff` run, a failed reviewer, a working-tree or single-commit review, or a
-since-`<sha>` review starting from an unreviewed commit: earlier commits would be skipped
+a `diff-failed` or `empty-diff` run, a failed reviewer, a working-tree or single-commit review,
+or a since-`<sha>` review starting from an unreviewed commit: earlier commits would be skipped
 unreviewed.
 
 ## Guardrails

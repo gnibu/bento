@@ -14,7 +14,7 @@ Precedence: **L2 > L1.** bento is the floor; the repo overrides it where they ov
 
 A repo shapes a bento skill through L2 only: facts in `AGENTS.md`, extra rules in that skill's
 overlay `.agents/bento/<skill-name>.md`. Overlays add steps or replace steps marked *(default)*,
-never guardrails, and never touch the installed skill, so `npx skills update` can't clobber
+never guardrails, and never touch the installed skill, so updating bento can't clobber
 them. Rules: [instruction-layer.md](plugins/bento/skills/bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
 
 ## Four pillars
@@ -81,14 +81,16 @@ directory, and `ship`, `qa` or `setup` would collide.
 | scope | where skills land | pinning | principles wiring |
 |---|---|---|---|
 | project (default) | `.agents/skills/bento-*` (Codex), `.claude/skills/bento-*` (Claude, links) | committed files + `skills-lock.json` | repo `CLAUDE.md` import + `AGENTS.md` block |
-| global (`-g`) | `~/.agents/skills/`, `${CLAUDE_CONFIG_DIR:-~/.claude}/skills/` | none — `npx skills update` | user `CLAUDE.md` import + `${CODEX_HOME:-~/.codex}/AGENTS.md` block |
+| global (`-g`) | `~/.agents/skills/`, `${CLAUDE_CONFIG_DIR:-~/.claude}/skills/` | none — re-add to update | user `CLAUDE.md` import + `${CODEX_HOME:-~/.codex}/AGENTS.md` block |
 
 Project scope is the team path: the committed skills *are* the pin, and a committed
 `@.claude/skills/bento-setup/PRINCIPLES.md` import finally gives principles a stable in-repo
 path. Global scope is the personal path.
 
-Updates: `npx skills update`, then rerun `bento-setup` to refresh the distilled `AGENTS.md`
-block. No hook nags about updates; `npx skills update` updates every installed pack at once.
+Updates: rerun `npx skills add gnibu/bento --skill '*'` (same scope), then `bento-setup` to
+refresh the distilled `AGENTS.md` block. Not `npx skills update`: it refreshes only skills
+already installed, so a new bento skill that an updated playbook calls never lands. No hook
+nags about updates.
 
 **Why not the old setup.** bento used to ship as a `.bento` submodule plus a Claude
 marketplace plugin, Codex symlinks into the submodule, and SessionStart hooks. That needed an
