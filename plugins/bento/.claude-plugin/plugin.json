@@ -1,4 +1,4 @@
 {
   "name": "bento",
-  "description": "Portable agent playbooks, plus learn (route session learnings), init (bootstrap a repo's L2) and setup."
+  "description": "bento playbooks as a skills-dir plugin, for `claude plugin eval` and `claude --plugin-dir` development. Install with `npx skills add gnibu/bento`."
 }
