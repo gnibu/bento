@@ -1,5 +1,5 @@
 """Repo-level checks for bento's own dogfood setup (see AGENTS.md). Run: python3 -m unittest discover tests"""
-import importlib.util
+import runpy
 import subprocess
 import tempfile
 import tomllib
@@ -7,10 +7,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-_spec = importlib.util.spec_from_file_location(
-    "agents_block", ROOT / "plugins/bento/skills/bento-setup/scripts/agents_block.py")
-agents_block = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(agents_block)
+AGENTS_BLOCK = runpy.run_path(str(ROOT / "plugins/bento/skills/bento-setup/scripts/agents_block.py"))
 
 
 class DogfoodTest(unittest.TestCase):
@@ -31,7 +28,7 @@ class DogfoodTest(unittest.TestCase):
 
     def test_agents_md_principles_block_is_current(self):
         text = (ROOT / "AGENTS.md").read_text()
-        self.assertEqual(agents_block.apply(text, agents_block.build_block())[1], "unchanged",
+        self.assertEqual(AGENTS_BLOCK["apply"](text, AGENTS_BLOCK["build_block"]())[1], "unchanged",
                          "rerun plugins/bento/skills/bento-setup/scripts/agents_block.py AGENTS.md")
 
 
