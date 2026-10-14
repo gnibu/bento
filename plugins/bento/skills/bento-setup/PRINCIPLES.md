@@ -35,3 +35,18 @@ a self-report. If you can't show the artifact, the task isn't finished.
 The best change is the smallest one that holds. Reuse what exists before writing new;
 prefer deletion over addition; don't build for a need that isn't here yet. One stated
 simplification beats a paragraph defending complexity.
+
+## Work on a ticket
+
+> Before the first file edit, no ticket in context or the branch name → create one in the repo's tracker (none → skip) and rename the unpushed branch after it.
+
+Every change traces to a ticket. Read-only work (questions, reviews, investigations that edit
+nothing) needs none.
+
+- **Tracker:** the one the repo's `AGENTS.md` names, through its MCP server if connected, else
+  its CLI. None named or reachable → skip and say so once.
+- **Ticket:** one per task, titled from the task, 1–3 lines of description. This rule is the
+  standing approval for that one tracker write; it authorizes nothing else there.
+- **Branch:** rename it to the tracker's branch name for the ticket (e.g. Linear's
+  `gitBranchName`), else `<ticket-id>-<slug>`. On the base branch, create that branch instead.
+  Already pushed or has a PR → keep the name; the ticket id goes in the PR instead.
