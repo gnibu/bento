@@ -21,6 +21,14 @@ class DogfoodTest(unittest.TestCase):
             for link in (".agents/skills", ".claude/skills"):
                 self.assertTrue((Path(tmp) / link / "bento-ship/SKILL.md").is_file(), link)
 
+    def test_setup_refuses_a_real_skills_directory(self):
+        setup = tomllib.loads((ROOT / ".conductor/settings.toml").read_text())["scripts"]["setup"]
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / ".agents/skills").mkdir(parents=True)
+            run = subprocess.run(setup, shell=True, cwd=tmp, capture_output=True)
+            self.assertNotEqual(run.returncode, 0)
+            self.assertFalse((Path(tmp) / ".agents/skills/skills").exists())
+
     def test_links_are_gitignored(self):
         out = subprocess.run(["git", "check-ignore", ".agents/skills", ".claude/skills"],
                              cwd=ROOT, capture_output=True, text=True)

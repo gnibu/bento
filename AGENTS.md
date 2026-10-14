@@ -11,11 +11,8 @@
 ## Dogfooding
 
 This repo runs its own working-tree skills (`/bento-ship`, `/bento-adversarial-review`, …).
-Link them once per checkout (Conductor's setup script does it):
-
-```sh
-mkdir -p .agents .claude && ln -sfn ../plugins/bento/skills .agents/skills && ln -sfn ../.agents/skills .claude/skills
-```
+Conductor links them in each new workspace; elsewhere, run the `setup` command from
+`.conductor/settings.toml` once per checkout.
 
 Never commit these links: `npx skills` would then find the skills under `.agents/skills/` and
 record that path, which GitHub's tree has as a symlink, breaking consumers' update checks.
