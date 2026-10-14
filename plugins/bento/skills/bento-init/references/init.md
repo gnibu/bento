@@ -62,7 +62,8 @@ substitute for these human checkpoints. No background hook initializes an L2.
 Replace the example with instructions grounded in the target's evidence. Values
 are complete UTF-8 text, not patches. Allowed targets are `AGENTS.md`/`CLAUDE.md`
 at the root or in ordinary subdirectories, Markdown under `docs/`, and Markdown
-under `.claude/skills/<name>/` or `.agents/skills/<name>/`. No source code,
+under `.agents/skills/<name>/` (Claude reads it through the `.claude/skills` link;
+a real `.claude/skills/<name>/` is allowed only in repos without that link). No source code,
 settings, hooks, credentials, or bento's vendored L1 files are generated.
 
 ```sh
@@ -75,7 +76,8 @@ python3 "<skill>/scripts/l2-state.py" --repo . init "$proposal" --apply
 `check` and `init` refuse existing root/nested instruction files, agent skills or
 commands/rules, or `.bento-state/`, including untracked and locally deleted tracked
 instructions. They skip `.git`,
-installed `bento-*` skills, `.context`, and common dependency/build directories. If a repo
+installed `bento-*` skills, `.context`, and common dependency/build directories. A
+`.claude/skills` link to `.agents/skills` is inspected through its target. If a repo
 keeps an L2 in another excluded dependency directory or uses a different instruction
 format, identify it during inspection and stop rather than treating it as greenfield.
 Existing MCP settings alone are not an L2. `init` requires both root entry points

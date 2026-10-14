@@ -99,6 +99,12 @@ def encoded(files):
                        ensure_ascii=False, sort_keys=True) + "\n").encode()
 
 
+def skills_link(path):
+    """`.claude/skills -> ../.agents/skills`, the layout bento-setup offers; the walk inspects the target."""
+    return (path.name == "skills" and path.parent.name == ".claude" and path.is_symlink() and
+            path.resolve() == (path.parent.parent / ".agents" / "skills").resolve())
+
+
 def greenfield(repo):
     if (repo / ".bento-state").exists() or (repo / ".bento-state").is_symlink():
         raise Invalid("L2 state already exists; use bento-learn, not bento-init")
@@ -107,7 +113,7 @@ def greenfield(repo):
         raise Invalid("Cannot inspect tracked instructions")
     for name in os.fsdecode(tracked.stdout).split("\0"):
         parts = PurePosixPath(name).parts
-        if not parts or any(part in SKIP_DIRS for part in parts[:-1]):
+        if not parts or any(part in SKIP_DIRS for part in parts[:-1]) or skills_link(repo / name):
             continue
         agent_layer = any(parts[i] in {".claude", ".agents"} and
                           parts[i + 1] in {"skills", "commands", "rules"} and
@@ -127,6 +133,8 @@ def greenfield(repo):
                 raise Invalid(f"Existing L2: {(here / name).relative_to(repo)}; use bento-learn")
         if here.name in {".claude", ".agents"}:
             for name in ("skills", "commands", "rules"):
+                if name == "skills" and skills_link(here / name):
+                    continue
                 if name == "skills" and name in dirs and not (here / name).is_symlink():
                     entries = os.listdir(here / name)
                     if entries and all(entry.startswith(L1_PREFIX) for entry in entries):

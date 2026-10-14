@@ -80,7 +80,7 @@ directory, and `ship`, `qa` or `setup` would collide.
 
 | scope | where skills land | pinning | principles wiring |
 |---|---|---|---|
-| project (default) | `.agents/skills/bento-*` (Codex), `.claude/skills/bento-*` (Claude, links) | committed files + `skills-lock.json` | repo `CLAUDE.md` import + `AGENTS.md` block |
+| project (default) | `.agents/skills/bento-*` (Codex), `.claude/skills -> ../.agents/skills` (Claude, one link) | committed files + `skills-lock.json` | repo `CLAUDE.md` import + `AGENTS.md` block |
 | global (`-g`) | `~/.agents/skills/`, `${CLAUDE_CONFIG_DIR:-~/.claude}/skills/` | none — re-add to update | user `CLAUDE.md` import + `${CODEX_HOME:-~/.codex}/AGENTS.md` block |
 
 Project scope is the team path: the committed skills *are* the pin, and a committed
@@ -88,8 +88,9 @@ Project scope is the team path: the committed skills *are* the pin, and a commit
 path. Global scope is the personal path.
 
 Updates: rerun `npx skills add gnibu/bento --skill '*'` (same scope), then `bento-setup` to
-refresh the distilled `AGENTS.md` block. Not `npx skills update`: it refreshes only skills
-already installed, so a new bento skill that an updated playbook calls never lands. No hook
+refresh the distilled `AGENTS.md` block. Not `npx skills update`: it re-adds only skills whose
+hash changed, so a new bento skill that an updated playbook calls never lands. Agents run
+`bento-setup` on their own after either command: it is idempotent and local. No hook
 nags about updates.
 
 **Why not the old setup.** bento used to ship as a `.bento` submodule plus a Claude

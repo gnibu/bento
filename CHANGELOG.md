@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- **Agents run `bento-setup` on their own.** The skill and the `AGENTS.md` block say it is
+  idempotent, local and reviewable, so an agent runs it after `npx skills add` or `update`
+  instead of asking.
+- **One `.claude/skills` link.** `bento-setup` replaces per-skill links with
+  `.claude/skills -> ../.agents/skills` (asking first if it holds real folders), so a skill
+  added later is never invisible to Claude. `bento-init` writes repo skills to
+  `.agents/skills/` and accepts that link as greenfield.
+- **`CLAUDE.md -> AGENTS.md` repos** skip the principles import, which would load them twice.
+- **`agents_block.py` reports `unchanged`** and skips the write when the block is identical.
+- **Verify is concrete:** headless `claude -p` and `codex exec` list the `bento-*` skills,
+  compared against `.agents/skills/`.
+
 ## 0.3.0 — 2026-10-13
 
 - **`bento-qa` leaves tests behind.** After exercising a change on its real surface, it pins
