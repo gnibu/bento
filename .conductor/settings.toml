@@ -1,0 +1,5 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+# Dogfood: expose the working-tree bento skills to Claude and Codex in this repo (see AGENTS.md).
+setup = "mkdir -p .agents .claude && ln -sfn ../plugins/bento/skills .agents/skills && ln -sfn ../.agents/skills .claude/skills"

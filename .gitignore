@@ -3,3 +3,7 @@
 __pycache__/
 *.py[cod]
 plugins/*/evals/results/
+
+# Local dogfood links (.conductor/settings.toml setup); never committed, see AGENTS.md
+/.agents/skills
+/.claude/skills
