@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Work on a ticket.** A new always-on principle: before the first file edit, an agent with
+  no ticket in context or in the branch name creates one in the tracker `AGENTS.md` names and
+  renames the branch after it (a pushed branch keeps its name). `bento-ship` creates a missing
+  ticket under the same rule instead of only when repo policy says so.
 - **`bento-qa` checks the server it tests is its own.** After starting a background server,
   it confirms the process listening on the port is the one it started, so a stale server or
   another workspace's never stands in for the change.

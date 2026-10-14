@@ -17,7 +17,8 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
 
 Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-contained:
 
-- **Principles** — always-on standing rules (autonomy, prove-on-artifact, subtract-before-add),
+- **Principles** — always-on standing rules (autonomy, prove-on-artifact, subtract-before-add,
+  work-on-a-ticket),
   in `bento-setup/PRINCIPLES.md`. `bento-setup` wires them into `CLAUDE.md` / `AGENTS.md`.
 - **Conventions** — how to author a repo's L2 (instruction-file pricing, pointer form, where
   each fact goes), in `bento-learn/references/instruction-layer.md`.

@@ -30,8 +30,8 @@ In every message, call the adversarial review the "pre-PR review (local)", never
    after reads `HEAD` only.
 2. **One PR per ticket.** Find the ticket (in context, or the id in the branch name). If an open
    PR for it exists on any branch, this work goes there: note that PR's branch as the push
-   target for step 12 (it can't take this work → stop and ask). If the repo's policy says to open a ticket and none exists, create it.
-   No tracker → skip.
+   target for step 12 (it can't take this work → stop and ask). No ticket yet → create it under
+   *Work on a ticket* in `bento-setup/PRINCIPLES.md`. No tracker → skip.
 3. **Sync with the current base.** `git fetch origin <base>`, and always compare against
    `origin/<base>`, never a local base branch. If `git log origin/<base>..HEAD` lists commits
    you didn't write, the branch was rebased onto a stale base and may carry copies of merged
