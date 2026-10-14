@@ -58,6 +58,9 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    - CLI/TUI → run the binary. API → curl/HTTP against the running service. Library → call it
      from a scratch script.
    Save screenshots outside tracked files (a gitignored dir or tmp).
+   **A server you start in the background:** before testing against it, confirm the process
+   listening on its port is yours (`lsof -nP -iTCP:<port> -sTCP:LISTEN` shows your PID).
+   Another workspace's or a stale server on that port means testing the wrong code.
 4. **Record defects with evidence.** For each: the steps, expected vs actual, and the captured
    artifact. No repro/artifact → not a confirmed defect.
 5. **Pin each behavior with a test** in the repo's layout and style, at the cheapest level

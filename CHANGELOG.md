@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **`bento-qa` checks the server it tests is its own.** After starting a background server,
+  it confirms the process listening on the port is the one it started, so a stale server or
+  another workspace's never stands in for the change.
 - **Agents run `bento-setup` on their own.** The skill and the `AGENTS.md` block say it is
   idempotent, local and reviewable, so an agent runs it after `npx skills add` or `update`
   instead of asking.
