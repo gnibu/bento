@@ -49,8 +49,9 @@ Run from the **target repository**, not the bento installation.
 1. Propose the smallest useful file map. `AGENTS.md` is the shared routing source;
    `CLAUDE.md` imports it with `@AGENTS.md`. Keep root entries in pointer form.
 2. Put detailed procedures in existing shared docs, or new `docs/` Markdown files
-   only when needed. Add `.claude/skills/<name>/SKILL.md` only for demonstrated
-   recurring agent workflows; give Codex task-triggered pointers to the same files.
+   only when needed. Add `.agents/skills/<name>/SKILL.md` only for demonstrated
+   recurring agent workflows. Codex reads `.agents/skills/` directly and Claude through the
+   `.claude/skills -> ../.agents/skills` link `bento-setup` creates; never per-skill links.
    Do not duplicate bento's L1 playbooks or generate a second copy of every skill.
 3. Link each proposed rule to evidence from phase 1. Avoid invented commands,
    credentials, installation paths, and rules justified by a single anecdote.

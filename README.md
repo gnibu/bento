@@ -74,8 +74,10 @@ Install all skills together (`bento-learn` uses `bento-init`'s helper and vice v
 npx skills add gnibu/bento --skill '*' -a claude-code codex -y
 ```
 
-This writes `.agents/skills/bento-*` (read by Codex), `.claude/skills/bento-*` (links for
-Claude; add `--copy` for real files) and `skills-lock.json`. Commit them.
+This writes `.agents/skills/bento-*` (read by Codex), `.claude/skills/bento-*` (per-skill links
+for Claude) and `skills-lock.json`. `bento-setup` then replaces the per-skill links with one
+`.claude/skills -> ../.agents/skills` link, which `npx skills` keeps on later installs and
+updates, so no skill is left without a link. Commit them.
 
 **Per machine** (personal, every repo): add `-g`. Skills land in `~/.agents/skills/` and
 `~/.claude/skills/` (`$CLAUDE_CONFIG_DIR/skills/` when set).
@@ -91,9 +93,12 @@ defaulting to `~/.claude` / `~/.codex`, for a global install).
 npx skills add gnibu/bento --skill '*' -a claude-code codex -y   # add -g for global
 ```
 
-Re-add rather than `npx skills update`: update only refreshes skills already installed, so a
-playbook that starts calling a new bento skill would find it missing. Then rerun `bento-setup` to refresh the distilled `AGENTS.md` block (the `CLAUDE.md` import
-follows the installed file automatically). For a project install, commit the updated skills
+Re-add rather than `npx skills update`: update re-adds only skills whose hash changed, skips
+skills installed before skill-path tracking (it prints their `add` command instead), and never
+installs a skill bento added since, so a playbook that starts calling one would find it
+missing. Then run `bento-setup`; agents do this on their own after either command. It refreshes
+the distilled `AGENTS.md` block and the `.claude/skills` link (the `CLAUDE.md` import follows
+the installed file automatically). For a project install, commit the updated skills
 and `skills-lock.json`; that commit is the version bump. Roll back with git.
 
 **Content self-update:** `bento-learn` routes generic learnings back into bento (L1) as PRs —
@@ -116,7 +121,7 @@ the legacy pieces, asking before machine-wide changes:
    bento for other repos first), plus committed `extraKnownMarketplaces`/`enabledPlugins` entries;
 3. SessionStart/Stop hooks pointing into `.bento/plugins/` (Claude settings, `~/.codex/hooks.json`,
    the marked block in `.codex/config.toml`) and `~/.bento/update-reminder`;
-4. `.codex/skills/` symlinks into `.bento/`;
+4. `.codex/skills/` symlinks (Codex reads `.agents/skills/` directly);
 5. the old `@…/principles/PRINCIPLES.md` import in your user `CLAUDE.md`.
 
 It then writes the new principles wiring. Also drop `git submodule update --init .bento` from
@@ -130,6 +135,7 @@ claude --plugin-dir plugins/bento            # dev-load the skills
 npx skills add . --list                      # what npx skills will install
 python3 -m unittest discover -s plugins/bento/skills/bento-init/scripts -p 'test_*.py'
 python3 -m unittest discover -s plugins/bento/skills/bento-learn/scripts -p 'test_*.py'
+python3 -m unittest discover -s plugins/bento/skills/bento-setup/scripts -p 'test_*.py'
 claude plugin eval ./plugins/bento --runs 3 --ablation with-without --no-publish \
   --scaffold --allow-tools Bash               # scaffolded cases build a git repo per run
 ```

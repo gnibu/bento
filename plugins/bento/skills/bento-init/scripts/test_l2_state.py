@@ -107,6 +107,22 @@ class L2StateTests(unittest.TestCase):
         (self.repo / ".agents/skills/own").mkdir()
         self.cli("check", expected=1)
 
+    def test_claude_skills_dir_link_is_inspected_through_its_target(self):
+        (self.repo / ".agents/skills/bento-ship").mkdir(parents=True)
+        (self.repo / ".agents/skills/bento-ship/SKILL.md").write_text("Shared L1\n")
+        (self.repo / ".claude").mkdir()
+        (self.repo / ".claude/skills").symlink_to("../.agents/skills", target_is_directory=True)
+        subprocess.run(["git", "-C", str(self.repo), "add", "-A"], check=True)
+        self.cli("check")
+        (self.repo / ".claude/skills").unlink()
+        (self.repo / ".claude/skills").symlink_to("bento-ship", target_is_directory=True)
+        self.assertIn(".claude/skills", self.cli("check", expected=1))
+        (self.repo / ".claude/skills").unlink()
+        (self.repo / ".claude/skills").symlink_to("../.agents/skills", target_is_directory=True)
+        self.files[".agents/skills/check/SKILL.md"] = self.files.pop(".claude/skills/check/SKILL.md")
+        self.init()
+        self.assertIn("name: check", (self.repo / ".claude/skills/check/SKILL.md").read_text())
+
     def test_existing_doc_is_not_overwritten(self):
         (self.repo / "docs").mkdir()
         (self.repo / "docs/workflow.md").write_text("Manual guide\n")
