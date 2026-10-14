@@ -1,6 +1,8 @@
 # bento — repo instructions
 
 - Base branch: `master`. Forge: GitHub (`gnibu/bento`), `gh` CLI.
+- Tracker: Linear, workspace Tenjin tech, team `TT`, project Bento, through the
+  `linear-tenjin-tech` MCP server. Review status: In Review.
 - Changelog: add an entry under `## Unreleased` in `CHANGELOG.md` for every user-facing change.
 - Tests: `python3 -m unittest` in each `plugins/bento/skills/*/scripts/` directory; skill
   behavior evals under `plugins/bento/evals/` (`claude plugin eval`).
