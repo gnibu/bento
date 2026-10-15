@@ -7,6 +7,8 @@
 - Tests: `python3 -m unittest discover tests` (repo checks) and `python3 -m unittest` in each
   `plugins/bento/skills/*/scripts/` directory; skill behavior evals under `plugins/bento/evals/`
   (`claude plugin eval`).
+- **Running several eval cases:** `claude plugin eval --case` takes one glob; a repeated
+  `--case` keeps only the last, and `[...]` classes match nothing. Use `--tag` or one run per glob.
 
 ## Dogfooding
 
