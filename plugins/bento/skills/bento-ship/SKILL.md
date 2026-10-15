@@ -48,7 +48,8 @@ default (listed first). No preference relaxes a guardrail.
 
 1. **Commit the task's work first.** Uncommitted task changes → commit them now; every step
    after reads `HEAD` only.
-2. **One PR per ticket.** Find the ticket (in context, or the id in the branch name). If an open
+2. **One PR per ticket.** Find the ticket (in context, the id in the branch name, or the body
+   of this branch's open PR, where a ticket created by an earlier run sits). If an open
    PR for it exists on any branch, this work goes there: note that PR's branch as the push
    target for step 12 (it can't take this work → stop and ask). No tracker → skip, and say
    so in step 15.
@@ -105,8 +106,8 @@ default (listed first). No preference relaxes a guardrail.
     ```
 
     After the reply, commit approved learnings on their own and each decision as its own
-    verified commit, then rerun the pre-PR review with the explicit scope "commits since
-    `<reviewed>`" (the sha step 10 returned). Never stop a second
+    verified commit, then, unless step 10 was skipped, rerun the pre-PR review with the
+    explicit scope "commits since `<reviewed>`" (the sha step 10 returned). Never stop a second
     time: anything it raises, and every skipped decision with its default, goes under
     `## Open review questions` in the PR body.
 12. **Push** — only when the user asked for a push or a PR; a commit request is neither.
