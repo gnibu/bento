@@ -1,6 +1,6 @@
 ---
 name: bento-setup
-description: Wire bento's always-on principles into Claude Code (CLAUDE.md import) and Codex (AGENTS.md block), link `.claude/skills` to `.agents/skills`, and migrate an old submodule/plugin install. Idempotent and local (the user reviews the diff before committing), so run it yourself without asking after every `npx skills add` or `npx skills update` of bento. Args — none = interactive; `--yes` = defaults; `--purge` = unwire.
+description: Wire bento's always-on principles into Claude Code (CLAUDE.md import) and Codex (AGENTS.md block), link `.claude/skills` to `.agents/skills`, migrate an old submodule/plugin install, and record the repo's ship preferences (asked once). Idempotent and local (the user reviews the diff before committing), so run it yourself without asking after every `npx skills add` or `npx skills update` of bento. Args — none = interactive; `--yes` = defaults; `--preferences` = re-ask the ship preferences; `--purge` = unwire.
 ---
 
 # bento setup
@@ -13,7 +13,8 @@ Report failures instead of claiming setup completed.
 `.claude/skills`) that the user reviews before committing, and a rerun on a wired repo changes
 nothing. That is reversible work under the autonomy contract in `PRINCIPLES.md`: after any
 `npx skills add` or `npx skills update` of bento, run this skill yourself, without asking
-first. Only the steps marked *confirm* below (machine-wide or moving real folders) pause.
+first. Only the steps marked *confirm* below (machine-wide or moving real folders) and the
+ship preference questions, asked once per repo, pause.
 
 **Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
 overlay `.agents/bento/bento-setup.md` at the repo root; follow it under the
@@ -81,7 +82,36 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    `./AGENTS.md` (project) or `${CODEX_HOME:-~/.codex}/AGENTS.md` (global). The block is
    marker-bounded and distilled; the script prints `added`, `updated` or `unchanged` (no
    write). Edit the `AGENTS.md` source, never a `CLAUDE.md` symlink.
-5. **Verify.** Show the diff of each file touched. A running session doesn't reload skills,
+5. **Ship preferences** (inside a git repo, either scope). The repo's answers to
+   [bento-ship's preferences](../bento-ship/SKILL.md#preferences) live in a marker-bounded
+   block of its overlay `.agents/bento/bento-ship.md`:
+
+   ```markdown
+   <!-- bento:preferences:start -->
+   ## Ship preferences
+   Written by `bento-setup`; change with `/bento-setup --preferences`.
+
+   - Missing ticket: create
+   - Ticket update: yes
+   - Tracker: Linear, team TT, review status In Review
+   - QA: always
+   - Pre-PR review: always
+   - Learnings: yes
+   - PR reviewers: none
+   <!-- bento:preferences:end -->
+   ```
+
+   - Ask, in one message, only the questions the block doesn't answer yet: each with its
+     values, default first, and the step it controls. All answered → ask nothing and write
+     nothing, so a rerun after an update asks only questions a newer bento added.
+   - `Tracker`: take the tracker, team or project and review status from `AGENTS.md`/`CLAUDE.md`
+     and ask only for what's missing (no tracker → `none`).
+   - `--yes`, or no one to answer (an unattended run) → record the defaults and list them in
+     the report.
+   - `--preferences` → ask every question again, the recorded answers as defaults.
+   - Write only between the markers: create the overlay (title `# Overlay for bento-ship`) or
+     append the block if it has none; keep every other line.
+6. **Verify.** Show the diff of each file touched. A running session doesn't reload skills,
    so ask fresh headless sessions from the repo root and compare with `ls -d .agents/skills/bento-*`
    (global: `~/.agents/skills/bento-*`):
 
@@ -92,13 +122,15 @@ ran, run the `add` command it printed (or the full one above), then this skill.
 
    Run the agents that were install targets. A missing skill is a failure to report, not a
    pass.
-6. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
+7. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
    each one's `##` rule headings, so the user sees which bento skills are customised here.
-   None → say so.
+   None → say so. Then the ship preferences, marking those written this run and whether each
+   is a default or the user's answer.
 
 Project-scope changes (`CLAUDE.md`, `AGENTS.md`, `.agents/`, `.claude/skills/`,
-`skills-lock.json`) are for the user to review and commit. Setup, migrate and purge never
-create or delete the repo's overlays in `.agents/bento/`.
+`skills-lock.json`) are for the user to review and commit. Setup writes only the preferences
+block of `.agents/bento/bento-ship.md`, creating that file if needed; setup, migrate and purge
+never delete an overlay or touch the rest of one.
 
 ## Migrate from the submodule/plugin install
 

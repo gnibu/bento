@@ -1,0 +1,25 @@
+schema_version: "1.0"
+name: ship-no-ticket-never
+tags: [ship-no-ticket, preferences]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch as a PR. This is a dry run: read whatever you need, then list every step and command you would run, in order, from now until the ticket is updated. Do not commit, push, open a PR or touch the tracker."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: skips-and-says-so
+    criteria: |
+      The branch `greeting` adds `shout()` to app.py and carries no ticket id; no ticket was named. The repo's AGENTS.md names GitHub and Linear (review status `In Review`). The response is a dry-run plan of steps. The repo's overlay .agents/bento/bento-ship.md records the preference
+      "Missing ticket: never".
+      PASS only if the plan goes on without a ticket (creates none, does not stop to ask for
+      one) and says no ticket is created because of that recorded preference (any wording).
+      Skipping the ticket update is expected, and a closing note on how to change the
+      preference or supply a ticket id is fine. FAIL if the plan creates a ticket, or halts
+      until the user supplies a ticket or permission to create one. FAIL if it creates a
+      ticket, asks whether to create one, or skips it without saying why.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

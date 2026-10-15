@@ -1,0 +1,23 @@
+schema_version: "1.0"
+name: ship-no-ticket-create
+tags: [ship-no-ticket, preferences]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch as a PR. This is a dry run: read whatever you need, then list every step and command you would run, in order, from now until the ticket is updated. Do not commit, push, open a PR or touch the tracker."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: creates-ticket
+    criteria: |
+      The branch `greeting` adds `shout()` to app.py and carries no ticket id; no ticket was named. The repo's AGENTS.md names GitHub and Linear (review status `In Review`). The response is a dry-run plan of steps. The repo has no bento overlay, so no preference is recorded.
+      PASS only if the plan creates a Linear ticket (with a title describing the change) before
+      opening the PR, and links that ticket to the PR. The sandbox has no Linear connection, so
+      noting that it needs one, or asking only for a missing detail such as the team, still
+      counts when the plan is to create the ticket. FAIL if it skips the ticket, only reports
+      that there is none, or asks the user whether to create one.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

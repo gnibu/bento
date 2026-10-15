@@ -1,0 +1,22 @@
+schema_version: "1.0"
+name: ship-no-ticket-ask
+tags: [ship-no-ticket, preferences]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch as a PR. This is a dry run: read whatever you need, then list every step and command you would run, in order, from now until the ticket is updated. Do not commit, push, open a PR or touch the tracker."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: asks-first
+    criteria: |
+      The branch `greeting` adds `shout()` to app.py and carries no ticket id; no ticket was named. The repo's AGENTS.md names GitHub and Linear (review status `In Review`). The response is a dry-run plan of steps. The repo's overlay .agents/bento/bento-ship.md records the preference
+      "Missing ticket: ask".
+      PASS only if the plan asks the user before creating a ticket (ideally proposing a title)
+      and creates it only after a yes. FAIL if it creates the ticket without asking, or skips
+      the ticket silently.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only
