@@ -1,0 +1,23 @@
+schema_version: "1.0"
+name: setup-preferences-first
+tags: [preferences]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Run bento setup in this repo. This is a dry run: skip the install checks, wiring and verification, write no file, and tell me exactly which questions, if any, you would ask me about this repo, and what you would write."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: asks-preferences
+    criteria: |
+      The repo is a fresh checkout whose AGENTS.md names GitHub, the tracker Linear and the review status `In Review`, but no Linear team or project. The user asked for a dry run of bento setup. There is no .agents/bento/bento-ship.md overlay, so no ship preference is recorded.
+      PASS only if the response would ask the user the ship preferences, each with a default:
+      at least what to do about a missing ticket (create automatically by default), whether to
+      run QA on ship, and whether to run the pre-PR review; and it would record the answers in
+      .agents/bento/bento-ship.md. It should ask for the Linear team, not for the tracker or
+      review status AGENTS.md already names. FAIL if it would ask no preference question.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

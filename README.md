@@ -50,7 +50,9 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews, with
     human checkpoints and a generated baseline for later three-way merges. See
     [the workflow and file contract](plugins/bento/skills/bento-init/references/init.md).
-- **`bento-setup`** — wire the principles; migrate an old install; `--purge` to unwire.
+- **`bento-setup`** — wire the principles; ask the repo's ship preferences once (missing
+  ticket, QA, pre-PR review…; `--preferences` re-asks); migrate an old install; `--purge` to
+  unwire.
 
 Quality is built in: an **eval harness** (`claude plugin eval` with with/without ablation +
 a `tool_used` firing indicator) proves whether a skill actually changes behavior — see

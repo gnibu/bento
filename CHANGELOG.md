@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **`bento-ship` creates the missing ticket.** When the repo has a tracker and the work has
+  no ticket, ship creates one titled for the whole diff and links it to the PR, instead of
+  reporting "no ticket". A repo can set it to `ask` or `never`.
+- **Ship preferences per repo.** `bento-setup` asks once, and records in the
+  `.agents/bento/bento-ship.md` overlay: missing ticket, ticket update, tracker details (read
+  from `AGENTS.md` first), QA, pre-PR review, learnings and PR reviewers. Reruns ask only new
+  questions; `--yes` writes the defaults; `/bento-setup --preferences` re-asks them all.
+  `bento-ship` follows them, and its report names each one that applied.
 - **`bento-qa` checks the server it tests is its own.** After starting a background server,
   it confirms the process listening on the port is the one it started, so a stale server or
   another workspace's never stands in for the change.
