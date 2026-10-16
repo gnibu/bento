@@ -26,11 +26,14 @@ the moment they need it.
 
 - **Code bug / wrong logic** → fix the source + a test. The fix *is* the documentation.
 - **Procedure for humans and agents** → a shared doc; link it from the relevant `AGENTS.md`
-  or skill with a task trigger. Don't fork an agent-only copy.
+  or skill with a task trigger. Don't fork an agent-only copy. No doc covers it → create a
+  [procedure](#procedures-how-to-do-what); a missing doc is never a reason to put the steps
+  in `AGENTS.md`.
 - **Agent orchestration / tool choice / review behavior** → a skill (amend the owner;
   create one only if none fits).
 - **Code-scoped gotcha / command / env quirk** → the **nearest** `AGENTS.md` to that code,
-  not the subsystem root. Root only for cross-cutting rules.
+  not the subsystem root. Root only for cross-cutting rules. None nearby → create one in the
+  code's directory with a sibling `CLAUDE.md` containing `@AGENTS.md`.
 - **Human-facing architecture / decision** → docs (or an ADR).
 - **One-off** → drop it.
 
@@ -62,7 +65,9 @@ Ask: *"Will this recur, with a concrete trigger?"* Name the trigger and the take
 drop it. Default to dropping — storing costs context on every future agent; a missed
 one-off costs nothing. Surfacing nothing is a valid outcome.
 
-## `AGENTS.md` entries take the pointer form, nothing else
+## `AGENTS.md` entries: one line, or two with a pointer
+
+A repo fact fits on one line (`- Base branch: main.`). Anything longer takes the pointer form:
 
 ```
 - **<trigger>:** <takeaway>. See <file> <symbol>.
@@ -72,14 +77,50 @@ Trigger = when it bites. Takeaway = what to do instead. Pointer = where the reas
 lives. If reasoning doesn't fit in two lines, it belongs at the code site, in a shared
 guide, or in a skill reference — not in `AGENTS.md`. Writing "which caused…", a ticket
 number, or a second justifying sentence means you're drafting a code comment in the wrong
-file. Cut to the pointer.
+file. Cut to the pointer. `bento-learn` enforces this with `scripts/check_entries.py` on
+every entry it proposes.
 
-## Discoverability — task-triggered links
+## Procedures: how to do what
 
-Instruction files are a routing map, not a knowledge dump. From `CLAUDE.md` / `AGENTS.md`,
-**link procedures by their task trigger** ("Writing a migration → <guide>"), so the guide
-surfaces exactly when the task starts and costs nothing until then. Keep the detailed
-procedure in the doc; keep only the trigger + link in the instruction file.
+A procedure is a doc that tells anyone, human or agent, how to do one task. It lives in
+`docs/procedures/`, one task per file, named by the task: verb first, kebab-case —
+`run-tests.md`, `run-locally.md`, `release.md`, `add-a-migration.md`, `rotate-a-secret.md`.
+The name is the vocabulary: before writing one, look for an existing file for the same task
+and extend it instead of adding a near-synonym. Each file has the same three parts:
+
+```md
+# Run the tests
+
+**When:** before handing off any code change.
+
+1. `docker compose up -d db`
+2. `make seed`
+3. `python3 -m unittest`
+
+**Check:** the last line reads `OK`.
+```
+
+Other docs (architecture, decisions, briefs) stay `docs/<topic>.md` or their own folder.
+An existing doc that already covers a task stays where it is; don't move it to match.
+
+## The docs menu — AGENTS.md lists every doc
+
+Instruction files are a routing map, not a knowledge dump. The root `AGENTS.md` holds a
+`## Docs` section: one line per doc, its task trigger first, so an agent sees every procedure
+and doc available and opens the right one exactly when the task starts.
+
+```md
+## Docs
+
+- Before running tests → docs/procedures/run-tests.md
+- Deploying → docs/DEPLOY.md
+- Design briefs, when changing a feature → docs/briefs/
+```
+
+Every `docs/**/*.md` appears in it, by its path or by a folder below `docs/` that holds it (one
+line for a folder of similar docs). Keep the steps in the doc, only the trigger and path in
+the menu. `bento-learn`'s `scripts/check_entries.py` rejects a root `AGENTS.md` whose menu
+misses a doc.
 
 ## Skill routing needs an explicit fallback
 

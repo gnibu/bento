@@ -46,13 +46,18 @@ Pick the cheapest correct home. Price the sink first (see [instruction-layer.md]
 
 **By kind:**
 - Code bug / wrong logic → fix the **source** + a test. The fix is the learning.
-- Cross-role procedure → **existing docs** + a task-triggered link from the instruction file.
+- Procedure (how to run, test, release, migrate…) → **a doc**: the existing doc that covers
+  the task, else a new `docs/procedures/<verb>-<object>.md` (`run-tests.md`). Add it to the
+  root `AGENTS.md` `## Docs` menu ("Before running tests → docs/procedures/run-tests.md").
+  See [procedures](references/instruction-layer.md#procedures-how-to-do-what).
 - Agent orchestration / tool choice / review behavior → a **skill** (amend the owner; create
   one only if none fits — see `bento-authoring-a-playbook`).
 - How a bento skill should run in this repo (an extra step, a different default) → that
   skill's **overlay**, `.agents/bento/<skill-name>.md` (create it if missing). Never edit the
   installed `bento-*` skill.
-- Code-scoped gotcha / command / env quirk → the **nearest `AGENTS.md`** to that code.
+- Code-scoped gotcha / command / env quirk → the **nearest `AGENTS.md`** to that code; none
+  below the root → create `AGENTS.md` in that code's directory, plus a `CLAUDE.md` holding
+  `@AGENTS.md` so Claude loads it too.
 - Human-facing architecture / decision → **docs** (or an ADR).
 - One-off → **drop it.**
 
@@ -66,6 +71,11 @@ preferences.
 
 ## 3. Propose, then apply
 
+- For each `AGENTS.md`/`CLAUDE.md` you would change, write the proposed text to a temp file
+  and run `python3 "<skill>/scripts/check_entries.py" <file> <proposed>`. It rejects any new
+  entry over one line without a pointer, or over two lines, and a root `AGENTS.md` whose
+  `## Docs` menu misses a doc. Re-route a rejected entry (step 2), add missing docs to the
+  menu; never propose a failing file.
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
 - Apply on explicit go-ahead. Leave commits/PRs to the user (or to `bento-ship`, when it called you).
 - **Preserve generated-file ownership.** If `.bento-state/baseline.json` lists the

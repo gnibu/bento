@@ -1,0 +1,41 @@
+schema_version: "1.0"
+name: learn-route-docs
+tags: [learn]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: |
+    Run bento-learn on this session. What it surfaced:
+    1. The tests failed three times before they passed: they need `docker compose up -d db`,
+       then `export DATABASE_URL=postgres://localhost:5433/app`, then `make seed`, and only
+       then `python3 -m unittest`; the integration tests also need `STRIPE_KEY=test`.
+    2. In `billing/`, every amount is in cents: `invoice.total` returns cents, and I divided
+       by 100 twice before noticing.
+    3. My terminal froze once and I restarted it.
+    Propose the exact diffs per destination. Do not apply anything.
+  max_turns: 20
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write]
+graders:
+  - type: llm
+    name: procedure-to-docs
+    criteria: |
+      The response proposes diffs for a repo whose docs/ holds only DEPLOY.md.
+      PASS if all hold: (a) the test steps (docker compose, DATABASE_URL, make seed) are
+      proposed in a new file under docs/procedures/ named for the task (e.g. run-tests.md);
+      (b) the root AGENTS.md diff adds no shell commands; (c) the proposed root AGENTS.md has a
+      docs menu (a `## Docs` section) listing both that new procedure and docs/DEPLOY.md.
+      FAIL if the steps themselves are added to the root AGENTS.md.
+  - type: llm
+    name: gotcha-nested
+    criteria: |
+      PASS if all hold: (a) the cents rule is proposed in a new file billing/AGENTS.md, not in
+      the root AGENTS.md; (b) a new file billing/CLAUDE.md is proposed whose content is
+      `@AGENTS.md`; (c) the rule in billing/AGENTS.md is a single bullet of at most two lines.
+  - type: llm
+    name: drops-one-off
+    criteria: |
+      PASS if the frozen terminal is dropped: no proposed diff mentions it.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only
