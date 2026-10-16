@@ -50,6 +50,25 @@ class CheckEntriesTests(unittest.TestCase):
             self.assertEqual(menu_gaps(root, menu), ["docs/DEPLOY.md"])
             self.assertEqual(menu_gaps(root, "See docs/ for everything."), [
                 "docs/DEPLOY.md", "docs/briefs/a.md", "docs/briefs/b.md", "docs/procedures/run-tests.md"])
+            # A file link doesn't name its folder, and a proposed doc must be listed too.
+            self.assertEqual(menu_gaps(root, menu + "- Deploying → docs/DEPLOY.md\n",
+                                       ["docs/procedures/release.md"]), ["docs/procedures/release.md"])
+
+    def test_only_the_docs_section_counts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "docs").mkdir()
+            Path(tmp, "docs", "DEPLOY.md").write_text("x")
+            self.assertEqual(menu_gaps(Path(tmp), "- Deploy per docs/DEPLOY.md.\n"), ["docs/DEPLOY.md"])
+            menu = "## Docs\n\n- Deploying → docs/DEPLOY.md.\n\n## Other\n"
+            self.assertEqual(menu_gaps(Path(tmp), menu), [])
+            self.assertEqual(menu_gaps(Path(tmp), "## Docs\n\n## Other\n- docs/DEPLOY.md\n"),
+                             ["docs/DEPLOY.md"])
+
+    def test_no_docs_dir_still_checks_proposed_docs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(menu_gaps(Path(tmp), "- x\n"), [])
+            self.assertEqual(menu_gaps(Path(tmp), "- x\n", ["docs/procedures/run-tests.md"]),
+                             ["docs/procedures/run-tests.md"])
 
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:

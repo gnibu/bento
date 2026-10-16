@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Reject instruction-file entries that belong somewhere else.
 
-Usage: check_entries.py CURRENT PROPOSED
+Usage: check_entries.py CURRENT PROPOSED [NEW_DOC...]
 
 CURRENT is the instruction file as it is now (AGENTS.md or CLAUDE.md, at any depth; it may
 not exist yet), PROPOSED the full text bento-learn wants to write there. Only entries that
 are new or changed in PROPOSED are checked, so an old file never blocks a new learning.
 An entry (a bullet, a paragraph or a code block) must fit on one line, or on two when it
-carries a pointer (a path or a link) to where the detail lives. An AGENTS.md next to a
-docs/ directory is also the menu of those docs: each docs/**/*.md must be named in it, by its
-path or a folder below docs/ that holds it ("Design briefs → docs/briefs/"). Exits 1 and
-names each rejected entry and each doc missing from the menu.
+carries a pointer (a path or a link) to where the detail lives. An AGENTS.md is also the
+menu of the docs/**/*.md beside it, on disk or proposed in the same change (NEW_DOC, relative
+to the AGENTS.md's directory): its `## Docs` section must name each one, by its path or a
+folder below docs/ that holds it ("Design briefs → docs/briefs/"). Exits 1 and names each
+rejected entry and each doc missing from the menu.
 """
 import re
 import sys
@@ -69,23 +70,28 @@ def check(current, proposed):
             if entry not in old and (reason := problem(entry))]
 
 
-def menu_gaps(root, proposed):
-    """Docs under root/docs that the proposed AGENTS.md doesn't name, by file or folder."""
-    docs = root / "docs"
-    if not docs.is_dir():
-        return []
+def menu_section(text):
+    """The body of the `## Docs` section, up to the next heading of level 1 or 2."""
+    match = re.search(r"^## Docs[ \t]*\n(.*?)(?=^#{1,2} |\Z)", text, re.M | re.S)
+    return match.group(1) if match else ""
+
+
+def menu_gaps(root, proposed, new_docs=()):
+    """Docs under root/docs, plus new_docs, that the proposed `## Docs` menu doesn't name."""
+    docs = {doc.relative_to(root).as_posix() for doc in (root / "docs").rglob("*.md")}
+    docs |= {Path(doc).as_posix() for doc in new_docs}
+    menu = menu_section(proposed)
     gaps = []
-    for doc in sorted(docs.rglob("*.md")):
-        relative = doc.relative_to(root)
-        named = [relative.as_posix()] + [f"{folder.as_posix()}/" for folder in relative.parents
-                                        if len(folder.parts) > 1]
-        if not any(name in proposed for name in named):
-            gaps.append(relative.as_posix())
+    for doc in sorted(docs):
+        folders = [f"{folder.as_posix()}/" for folder in Path(doc).parents if len(folder.parts) > 1]
+        # A name counts only as a whole target: `docs/a/b.md` doesn't name the folder `docs/a/`.
+        if not any(re.search(re.escape(name) + r"(?![\w/-]|\.\w)", menu) for name in [doc, *folders]):
+            gaps.append(doc)
     return gaps
 
 
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         sys.exit(__doc__)
     current_path = Path(sys.argv[1])
     current = current_path.read_text() if current_path.exists() else ""
@@ -93,7 +99,8 @@ def main():
     rejected = check(current, proposed)
     for entry, reason in rejected:
         print(f"{current_path}: {entry[:70]}…: {reason}")
-    gaps = menu_gaps(current_path.parent, proposed) if current_path.name == "AGENTS.md" else []
+    gaps = (menu_gaps(current_path.parent, proposed, sys.argv[3:])
+            if current_path.name == "AGENTS.md" else [])
     for doc in gaps:
         print(f"{current_path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs")
     sys.exit(1 if rejected or gaps else 0)

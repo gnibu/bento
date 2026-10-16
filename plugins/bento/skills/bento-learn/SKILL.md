@@ -72,9 +72,10 @@ preferences.
 ## 3. Propose, then apply
 
 - For each `AGENTS.md`/`CLAUDE.md` you would change, write the proposed text to a temp file
-  and run `python3 "<skill>/scripts/check_entries.py" <file> <proposed>`. It rejects any new
-  entry over one line without a pointer, or over two lines, and a root `AGENTS.md` whose
-  `## Docs` menu misses a doc. Re-route a rejected entry (step 2), add missing docs to the
+  and run `python3 "<skill>/scripts/check_entries.py" <file> <proposed> [<new doc>...]`, naming
+  each doc the proposal creates (`docs/procedures/run-tests.md`). It rejects any new entry over
+  one line without a pointer, or over two lines, and an `AGENTS.md` whose `## Docs` menu
+  misses a doc. Re-route a rejected entry (step 2), add missing docs to the
   menu; never propose a failing file.
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
 - Apply on explicit go-ahead. Leave commits/PRs to the user (or to `bento-ship`, when it called you).
