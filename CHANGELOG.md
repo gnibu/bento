@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **`bento-learn` keeps procedures out of `AGENTS.md`.** A procedure with no doc to go in
+  gets one in `docs/procedures/`, named by its task (`run-tests.md`, `release.md`), with When,
+  steps and Check. The root `AGENTS.md` lists every doc in a `## Docs` menu, trigger first. A
+  code-scoped gotcha with no nearby `AGENTS.md` gets a new one in that directory, with a
+  `CLAUDE.md` importing it. `check_entries.py` checks every proposed `AGENTS.md`/`CLAUDE.md`: it
+  rejects an entry over a line without a pointer, or over two lines, and a menu missing a doc.
 - **`bento-ship` creates the missing ticket.** When the repo has a tracker and the work has
   no ticket, ship creates one titled for the whole diff and links it to the PR, instead of
   reporting "no ticket". A repo can set it to `ask` or `never`.
