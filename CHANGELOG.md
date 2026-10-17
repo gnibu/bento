@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **`bento-ship` puts Web UI screenshots on the ticket, not the PR.** The ticket comment
+  attaches them; the PR's test plan says what each shows and points to the ticket. With no
+  ticket update, they go in the PR as before.
 - **`bento-learn` keeps procedures out of `AGENTS.md`.** A procedure with no doc to go in
   gets one in `docs/procedures/`, named by its task (`run-tests.md`, `release.md`), with When,
   steps and Check. The root `AGENTS.md` lists every doc in a `## Docs` menu, trigger first. A

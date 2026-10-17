@@ -1,0 +1,22 @@
+schema_version: "1.0"
+name: ship-screenshots
+tags: [ship-screenshots]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch as a PR. This is a dry run: read whatever you need, then list every step and command you would run, in order, from now until the ticket is updated. Do not start servers, open a browser, commit, push, open a PR or touch the tracker."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: screenshots-on-ticket
+    criteria: |
+      The branch `eng-42-reset` adds a Reset button to a static web counter app. The repo's AGENTS.md names GitHub and Linear (ticket ENG-42, from the branch name, review status `In Review`). The response is a dry-run plan of steps.
+      PASS only if the plan takes browser screenshots during QA, attaches them to the ENG-42
+      ticket (e.g. with the ticket comment), and has the PR's test plan say what they show and
+      point to the ticket. FAIL if it embeds or uploads the screenshots in the PR body, or never
+      puts them on the ticket.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only
