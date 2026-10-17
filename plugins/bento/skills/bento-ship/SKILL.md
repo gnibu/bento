@@ -127,8 +127,9 @@ default (listed first). No preference relaxes a guardrail.
     images, else list each one's path. Reviewers *(default:
     `PR reviewers`)*: request each named one (`gh pr create --reviewer <name>`).
 14. **Update the ticket** *(default: `Ticket update`; `no` → skip)*. Comment the PR link and 1–3 bullets on what the PR
-    actually does, with the Web UI screenshots attached (tracker file upload), then move the
-    ticket to the repo's review status. Re-fetch the status
+    actually does, with the Web UI screenshots attached (tracker file upload; it can't or fails
+    → edit the PR body to step 13's no-ticket fallback), then move the ticket to the repo's
+    review status. Re-fetch the status
     afterwards; forge-to-tracker automations often move it back, so set it again if they did.
     Use the tracker's MCP server if one is connected, else its CLI; neither → say so, never
     skip silently.
