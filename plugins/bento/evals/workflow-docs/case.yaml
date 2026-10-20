@@ -3,9 +3,9 @@ name: workflow-docs
 tags:
 - workflow
 execution:
-  prompt: The export CLI flag was renamed. Update the README usage examples to match the current
-    code, check the documented command, and add a release note in CHANGELOG.md under Unreleased.
-    Do not change the CLI.
+  prompt: The export CLI flag was renamed. Update the README usage examples to match the current code,
+    check the documented command, and add a release note in CHANGELOG.md under Unreleased. Do not change
+    the CLI.
   max_turns: 16
   timeout_seconds: 240
   allowed_tools:
@@ -33,7 +33,7 @@ graders:
   target:
     source: file
     path: README.md
-  pattern: --output-dir
+  pattern: python3\s+cli\.py\s+--output-dir\b
   match: not_contains
 - type: regex
   name: release-note

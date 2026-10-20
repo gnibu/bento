@@ -30,9 +30,7 @@ In every message, call the adversarial review the "pre-PR review (local)", never
 `## Ship preferences` block (between `<!-- bento:preferences:start -->` and `:end -->`); the
 user changes them with `/bento-setup --preferences`. Each one sets the *(default)* behaviour of
 the step it names. What the user asks in this run wins, then the recorded answer, then the
-default (listed first). No preference relaxes a guardrail. In steps 5 and 7, overlays may
-replace documentation/version tooling and repo check commands; the conditional specialist
-triggers and security triage rules still apply.
+default (listed first). No preference relaxes a guardrail.
 
 | Preference | Values | Step |
 |---|---|---|
@@ -89,8 +87,9 @@ triggers and security triage rules still apply.
    skill isn't installed. Say so in step 15.
 7. **Security, then the repo's own checks** *(default)*. Inspect the branch diff, including
    QA fixes: changes to auth/permissions, trust boundaries, secret handling or sensitive data
-   exposure → run `/bento-cso` before final checks and the pre-PR review. Routine internal
-   changes need no security pass. This is independent of the QA and pre-PR review preferences.
+   exposure, or untrusted input reaching queries, shells, file paths or templates → run
+   `/bento-cso` before final checks and the pre-PR review. Routine internal changes need no
+   security pass. This is independent of the QA and pre-PR review preferences.
    Triage its evidenced findings against the code: fix verified local defects and add regression
    tests; unresolved product/public-contract decisions and uncertain findings go to step 11's
    existing decision stop. Leave an undecided policy unimplemented until that decision is
@@ -111,7 +110,9 @@ triggers and security triage rules still apply.
 10. **Pre-PR review (local)** *(default: `Pre-PR review`; `skip` → skip)*. Run `/bento-adversarial-review` in ship mode. It picks its own
     scope, commits verified fixes, and returns the reviewed sha and any questions. Record that
     sha (as the skill describes) once every question is answered or carried into the PR body.
-    Also skip if the user says "skip adversarial review" or the skill isn't installed.
+    After verified fixes, rerun affected docs/security passes and repo checks if their surface
+    changed; carry any new questions to step 11. Also skip if the user says "skip adversarial
+    review" or the skill isn't installed.
 11. **The single stop before pushing** — only if there are L2 learnings to approve, or QA,
     security or pre-PR review questions to answer. Show each learning's diff, then end with:
 
@@ -165,6 +166,8 @@ triggers and security triage rules still apply.
 
 ## Guardrails
 
+- Overlays may replace documentation/version tooling and repo check commands in steps 5
+  and 7, never their conditional docs/security triggers or security triage rules.
 - No push, PR or merge without the user's explicit request, and never merge. Force-push only
   with `--force-with-lease` under step 12's `git cherry` rule. No overlay, preference or repo
   file relaxes this.

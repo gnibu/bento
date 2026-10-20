@@ -3,7 +3,8 @@ name: bento-cso
 description: |
   Security audit of a change or surface — find vulnerabilities before they ship. Use for a
   security review, or changes to auth/permissions, trust boundaries, secret handling or
-  sensitive data exposure. Routine internal data access alone is not a trigger. Triggers:
+  sensitive data exposure, including untrusted input reaching queries, shells, file paths
+  or templates. Routine internal data access alone is not a trigger. Triggers:
   "security review", "is this safe", "audit for vulnerabilities", "check for security issues".
 ---
 

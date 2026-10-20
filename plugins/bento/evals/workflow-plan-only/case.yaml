@@ -33,14 +33,14 @@ graders:
 - type: tool_used
   name: no-source-write
   tool: Write
-  input_match: '"file_path"\s*:\s*"(?:[^"]*/)?(?:app|formatter|cli|test_[^"/]+)\.py"'
+  input_match: '"file_path"\s*:\s*"[^"]*\.py"'
   min: 0
   max: 0
   arm: both
 - type: tool_used
   name: no-source-edit
   tool: Edit
-  input_match: '"file_path"\s*:\s*"(?:[^"]*/)?(?:app|formatter|cli|test_[^"/]+)\.py"'
+  input_match: '"file_path"\s*:\s*"[^"]*\.py"'
   min: 0
   max: 0
   arm: both
@@ -75,6 +75,11 @@ graders:
   pattern: ^import unittest\nfrom app import greet, shout\n\n\nclass GreetingTest\(unittest\.TestCase\):\n    def
     test_greet\(self\):\n        self\.assertEqual\(greet\("bob"\), "hi bob"\)\n\n    def test_shout\(self\):\n        self\.assertEqual\(shout\("bob"\),
     "HI BOB"\)\n$
+  arm: both
+- type: file_exists
+  name: no-new-python-files
+  path: '**/*.py'
+  exists: false
   arm: both
 context:
   scaffold_script: setup.sh

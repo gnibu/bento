@@ -47,7 +47,8 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-spec` — turn vague intent into a precise, executable spec before building.
     Spec-only requests stop there; an implementation request resumes once the contract is settled.
   - `bento-cso` — security audit against common vuln classes; evidenced, confidence-calibrated.
-    Ship calls it for changes to auth/permissions, trust boundaries, secrets or sensitive data exposure.
+    Ship calls it for changes to auth/permissions, trust boundaries, secrets, sensitive data
+    exposure or untrusted input reaching queries, shells, file paths or templates.
   - `bento-docs` — write/update docs to match current code; release notes. Ship calls it before
     final checks when public behavior, CLI flags, API/config contracts or examples change.
 - **Forge** — the learning engine and generator:

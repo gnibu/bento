@@ -4,9 +4,9 @@ tags:
 - workflow
 - workflow-change
 execution:
-  prompt: Run the existing evaluation suite once with python3 -m unittest and report its result.
-    This is a routine existing-suite run, with no model/prompt comparison, optimization, or new behavior
-    to test.
+  prompt: Run the existing evaluation suite once with python3 -m unittest and report its result. This
+    is a routine existing-suite run, with no model/prompt comparison, optimization, or new behavior to
+    test.
   max_turns: 10
   timeout_seconds: 240
   allowed_tools:
@@ -35,5 +35,16 @@ graders:
   min: 0
   max: 0
   arm: both
+- type: tool_used
+  name: no-fallback
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-figure-it-out"'
+  min: 0
+  max: 0
+  arm: both
+- type: tool_used
+  name: ran-suite-command
+  tool: Bash
+  input_match: -m\s+unittest
 context:
   scaffold_script: setup.sh
