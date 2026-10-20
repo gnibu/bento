@@ -53,7 +53,8 @@ plus 500 NLOC per file. Pass paths to narrow the scan. Generated code (`dist/`, 
 
 1. **Run** `hotspots.py --base origin/<base>`. It compares `HEAD` and the working tree with the
    merge base and reports only functions this branch made worse that are past a limit, files
-   that grew past 500 NLOC, and import cycles a new import closed. Exit 1 means findings.
+   that grew past 500 NLOC, and import cycles a new import closed. Exit 1 means findings;
+   2 means git failed (a bad `--base`, no repo), with git's message.
 2. **For each finding,** read the function and either:
    - **simplify it in this change:** early returns over nested `if`s, a lookup over a branch
      ladder, or extracting a piece that has a name and a reason of its own; or

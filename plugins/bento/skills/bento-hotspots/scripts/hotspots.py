@@ -332,4 +332,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except subprocess.CalledProcessError as e:
+        print(f"hotspots.py: {' '.join(e.cmd)}: {e.stderr.strip()}", file=sys.stderr)
+        sys.exit(2)  # not 1: diff mode's 1 means findings

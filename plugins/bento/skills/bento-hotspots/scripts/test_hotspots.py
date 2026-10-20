@@ -119,6 +119,27 @@ class HotspotsTest(unittest.TestCase):
         out = self.run_script("--base", "main")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
 
+    def test_diff_flags_file_grown_past_limit(self):
+        self.commit({"big.py": SIMPLE})
+        self.git("checkout", "-q", "-b", "feature")
+        self.commit({"big.py": "".join(f"def f{i}(a):\n    return a\n" for i in range(260))})
+        out = self.run_script("--base", "main")
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+        self.assertIn("- big.py  file nloc 2->520 (limit 500)", out.stdout)
+
+    def test_git_failure_exits_2_with_gits_message(self):
+        self.commit({"core.py": SIMPLE})
+        out = self.run_script("--base", "no-such-ref")
+        self.assertEqual(out.returncode, 2)  # 1 means findings: a typo must not look like one
+        self.assertIn("no-such-ref", out.stderr)
+        self.assertNotIn("Traceback", out.stderr)
+
+    def test_paths_narrow_the_scan(self):
+        self.commit({"a/m.py": TANGLED, "b/n.py": TANGLED})
+        out = self.run_script("a")
+        self.assertIn("(1 files,", out.stdout)
+        self.assertNotIn("b/n.py", out.stdout)
+
     def test_diff_clean_branch_passes(self):
         self.commit({"core.py": TANGLED, "calm.py": SIMPLE})
         self.git("checkout", "-q", "-b", "feature")
