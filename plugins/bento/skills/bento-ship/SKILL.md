@@ -103,7 +103,9 @@ triggers and security triage rules still apply.
    and no test covers it → back to step 6; QA was skipped → stop and ask.
 8. **Review your own diff.** Read `git diff origin/<base>...HEAD` and the staged and unstaged
    diffs. Check: scope matches the task (no stray files, no debug code, no secrets), and every
-   change is intended.
+   change is intended. Then run `bento-hotspots` in diff mode against `origin/<base>` and
+   handle each finding as it says (skip if it isn't installed); if that changes code, rerun
+   step 7.
 9. **Commit** what steps 5–8 changed, in conventional style, one logical change per commit. If
    a commit hook reformats files, re-stage, rerun steps 7–8 on them, and retry.
 10. **Pre-PR review (local)** *(default: `Pre-PR review`; `skip` → skip)*. Run `/bento-adversarial-review` in ship mode. It picks its own

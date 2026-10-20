@@ -1,0 +1,26 @@
+schema_version: "1.0"
+name: hotspots-unattended
+tags: [hotspots]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Run /bento-hotspots in unattended mode. Dry run: there is no GitHub here, so stop before pushing or opening a PR, leave your work committed on its branch, and report the PR you would open."
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Edit, Write]
+graders:
+  - type: llm
+    name: skips-leave-refactors-next
+    criteria: |
+      The repo's top hotspot is `price` in orders.py, but the overlay
+      .agents/bento/bento-hotspots.md lists it under `## Leave`. The next one is `summary` in
+      report.py (nested ifs, duplicated currency branches).
+      PASS only if all hold: (a) it does not refactor or modify `price`/orders.py, citing the
+      Leave list; (b) it refactors `summary` on a new branch, with a test that pins its
+      behaviour written before or alongside the change; (c) it reports before/after metrics
+      for `summary`; (d) it opened no PR and pushed nothing.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-hotspots"'
+    arm: with-only
