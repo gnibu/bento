@@ -1,6 +1,6 @@
 ---
 name: bento-learn
-description: Reflect on a session and route each reusable learning to its cheapest correct home (L1 bento or L2 repo). Evolve an existing instruction layer — diff and propose, never regenerate. Idempotent; prove skill edits with the eval harness.
+description: Reflect on sessions and optionally requested PR review history, then route each reusable learning to its cheapest correct home (L1 bento or L2 repo). Evolve an existing instruction layer — diff and propose, never regenerate. Idempotent; prove skill edits with the eval harness.
 ---
 
 # bento learn
@@ -18,6 +18,14 @@ Paths below are relative to this skill's directory (`<skill>`); `bento-init` is 
 sibling, installed alongside it.
 
 ## 1. Reflect
+
+**Optional review history.** Only when explicitly asked to learn from PR reviews (or invoked
+with `--reviews`), also read [review-history.md](references/review-history.md). Use that
+collection as additional evidence for the same Reflect → Route → Propose loop. A request
+scoped to reviews alone need not scan local sessions. Ordinary learn/ship calls do not sweep
+historical PRs. `--propose-only`, including a factory call, returns concrete proposed diffs
+and evidence without applying, committing, creating tickets or waiting for approval; it never
+weakens step 3's approval requirement for a later application.
 
 Read **every session that built this branch**, not just this conversation — work often spans
 several Claude and Codex sessions. From the consumer repo root run
@@ -109,3 +117,8 @@ No hook runs this — it is a deliberate step, run two ways:
 - **Manually** — `/bento-learn` (Claude) or `$bento-learn` (Codex), for
   sessions that end without a PR (debugging, investigation). Same steps; committing the
   result is the user's call.
+- **Review history, on request** — `bento-learn --reviews` uses the
+  [shared review collection](references/review-history.md)
+  for a caller-specified PR set/window, or a bounded recent sample. A factory uses
+  `bento-learn --reviews --propose-only` and returns proposals for human review; it does not
+  turn review text into self-approved standing rules.

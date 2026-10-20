@@ -1,6 +1,10 @@
 ---
 name: bento-setup
-description: Wire bento's always-on principles into Claude Code (CLAUDE.md import) and Codex (AGENTS.md block), link `.claude/skills` to `.agents/skills`, migrate an old submodule/plugin install, and record the repo's ship preferences (asked once). Idempotent and local (the user reviews the diff before committing), so run it yourself without asking after every `npx skills add` or `npx skills update` of bento. Args — none = interactive; `--yes` = defaults; `--preferences` = re-ask the ship preferences; `--purge` = unwire.
+description: |
+  Wire Bento's principles and skill links, migrate legacy installs, record ship preferences
+  and discover the repository's real maintenance tools. Idempotent and local, so run after
+  every Bento npx skills add/update. Args: --yes uses preference defaults; --preferences
+  re-asks them; --purge unwires.
 ---
 
 # bento setup
@@ -9,9 +13,9 @@ description: Wire bento's always-on principles into Claude Code (CLAUDE.md impor
 the always-on principles in `PRINCIPLES.md` (next to this file). Every step is idempotent.
 Report failures instead of claiming setup completed.
 
-**Safe to run unprompted.** Setup edits only local files (`CLAUDE.md`, `AGENTS.md`,
-`.claude/skills`) that the user reviews before committing, and a rerun on a wired repo changes
-nothing. That is reversible work under the autonomy contract in `PRINCIPLES.md`: after any
+**Safe to run unprompted.** Setup edits local instruction files, the skills link and its
+marker-bounded overlay sections, which the user reviews before committing. A rerun with
+unchanged facts changes nothing. That is reversible work under the autonomy contract: after any
 `npx skills add` or `npx skills update` of bento, run this skill yourself, without asking
 first. Only the steps marked *confirm* below (machine-wide or moving real folders) and the
 ship preference questions, asked once per repo, pause.
@@ -111,7 +115,13 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    - `--preferences` → ask every question again, the recorded answers as defaults.
    - Write only between the markers: create the overlay (title `# Overlay for bento-ship`) or
      append the block if it has none; keep every other line.
-6. **Verify.** Show the diff of each file touched. A running session doesn't reload skills,
+6. **Discover maintenance tools** (inside a Git repo, either install scope, when
+   `bento-maintain` is installed). Follow [maintenance-tools.md](references/maintenance-tools.md)
+   to map the actual docs system, monitoring, advisory tooling, checks, forge and tracker to
+   their consuming tasks. Record source-cited mappings and gaps in the marker-bounded section
+   of `.agents/bento/bento-maintain.md`; preserve manual rules. No service is assumed or
+   provisioned. Missing providers remain unavailable until the repository supplies them.
+7. **Verify.** Show the diff of each file touched. A running session doesn't reload skills,
    so ask fresh headless sessions from the repo root and compare with `ls -d .agents/skills/bento-*`
    (global: `~/.agents/skills/bento-*`):
 
@@ -122,15 +132,17 @@ ran, run the `add` command it printed (or the full one above), then this skill.
 
    Run the agents that were install targets. A missing skill is a failure to report, not a
    pass.
-7. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
+8. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
    each one's `##` rule headings, so the user sees which bento skills are customised here.
    None → say so. Then the ship preferences, marking those written this run and whether each
-   is a default or the user's answer.
+   is a default or the user's answer. Include maintenance mappings, their sources and any
+   unavailable or unverified capabilities.
 
 Project-scope changes (`CLAUDE.md`, `AGENTS.md`, `.agents/`, `.claude/skills/`,
-`skills-lock.json`) are for the user to review and commit. Setup writes only the preferences
-block of `.agents/bento/bento-ship.md`, creating that file if needed; setup, migrate and purge
-never delete an overlay or touch the rest of one.
+`skills-lock.json`) are for the user to review and commit. Setup owns only the preferences
+block of `.agents/bento/bento-ship.md` and the discovered-tools block of
+`.agents/bento/bento-maintain.md`, creating either file if needed. Setup, migrate and purge
+never delete an overlay or touch its hand-authored sections.
 
 ## Migrate from the submodule/plugin install
 

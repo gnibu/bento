@@ -15,6 +15,10 @@ Drive the real surface the way a user would, then leave a test behind. Observati
 change works today; the test keeps it working. Every changed behavior ends either tested or
 listed as untested with a reason.
 
+Use the [shared evidence contract](references/proof.md) for before/after comparisons,
+artifact provenance and reporting omitted checks. Repository-specific capture/upload steps
+belong in this skill's overlay; the caller's permissions still govern uploads.
+
 **Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
 overlay `.agents/bento/bento-qa.md` at the repo root; follow it under the
 [overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).

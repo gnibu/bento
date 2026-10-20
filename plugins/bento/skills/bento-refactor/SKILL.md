@@ -8,6 +8,11 @@ description: |
 
 # Refactor
 
+**Work-only caller.** When called by maintenance or a factory that reserves git delivery,
+keep its scope and permissions throughout this checklist. Return verified edits and the
+suggested commit slices at step 8; do not commit, change branches, invoke ship or write to a
+tracker. A caller's narrower permissions also apply to any delegated work.
+
 You own the contract. The structure changes; the behavior does not. If the cleanup reveals a
 missing feature or a real bug, split it out and ship the structural change first against the
 pinned contract.

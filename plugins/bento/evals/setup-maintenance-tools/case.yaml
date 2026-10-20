@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "name": "setup-maintenance-tools",
+  "tags": [
+    "maintenance-setup",
+    "maintenance-extraction",
+    "maintenance-grader-retry"
+  ],
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "Run bento-setup --yes for maintenance tool mapping only. Skip install checks, principles/link wiring, ship preference questions and fresh-session verification. Discover this repository's actual tools and write only the discovered-tools block in .agents/bento/bento-maintain.md. Then repeat discovery once: unchanged facts should cause no further edit. Work solo; no network or remote writes.",
+    "max_turns": 30,
+    "timeout_seconds": 480,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash",
+      "Write",
+      "Edit"
+    ]
+  },
+  "graders": [
+    {
+      "type": "regex",
+      "name": "manual-rule-preserved",
+      "target": {
+        "source": "file",
+        "path": ".agents/bento/bento-maintain.md"
+      },
+      "pattern": "never edit src/generated/\\."
+    },
+    {
+      "type": "regex",
+      "name": "mapped-real-tools",
+      "target": {
+        "source": "file",
+        "path": ".agents/bento/bento-maintain.md"
+      },
+      "pattern": "<!-- bento:maintenance:start -->.*Sphinx.*<!-- bento:maintenance:end -->",
+      "flags": "s"
+    },
+    {
+      "type": "llm",
+      "name": "no-provider-assumptions",
+      "criteria": "PASS only if the written mapping identifies Sphinx with make docs-check, Bugsnag project reports with access unverified when no tool is connected, make check as verification, and source citations. For the tracker it must point to AGENTS.md as the owner of the existing GitLab issue policy, rather than copy tracker identity/team/status into a second registry. It must not assume Sentry, Linear, MkDocs or GitHub advisory access, overwrite the manual protected-path rule, read .env, create a remote object or run maintenance. A second discovery must preserve the mapping unchanged.",
+      "focus": "trace"
+    },
+    {
+      "type": "tool_used",
+      "name": "fired",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[^\"]*:)?bento-setup\"",
+      "arm": "with-only"
+    }
+  ]
+}

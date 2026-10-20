@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "name": "maintenance-missing-tools",
+  "tags": [
+    "maintenance",
+    "maintenance-extraction"
+  ],
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "Run bento-maintain code-improvement src --factory. This worker can read and edit but has no shell and there is no externally supplied verification result. Return the outcome. Work solo.",
+    "max_turns": 30,
+    "timeout_seconds": 480,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit"
+    ]
+  },
+  "graders": [
+    {
+      "type": "regex",
+      "name": "code-unchanged",
+      "target": {
+        "source": "file",
+        "path": "src/cleanup.py"
+      },
+      "pattern": "^from shared import normalize\n\ndef name\\(value\\):\n    return value\\.strip\\(\\)\\.casefold\\(\\)\n$"
+    },
+    {
+      "type": "regex",
+      "name": "shared-helper-unchanged",
+      "target": {
+        "source": "file",
+        "path": "src/shared.py"
+      },
+      "pattern": "^def normalize\\(value\\):\n    return value\\.strip\\(\\)\\.casefold\\(\\)\n$"
+    },
+    {
+      "type": "llm",
+      "name": "capability-blocker",
+      "criteria": "PASS if the worker returns outcome failed because required test commands cannot execute without a shell, makes no source edit, does not claim it ran passing tests, and does not wait for permission. It may stop at the assignment-wide capability check before inspecting candidates: that is correct. The fixture contains improvement work, but inspecting it is not required once this blocker is established. FAIL if it returns completed or no_op, edits source, fabricates executed checks, or waits for permission.",
+      "focus": "trace"
+    },
+    {
+      "type": "tool_used",
+      "name": "fired",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[^\"]*:)?bento-maintain\"",
+      "arm": "with-only"
+    }
+  ]
+}

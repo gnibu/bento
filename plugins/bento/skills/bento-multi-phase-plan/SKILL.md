@@ -40,6 +40,12 @@ overlay `.agents/bento/bento-multi-phase-plan.md` at the repo root; follow it un
 5. **Write the plan as a checklist.** One section per PR; **one PR = one change with its own
    evidence.** Order sections by dependency (independent work first; dependent work after its
    parent).
+   For a repeated cleanup/migration, first inventory the affected sites against the actual
+   owning rule, group them into batches (for example one screen or module), and state the
+   measurable end condition. Record approval and completed batches in the caller's existing
+   plan/tracker. A factory worker returns the inventory/plan until execution is authorized;
+   then it executes only its assigned batch and returns evidence. No separate campaign hub
+   or scheduler is needed, and the worker's scope/delivery restrictions still apply.
 6. **Every box names the evidence that checks it** — a file, a log line, a screenshot, a test
    run, or a SHA. A box is checked only when that evidence exists.
 7. **State the verification rule per PR:** tests alone are not sufficient. A PR is verified

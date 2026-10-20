@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "name": "maintenance-instructions",
+  "tags": [
+    "maintenance",
+    "maintenance-extraction"
+  ],
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "Run bento-maintain instructions-upkeep area --factory. This worker has read/edit tools only; validation is source/link inspection. Return the report. Work solo.",
+    "max_turns": 30,
+    "timeout_seconds": 480,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit"
+    ]
+  },
+  "graders": [
+    {
+      "type": "regex",
+      "name": "corrected-reference",
+      "target": {
+        "source": "file",
+        "path": "area/AGENTS.md"
+      },
+      "pattern": "\\]\\(\\.\\./docs/testing\\.md\\)"
+    },
+    {
+      "type": "regex",
+      "name": "stale-reference-removed",
+      "target": {
+        "source": "file",
+        "path": "area/AGENTS.md"
+      },
+      "pattern": "old-testing\\.md",
+      "match": "not_contains"
+    },
+    {
+      "type": "regex",
+      "name": "safety-preserved",
+      "target": {
+        "source": "file",
+        "path": "area/AGENTS.md"
+      },
+      "pattern": "Never change production data\\."
+    },
+    {
+      "type": "regex",
+      "name": "companion-preserved",
+      "target": {
+        "source": "file",
+        "path": "area/CLAUDE.md"
+      },
+      "pattern": "^@AGENTS\\.md\\n$"
+    },
+    {
+      "type": "llm",
+      "name": "source-proof",
+      "criteria": "PASS only if it fixes the actual stale link, cites the existing docs/testing.md as evidence, reports completed with source inspection rather than claiming a build/test execution, does not ask for a shell and makes no edit outside area/.",
+      "focus": "trace"
+    },
+    {
+      "type": "tool_used",
+      "name": "fired",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[^\"]*:)?bento-maintain\"",
+      "arm": "with-only"
+    }
+  ]
+}

@@ -141,7 +141,8 @@ default (listed first). No preference relaxes a guardrail.
     and body to match the whole diff instead. Title: covers
     the whole diff, not the branch name, the ticket title or the last commit; under 70
     characters; a conventional prefix only if every change fits one scope. Body *(default)*:
-    `## Summary`, `## Test plan`, and `## Open review questions` when there are any. The test
+    `## Summary`, `## Test plan`, and `## Open review questions` when there are any. Follow the
+    [shared evidence contract](../bento-qa/references/proof.md) when presenting artifacts. The test
     plan comes from the QA report: tests added, paths exercised with their evidence, and every
     untested behavior with its reason. Include docs/security outcomes and verification gaps;
     unresolved security decisions join `## Open review questions`. Web UI: say what each

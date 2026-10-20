@@ -20,23 +20,12 @@ executes commands found in a document. Keep an evidence table in the conversatio
 | Docs | Guide and section | Existing procedure to link, contradiction to resolve |
 | Merged PR reviews | PR and comment URL | Recurring gotcha corroborated in current code |
 
-Start with a bounded sample of 20 recently merged PRs; disclose the sample and
-expand it only when needed. Discover the target repo instead of hardcoding bento:
-
-```sh
-gh repo view --json nameWithOwner --jq .nameWithOwner
-gh pr list --repo OWNER/REPO --state merged --limit 20 \
-  --json number,title,url,mergedAt
-# For each selected NUMBER, collect inline comments and review summaries:
-gh api --paginate repos/OWNER/REPO/pulls/NUMBER/comments
-gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews
-```
-
-Replace `OWNER/REPO` and `NUMBER` with discovered values. A missing GitHub remote,
-missing `gh`, inaccessible reviews, or zero merged PRs must be reported in the
-phase-1 checkpoint. Ask whether to proceed with the other sources or gather more;
-do not infer that approval from silence. Historical review requests may have been
-fixed or superseded: verify current code before turning them into standing rules.
+Collect merged PR reviews using the shared
+[review-history procedure](../../bento-learn/references/review-history.md), starting with
+20 recently merged PRs and verifying the feedback against current code. `bento-learn`
+reuses that collection only when historical review input is requested. A missing remote,
+forge access, or empty sample must be reported in the phase-1 checkpoint. Ask whether to
+proceed with other sources or gather more; do not infer approval from silence.
 
 The checkpoints are **evidence → file design → exact generated diff → handoff**.
 The user can reject or revise any phase. The JSON helper's `--apply` is not a

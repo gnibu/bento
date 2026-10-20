@@ -30,6 +30,9 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-investigate` — evidence-first root-cause debugging; fix at the shared source.
   - `bento-checkpoint` — capture in-progress state so work survives a reset or handoff.
   - `bento-refactor` — change structure while holding behavior; pin first, prove equivalence.
+  - `bento-maintain` — one bounded maintenance change with proof: code improvement, instruction
+    upkeep, documentation upkeep, dependency security, or a monitoring-driven fix. Reads repo
+    overlays; factory mode returns edits and a report, leaving delivery to the caller.
   - `bento-hotspots` — rank Python/JS/TS refactoring targets by complexity x churn, with import
     cycles and fan-in/out; its diff mode flags what a branch made worse. `bento-ship` runs it.
   - `bento-prototype` — throwaway spike to make a design decision cheaply; decide by observation.
@@ -54,15 +57,17 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
 - **Forge** — the learning engine and generator:
   - `bento-learn` — Reflect → Route → Propose: route each session's learnings to their
     cheapest correct home (L1 bento / L2 repo), with an eval-gated keep-or-revert. Run it
-    manually, or let `bento-ship` call it before final checks.
+    manually, or let `bento-ship` call it before final checks. `--reviews` explicitly adds
+    historical PR feedback; `--propose-only` returns proposals without applying them.
   - `bento-init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews, with
     human checkpoints and a generated baseline for later three-way merges. See
     [the workflow and file contract](plugins/bento/skills/bento-init/references/init.md).
 - **`bento-setup`** — wire the principles; ask the repo's ship preferences once (missing
   ticket, QA, pre-PR review…; `--preferences` re-asks); migrate an old install; `--purge` to
-  unwire.
+  unwire. Discover the repository's actual maintenance tools and source-cited commands into
+  the maintenance overlay, preserving manual rules and reporting missing integrations.
 
-The **eval harness** (`claude plugin eval` with with/without ablation) covers all 19 skills.
+The **eval harness** (`claude plugin eval` with with/without ablation) has cases for all 20 skills.
 Firing indicators check the intended skill, separately from behavior scores. Workflow cases
 check captured edits, commands and artifacts, including spec/plan continuation, conditional
 docs/security passes, and negative controls for routine test runs and tiny edits. See
@@ -78,7 +83,8 @@ overlay adds steps and may replace steps marked *(default)*; it never relaxes a 
 
 ## Install
 
-Install all skills together (`bento-learn` uses `bento-init`'s helper and vice versa).
+Install all skills together: maintenance reuses the refactor/docs/investigation playbooks
+and QA's proof reference; Learn and Init share review collection and baseline helpers.
 
 **Per project** (team repos — the version is pinned by what you commit):
 
@@ -156,6 +162,28 @@ Run /bento-hotspots in unattended mode.
   that prompt.
 
 Either needs network access, so `uv` can fetch lizard.
+
+## Maintenance from a person or factory
+
+Run `bento-maintain <task> [scope]` for `code-improvement`, `instructions-upkeep`,
+`docs-upkeep`, `security-fix` or `error-fix`. Claude uses `/bento-maintain`; Codex uses
+`$bento-maintain`. Required checks, protected paths, dependency pins and monitoring details
+come from the repository's instructions and `.agents/bento/bento-maintain.md`.
+After installation, `bento-setup` discovers the repository's actual tools and writes only
+its source-cited mapping block in that overlay. Manual rules survive refreshes. A missing
+monitoring/advisory integration is reported as unavailable; no provider is assumed.
+
+A factory invokes, for example, `bento-maintain code-improvement backend --factory`, passing
+the assignment's permissions. The worker returns report Markdown, an outcome
+(`completed`, `no_op`, `failed`) and a summary. It never commits, pushes, opens PRs or creates
+tickets; the local adapter owns delivery and tracker policy. No quota meter, hub issue or
+profile file is needed. See [factory adoption and overlay examples](plugins/bento/skills/bento-maintain/references/factory-adoption.md).
+
+Larger cleanups reuse `bento-multi-phase-plan` to inventory sites and define verifiable
+batches; the factory tracks authorization and batch completion. Complexity jobs continue to
+call `bento-hotspots`. To propose lessons from past PR feedback, explicitly request
+`bento-learn --reviews --propose-only`; ordinary maintenance does not change standing rules
+from review text. Evidence follows [the shared proof contract](plugins/bento/skills/bento-qa/references/proof.md).
 
 ## Develop
 
