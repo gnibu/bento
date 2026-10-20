@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- **Shipping checks affected docs and sensitive changes.** `bento-ship` calls `bento-docs`
+  before final checks for public behavior, CLI/API/config contracts or example changes, and
+  `bento-cso` for auth, trust-boundary, secret, sensitive-data exposure or untrusted-input
+  sink changes. Security decisions use the existing decision stop; docs/security outcomes appear in the PR and report.
+  Repo overlays can customize tooling while retaining the specialist triggers and security triage.
+- **Spec and planning preserve the requested scope.** Spec-only and plan-only requests stop
+  at their artifact. When used as preparation for an implementation request, they continue
+  the authorized work once the contract is settled, without another permission round.
+- **More precise skill routing and evals.** Debugging, tuning, comparisons and large-change
+  planning have clearer boundaries. All 19 skills now have behavioral cases; new workflow
+  cases cover secondary duties, continuation and trivial-task exclusions, and firing checks
+  identify the intended skill rather than any skill call. Playbook authoring checks for an
+  existing owner before adding a competing skill.
+- **Shorter handoff and fallback checklists.** `bento-checkpoint` and `bento-figure-it-out`
+  retain their evidence and scope rules with fewer steps and less repeated guidance.
 - **New `bento-hotspots`: measure code quality in Python, JavaScript and TypeScript.**
   `hotspots.py` (lizard, via `uv run`) ranks functions by cognitive complexity x churn and
   files by size x churn, and lists import cycles and fan-in/fan-out. The agent reads each top

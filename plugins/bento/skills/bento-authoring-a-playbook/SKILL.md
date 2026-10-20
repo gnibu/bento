@@ -36,13 +36,16 @@ naming its trigger, action and approval. Link a repo skill or doc instead of cop
 - Action: add the `greptile` label to the PR.
 - Approval: the user's review request.
 
-## Lint (adds to Verify, a default step)
-- Trigger: step 7, Verify.
+## Lint (adds to the repo checks in step 7)
+- Trigger: step 7, Security, then the repo's own checks.
 - Action: also run `ruff check .`; see [docs/lint.md](../../docs/lint.md).
 - Approval: none, local and read-only.
 ```
 
 ## Gate first — should it exist?
+
+Check existing playbooks first. If one owns the task, amend that owner (or its repo overlay)
+instead of adding a competing skill.
 
 Add a playbook only when the same task shape has recurred (≥2–3 times) and you can name a
 concrete trigger. One occurrence → do it inline via `bento-figure-it-out`, don't skill it.

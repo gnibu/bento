@@ -8,8 +8,7 @@ description: |
 
 # Checkpoint
 
-Write down enough that a fresh session (you or someone else) can resume without re-deriving
-what you already know. State lives in the repo, not in your head.
+Leave a shared artifact a fresh session can resume from.
 
 **Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
 overlay `.agents/bento/bento-checkpoint.md` at the repo root; follow it under the
@@ -17,20 +16,15 @@ overlay `.agents/bento/bento-checkpoint.md` at the repo root; follow it under th
 
 ## Steps (paste as todos)
 
-1. **State the goal** and the done-condition in one line.
-2. **Record what's done** — the decisions made and why, with pointers (files, commits,
-   PRs), not prose recaps.
-3. **Record what's next** — the immediate next action, concretely enough to run. Include the
-   command or the file:line to start from.
-4. **Flag blockers and open questions** — anything waiting on a decision, a dependency, or
-   an irreversible step you deliberately paused before.
-5. **Leave no landmine.** Note any half-applied change, dirty state, or running process the
-   next session must know about.
-6. **Write it where it's found** — a task file, a PR/issue comment, or the repo's checkpoint
-   location; not private memory. Keep run-specific detail out of reusable docs.
+1. **Inspect state.** Check the diff and dirty files; note half-applied work and any running
+   process you know about. Distinguish observed facts from unchecked assumptions.
+2. **Record the goal and progress.** State the done-condition, completed work and decisions with file,
+   commit or PR pointers; identify blockers and unresolved decisions.
+3. **Name the next action.** Give the exact command or file:line to resume from.
+4. **Write the handoff** in the requested location, the repo's checkpoint location, or a shared
+   task file. Keep it out of private memory and reusable docs; inspect it against checked state.
 
 ## Guardrails
 
-- A checkpoint is for *resuming*, not a diary. Cut anything that doesn't change the next
-  action or a decision.
+- Keep only what affects resuming. Don't assert a clean tree or no running processes without evidence.
 - Don't checkpoint secrets or production data — pointers, not payloads.

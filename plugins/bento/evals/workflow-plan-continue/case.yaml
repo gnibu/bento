@@ -1,0 +1,40 @@
+schema_version: '1.0'
+name: workflow-plan-continue
+tags:
+- workflow
+- workflow-change
+execution:
+  prompt: Implement a configurable greeting prefix across formatter.py, app.py, and cli.py. The default
+    remains "hi"; python3 cli.py bob --prefix hello prints "hello bob". Make the formatter and app
+    accept an optional prefix; preserve existing callers and shout. First use the multi-phase planning
+    playbook to sequence the three layers into verifiable units, then carry out the plan and tests
+    in this task. Decisions are settled; work solo, do not commit or push.
+  max_turns: 25
+  timeout_seconds: 600
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- type: llm
+  name: continued-implementation
+  criteria: PASS only if the transcript actually edits the formatter, app, and CLI, tests the default
+    and custom prefix, and executes the CLI successfully with --prefix hello. Returning a plan and
+    asking whether to start fails.
+  focus: trace
+- type: llm
+  name: verifiable-plan
+  criteria: PASS if a plan artifact is written before implementation with dependent units (formatter,
+    app, CLI), each naming concrete verification evidence. A retrospective list after coding fails.
+  focus: trace
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-multi-phase-plan"'
+  arm: with-only
+context:
+  scaffold_script: setup.sh

@@ -1,0 +1,85 @@
+schema_version: '1.0'
+name: workflow-spec-only
+tags:
+- workflow
+- workflow-change
+execution:
+  prompt: Write a requirements spec only for blank-name handling in this greeting library. None, empty,
+    and whitespace become "anonymous"; all other names stay as they are. Include acceptance criteria for
+    greet and shout. Do not implement or change application/test files.
+  max_turns: 12
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- type: llm
+  name: spec-only
+  criteria: PASS if a spec artifact defines checkable greet/shout criteria for None, empty, whitespace
+    and nonblank input, and application/test files are not changed. Implementation is explicitly outside
+    this request. Inspect all mutation paths in the trace, including Bash commands and newly created test_*.py
+    files; a source/test change by any tool fails.
+  focus: trace
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-spec"'
+  arm: with-only
+- type: tool_used
+  name: no-source-write
+  tool: Write
+  input_match: '"file_path"\s*:\s*"[^"]*\.py"'
+  min: 0
+  max: 0
+  arm: both
+- type: tool_used
+  name: no-source-edit
+  tool: Edit
+  input_match: '"file_path"\s*:\s*"[^"]*\.py"'
+  min: 0
+  max: 0
+  arm: both
+- type: regex
+  name: unchanged-formatter
+  target:
+    source: file
+    path: formatter.py
+  pattern: ^def greeting\(name\):\n    return "hi " \+ name\n$
+  arm: both
+- type: regex
+  name: unchanged-app
+  target:
+    source: file
+    path: app.py
+  pattern: ^from formatter import greeting\n\n\ndef greet\(name\):\n    return greeting\(name\)\n\n\ndef
+    shout\(name\):\n    return greet\(name\)\.upper\(\)\n$
+  arm: both
+- type: regex
+  name: unchanged-cli
+  target:
+    source: file
+    path: cli.py
+  pattern: ^import argparse\nfrom app import greet\n\nparser = argparse\.ArgumentParser\(\)\nparser\.add_argument\("name"\)\nargs
+    = parser\.parse_args\(\)\nprint\(greet\(args\.name\)\)\n$
+  arm: both
+- type: regex
+  name: unchanged-test_app
+  target:
+    source: file
+    path: test_app.py
+  pattern: ^import unittest\nfrom app import greet, shout\n\n\nclass GreetingTest\(unittest\.TestCase\):\n    def
+    test_greet\(self\):\n        self\.assertEqual\(greet\("bob"\), "hi bob"\)\n\n    def test_shout\(self\):\n        self\.assertEqual\(shout\("bob"\),
+    "HI BOB"\)\n$
+  arm: both
+- type: file_exists
+  name: no-new-python-files
+  path: '**/*.py'
+  exists: false
+  arm: both
+context:
+  scaffold_script: setup.sh

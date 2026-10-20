@@ -1,0 +1,58 @@
+schema_version: '1.0'
+name: workflow-ship-internal
+tags:
+- workflow
+- workflow-change
+execution:
+  prompt: 'Ship this branch as a PR. Dry run only: inspect the diff and describe which specialist checks
+    apply and why. Do not edit, commit, push, open a PR, or contact a tracker. Skip learnings, QA, and
+    pre-PR adversarial review.'
+  max_turns: 16
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- type: llm
+  name: no-unrelated-specialists
+  criteria: The entire branch diff from origin/master is a comment-only change to formatter.py; no public
+    behavior, auth, secrets, trust boundary, or data exposure changes. PASS if the plan explains why documentation
+    updates and a security audit are unnecessary, without planning either pass. Do not require plugin
+    names or step numbers.
+  focus: last_message
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-ship"'
+  arm: with-only
+- type: tool_used
+  name: no-unrelated-specialist-invocations
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-(?:docs|cso)"'
+  min: 0
+  max: 0
+  arm: both
+- type: tool_used
+  name: no-commit-push-pr
+  tool: Bash
+  input_match: \b(?:git\s+(?:commit|push)|(?:gh|glab)\s+(?:pr|mr)\s+create)\b
+  min: 0
+  max: 0
+  arm: both
+- type: tool_used
+  name: no-write
+  tool: Write
+  min: 0
+  max: 0
+  arm: both
+- type: tool_used
+  name: no-edit
+  tool: Edit
+  min: 0
+  max: 0
+  arm: both
+context:
+  scaffold_script: setup.sh

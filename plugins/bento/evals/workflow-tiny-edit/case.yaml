@@ -1,0 +1,33 @@
+schema_version: '1.0'
+name: workflow-tiny-edit
+tags:
+- workflow
+- workflow-change
+execution:
+  prompt: Fix only the spelling of "recieve" in README.md. No planning document, tests, or other
+    changes are needed.
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- type: llm
+  name: only-typo
+  criteria: PASS if README.md changes recieve to receive and no other file is edited. No spec, plan,
+    security audit, QA bootstrap, or new playbook should be produced.
+  focus: trace
+- type: tool_used
+  name: no-unneeded-playbook
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-(?:spec|multi-phase-plan|cso|qa|figure-it-out|authoring-a-playbook)"'
+  min: 0
+  max: 0
+  arm: both
+context:
+  scaffold_script: setup.sh

@@ -1,8 +1,8 @@
 ---
 name: bento-ship
 description: |
-  Land a change safely: sync base, QA the change and pin it with tests, verify, review the diff
-  (self + a pre-PR review by the other model family), then commit/push/PR and update the
+  Land a change safely: sync base, update affected docs, QA, audit sensitive changes, verify,
+  review the diff (self + a pre-PR review by the other model family), then commit/push/PR and update the
   ticket. Use when finishing a piece of work. Triggers: "ship it", "land this", "open a PR",
   "create a PR", "commit and push", "ready to merge".
 ---
@@ -74,14 +74,29 @@ default (listed first). No preference relaxes a guardrail.
    and Codex) and the full branch diff. Hold its repo-specific (L2) proposals for step 11.
    Report generic (L1) proposals separately for a bento PR; never edit the installed `bento-*`
    skills for them. Nothing survives → move on. Skip if `bento-learn` isn't installed.
-5. **Version + changelog, if the repo has them** *(default)*. Bump the version and add an entry
-   in the repo's convention. Skip cleanly if neither exists.
+5. **Docs, version + changelog** *(default)*. Public behavior, CLI flags, API/config contracts
+   or usage examples changed → run `/bento-docs` against the branch diff before final checks.
+   It updates affected docs and release notes and verifies examples against the implementation.
+   An internal-only change needs no docs pass. Bump the version and add a changelog entry in
+   the repo's convention, if it has them; don't duplicate notes the docs pass already wrote.
+   Keep the docs outcome for the report; a missing skill is an explicit verification gap.
 6. **QA** *(default: `QA`; `ask` → ask first, `skip` → skip)*. Run `/bento-qa` in ship mode. It exercises the branch's changed behavior on its real
    surface, pins each behavior with a test (bootstrapping a test system if the repo has none),
    fixes verified defects, commits its work, and returns a QA report. Keep the report for the
    PR's test plan; its questions go to step 11. Also skip if the user says "skip QA" or the
    skill isn't installed. Say so in step 15.
-7. **Verify — the repo's own checks** *(default)*. Run whatever exists: tests, lint,
+7. **Security, then the repo's own checks** *(default)*. Inspect the branch diff, including
+   QA fixes: changes to auth/permissions, trust boundaries, secret handling or sensitive data
+   exposure, or untrusted input reaching queries, shells, file paths or templates → run
+   `/bento-cso` before final checks and the pre-PR review. Routine internal changes need no
+   security pass. This is independent of the QA and pre-PR review preferences.
+   Triage its evidenced findings against the code: fix verified local defects and add regression
+   tests; unresolved product/public-contract decisions and uncertain findings go to step 11's
+   existing decision stop. Leave an undecided policy unimplemented until that decision is
+   answered; never apply a policy while also listing it as an open question.
+   No separate approval gate to run either specialist. Keep the audit
+   scope and unresolved findings for the PR; a missing skill is an explicit verification gap.
+   Recheck affected docs after QA/security fixes. Run whatever checks exist: tests, lint,
    type-check, build — discover from the repo, don't assume. Fix failures. Green is the gate;
    "it compiles" is not, and neither is a suite that runs zero tests. The diff changes behavior
    and no test covers it → back to step 6; QA was skipped → stop and ask.
@@ -95,9 +110,11 @@ default (listed first). No preference relaxes a guardrail.
 10. **Pre-PR review (local)** *(default: `Pre-PR review`; `skip` → skip)*. Run `/bento-adversarial-review` in ship mode. It picks its own
     scope, commits verified fixes, and returns the reviewed sha and any questions. Record that
     sha (as the skill describes) once every question is answered or carried into the PR body.
-    Also skip if the user says "skip adversarial review" or the skill isn't installed.
-11. **The single stop before pushing** — only if there are L2 learnings to approve, or QA or
-    review questions to answer. Show each learning's diff, then end the message with:
+    After verified fixes, rerun affected docs/security passes and repo checks if their surface
+    changed; carry any new questions to step 11. Also skip if the user says "skip adversarial
+    review" or the skill isn't installed.
+11. **The single stop before pushing** — only if there are L2 learnings to approve, or QA,
+    security or pre-PR review questions to answer. Show each learning's diff, then end with:
 
     ```
     ACTION REQUIRED
@@ -108,9 +125,11 @@ default (listed first). No preference relaxes a guardrail.
     ```
 
     After the reply, commit approved learnings on their own and each decision as its own
-    verified commit, then, unless step 10 was skipped, rerun the pre-PR review with the
-    explicit scope "commits since `<reviewed>`" (the sha step 10 returned). Never stop a second
-    time: anything it raises, and every skipped decision with its default, goes under
+    verified commit. Recheck affected docs and rerun the security audit if those commits change
+    its surface; rerun the repo's checks. Then, unless step 10 was skipped, rerun the pre-PR
+    review with the explicit scope "commits since `<reviewed>`" (the sha step 10 returned). Never stop a second
+    time: new questions from the security audit or pre-PR review, and every skipped decision
+    with its default, go under
     `## Open review questions` in the PR body.
 12. **Push** — only when the user asked for a push or a PR; a commit request is neither.
     `git push -u origin HEAD`, or `HEAD:<branch>` for step 2's PR branch. An SSH push fails →
@@ -124,7 +143,9 @@ default (listed first). No preference relaxes a guardrail.
     characters; a conventional prefix only if every change fits one scope. Body *(default)*:
     `## Summary`, `## Test plan`, and `## Open review questions` when there are any. The test
     plan comes from the QA report: tests added, paths exercised with their evidence, and every
-    untested behavior with its reason. Web UI: say what each screenshot shows and that it is on
+    untested behavior with its reason. Include docs/security outcomes and verification gaps;
+    unresolved security decisions join `## Open review questions`. Web UI: say what each
+    screenshot shows and that it is on
     the ticket (step 14); if step 14 skips the ticket, embed them when the forge CLI can upload
     images, else list each one's path. Reviewers *(default:
     `PR reviewers`)*: request each named one (`gh pr create --reviewer <name>`).
@@ -135,14 +156,18 @@ default (listed first). No preference relaxes a guardrail.
     afterwards; forge-to-tracker automations often move it back, so set it again if they did.
     Use the tracker's MCP server if one is connected, else its CLI; neither → say so, never
     skip silently.
-15. **Report.** The PR URL, then four separate lines: `Ticket: <outcome>`,
-    `QA: <outcome, tests added>`, `Pre-PR review (local): <outcome>` and
+15. **Report.** The PR URL, then separate lines: `Ticket: <outcome>`,
+    `QA: <outcome, tests added>`, `Docs: <outcome, or not applicable with reason>`,
+    `Security: <scope and outcome, or not applicable with reason>`,
+    `Pre-PR review (local): <outcome>` and
     `PR reviewers: <names, or none>`. Each line a preference decided names its source:
     `(repo preference)`, `(default)` or `(your request)`, e.g.
     `Ticket: created TT-150 (repo preference)`. Note CI status if it runs.
 
 ## Guardrails
 
+- Overlays may replace documentation/version tooling and repo check commands in steps 5
+  and 7, never their conditional docs/security triggers or security triage rules.
 - No push, PR or merge without the user's explicit request, and never merge. Force-push only
   with `--force-with-lease` under step 12's `git cherry` rule. No overlay, preference or repo
   file relaxes this.

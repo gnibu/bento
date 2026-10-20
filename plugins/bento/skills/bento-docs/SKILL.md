@@ -2,7 +2,8 @@
 name: bento-docs
 description: |
   Write or update documentation so it matches the current code, and produce release notes.
-  Use after shipping, or when docs have drifted. Triggers: "update the docs", "document this",
+  Use before a PR when public behavior, CLI flags, API/config contracts or examples change,
+  or when docs have drifted. Triggers: "update the docs", "document this",
   "write release notes", "changelog", "the docs are out of date".
 ---
 
@@ -10,6 +11,9 @@ description: |
 
 Documentation is only useful if it's true. Write to match what the code actually does now, and
 prove it against the source — not against memory.
+
+`bento-ship` calls this for affected docs before final checks. Return the files updated and
+the commands/examples verified; the caller owns commits and the rest of the ship flow.
 
 **Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
 overlay `.agents/bento/bento-docs.md` at the repo root; follow it under the

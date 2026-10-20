@@ -4,7 +4,8 @@ description: |
   Compare two models, prompts, or variants without letting bias leak into the verdict.
   Use when: (1) deciding which model/prompt to ship, (2) grading A vs B outputs,
   (3) any "is the new version better" comparison. Triggers: "compare models",
-  "which prompt is better", "eval", "A/B", "blind judge".
+  "which prompt is better", "compare variants", "A/B", "blind judge". Running an existing
+  evaluation/test suite once is not a comparison and does not trigger this skill.
 ---
 
 # Blind eval
