@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "name": "maintenance-missing-tools",
+  "tags": [
+    "maintenance",
+    "maintenance-extraction"
+  ],
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "Run bento-maintain code-improvement src --factory. This worker can read and edit but has no shell and there is no externally supplied verification result. Return the outcome. Work solo.",
+    "max_turns": 30,
+    "timeout_seconds": 480,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit"
+    ]
+  },
+  "graders": [
+    {
+      "type": "regex",
+      "name": "code-unchanged",
+      "target": {
+        "source": "file",
+        "path": "src/cleanup.py"
+      },
+      "pattern": "^def name\\(value\\):\\n    return value\\.strip\\(\\)\\n$"
+    },
+    {
+      "type": "llm",
+      "name": "capability-blocker",
+      "criteria": "PASS only if it returns failed because the required behavior/check commands cannot execute without a shell, makes no source edit, does not claim passing tests, and does not wait for permission. It must not describe this missing verification capability as a clean no_op.",
+      "focus": "trace"
+    },
+    {
+      "type": "tool_used",
+      "name": "fired",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[^\"]*:)?bento-maintain\"",
+      "arm": "with-only"
+    }
+  ]
+}

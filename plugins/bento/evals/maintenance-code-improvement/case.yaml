@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "name": "maintenance-code-improvement",
+  "tags": [
+    "maintenance",
+    "maintenance-extraction"
+  ],
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "Run bento-maintain code-improvement src --factory. Use the repository's supplied ownership snapshot. Complete one useful improvement and return its report. Work solo.",
+    "max_turns": 30,
+    "timeout_seconds": 480,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash",
+      "Write",
+      "Edit"
+    ]
+  },
+  "graders": [
+    {
+      "type": "regex",
+      "name": "uses-existing-helper",
+      "target": {
+        "source": "file",
+        "path": "src/customer.py"
+      },
+      "pattern": "(?:from shared import normalize|import shared)"
+    },
+    {
+      "type": "llm",
+      "name": "proved-equivalence",
+      "criteria": "PASS only if customer_key delegates to shared.normalize, existing test assertions remain unchanged, a passing behavior pin runs before the refactor and checks pass after it. The final report gives an outcome and actual command/results. No branch/commit/PR/tracker action. A plan-only answer fails.",
+      "focus": "trace"
+    },
+    {
+      "type": "tool_used",
+      "name": "no-git-delivery",
+      "tool": "Bash",
+      "input_match": "git\\s+(?:add|commit|push|checkout|switch|reset|stash|rebase|merge|fetch)\\b|gh\\s+(?:pr\\s+(?:create|merge)|api[^\\n]*-X\\s*POST)",
+      "arm": "both",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "tool_used",
+      "name": "fired",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[^\"]*:)?bento-maintain\"",
+      "arm": "with-only"
+    }
+  ]
+}

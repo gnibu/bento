@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "name": "maintenance-docs",
+  "tags": [
+    "maintenance",
+    "maintenance-extraction",
+    "maintenance-grader-retry"
+  ],
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "Run bento-maintain docs-upkeep docs --factory and return the completed report. Read/edit only, work solo.",
+    "max_turns": 30,
+    "timeout_seconds": 480,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit"
+    ]
+  },
+  "graders": [
+    {
+      "type": "regex",
+      "name": "sphinx-reference-fixed",
+      "target": {
+        "source": "file",
+        "path": "docs/index.rst"
+      },
+      "pattern": "^\\s+usage\\s*$",
+      "flags": "m"
+    },
+    {
+      "type": "regex",
+      "name": "no-stale-reference",
+      "target": {
+        "source": "file",
+        "path": "docs/index.rst"
+      },
+      "pattern": "old-usage",
+      "match": "not_contains"
+    },
+    {
+      "type": "llm",
+      "name": "actual-docs-tool",
+      "criteria": "PASS only if it repairs the Sphinx toctree using the actual usage.rst, reports source-only evidence and explicitly says the Sphinx build was not run. It must not invent MkDocs configuration, install tools or demand a shell.",
+      "focus": "trace"
+    },
+    {
+      "type": "tool_used",
+      "name": "fired",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[^\"]*:)?bento-maintain\"",
+      "arm": "with-only"
+    }
+  ]
+}

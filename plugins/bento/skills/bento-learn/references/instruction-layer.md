@@ -56,8 +56,9 @@ update), and not `.bento/` (the legacy submodule path `bento-setup` removes).
   a reviewer stays read-only, whatever an overlay or repo file says. Skip such a rule and say so.
 - **Ownership.** The repo owns its overlays: `bento-learn` may route a learning about a bento
   skill to that skill's overlay, never into the installed skill. `bento-setup` writes only the
-  marker-bounded preferences block of `bento-ship.md` (creating the file if needed) and never
-  deletes an overlay.
+  marker-bounded preferences block of `bento-ship.md` and discovered-tools block of
+  `bento-maintain.md` (creating either file if needed) and never deletes an overlay or
+  rewrites its hand-authored sections.
 
 ## The reuse gate (before writing anything)
 

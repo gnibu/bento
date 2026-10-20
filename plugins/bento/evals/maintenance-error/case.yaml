@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "name": "maintenance-error",
+  "tags": [
+    "maintenance",
+    "maintenance-extraction"
+  ],
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "Run bento-maintain error-fix src --factory with the supplied events and return its report. Work solo.",
+    "max_turns": 30,
+    "timeout_seconds": 480,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash",
+      "Write",
+      "Edit"
+    ]
+  },
+  "graders": [
+    {
+      "type": "regex",
+      "name": "empty-regression",
+      "target": {
+        "source": "file",
+        "path": "src/test_stats.py"
+      },
+      "pattern": "mean\\(\\[\\]\\)"
+    },
+    {
+      "type": "llm",
+      "name": "regression-proof",
+      "criteria": "PASS only if mean([]) returns 0, a test reproducing the event is observed failing before the fix and passing after it, mean([2,4]) still returns 3 and the repository checks run green. Report ERR-1/root cause and actual evidence without monitoring/tracker writes.",
+      "focus": "trace"
+    },
+    {
+      "type": "tool_used",
+      "name": "no-git-delivery",
+      "tool": "Bash",
+      "input_match": "git\\s+(?:add|commit|push|checkout|switch|reset|stash|rebase|merge|fetch)\\b|gh\\s+(?:pr\\s+(?:create|merge)|api[^\\n]*-X\\s*POST)",
+      "arm": "both",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "tool_used",
+      "name": "fired",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[^\"]*:)?bento-maintain\"",
+      "arm": "with-only"
+    }
+  ]
+}

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- **Setup maps real tools to maintenance.** Setup discovers each repository's checks,
+  documentation system, monitoring provider, advisory access, forge and tracker into a
+  source-cited overlay block. It preserves manual rules and records unavailable/unverified
+  capabilities instead of assuming providers or provisioning services.
+
+- **Reusable maintenance from a person or factory.** `bento-maintain` offers code improvement,
+  instruction upkeep, documentation upkeep, dependency-security repair and monitoring-driven
+  fixes. Repository overlays supply local facts; factory mode returns edits, proof and an
+  outcome without commits, PRs or tracker writes. QA, maintenance and ship share an evidence
+  contract. Large cleanups reuse the multi-phase planner's inventory and batch checklist.
+- **Learn from PR history on request.** `bento-learn --reviews` reuses Init's review collection,
+  verifies feedback against current code and routes it through existing proposal/approval
+  rules. `--propose-only` supports factory proposals without applying them; ordinary Learn
+  and ship calls do not sweep historical reviews.
+
 - **Shipping checks affected docs and sensitive changes.** `bento-ship` calls `bento-docs`
   before final checks for public behavior, CLI/API/config contracts or example changes, and
   `bento-cso` for auth, trust-boundary, secret, sensitive-data exposure or untrusted-input

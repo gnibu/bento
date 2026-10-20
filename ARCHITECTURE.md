@@ -53,6 +53,17 @@ over time, instead of a one-time manual port.
 
 ## Factoring Rose → bento (the decision)
 
+`bento-maintain` factors Rose's code-improvement, instruction upkeep, documentation upkeep,
+dependency security and monitoring-driven fixes into one work-only contract. Each procedure
+reuses the owning Bento playbook. Repository overlays supply commands, paths, pins and
+providers; factory adapters retain schedules, permissions, tracker writes and delivery.
+`bento-qa/references/proof.md` owns the evidence contract shared with maintenance and ship.
+Review-history collection is shared by Init and opt-in Learn; it adds evidence to the same
+learning loop. Large maintenance batches reuse `bento-multi-phase-plan` rather than adding
+a campaign runtime. Setup discovers actual tools/commands from repository evidence into
+its marker-bounded maintenance overlay section, preserving manual policy and recording
+unavailable capabilities. See [factory adoption](plugins/bento/skills/bento-maintain/references/factory-adoption.md).
+
 Test for each practice: *would this help an agent in a repo that isn't Rose?*
 
 **Generic → factor into bento:**
