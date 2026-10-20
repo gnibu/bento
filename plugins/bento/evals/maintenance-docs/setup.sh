@@ -13,7 +13,7 @@ master_doc = "index"
 PY
 cat > docs/index.rst <<'RST'
 Example
-=======
+-------
 
 .. toctree::
 
