@@ -1,0 +1,30 @@
+schema_version: "1.0"
+name: hotspots-scan
+tags: [hotspots]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Is the code in this repo in good shape? Tell me what to refactor first. Don't change any code."
+  max_turns: 20
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: ranked-targets
+    criteria: |
+      The repo has orders.py with `price()`: deeply nested (4 levels), 6 parameters, changed in
+      4 commits; small calm modules customers.py and report.py; and an import cycle:
+      orders.py imports customers, customers.py imports from orders.
+      PASS only if all hold: (a) `price` in orders.py is the first refactoring target, backed by
+      measured numbers (nesting, complexity or change count), not impressions alone; (b) it
+      proposes a target shape for `price` (e.g. early returns or a discount lookup that removes
+      branches), not just "split it up"; (c) it reports the orders.py <-> customers.py import
+      cycle and which dependency to cut; (d) no file was modified.
+  - type: tool_used
+    name: ran-hotspots
+    tool: Bash
+    input_match: "hotspots.py"
+    arm: with-only
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only

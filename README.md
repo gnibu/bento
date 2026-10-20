@@ -30,6 +30,8 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-investigate` — evidence-first root-cause debugging; fix at the shared source.
   - `bento-checkpoint` — capture in-progress state so work survives a reset or handoff.
   - `bento-refactor` — change structure while holding behavior; pin first, prove equivalence.
+  - `bento-hotspots` — rank Python/JS/TS refactoring targets by complexity x churn, with import
+    cycles and fan-in/out; its diff mode flags what a branch made worse. `bento-ship` runs it.
   - `bento-prototype` — throwaway spike to make a design decision cheaply; decide by observation.
   - `bento-multi-phase-plan` — plan a large change as verifiable units before implementing.
   - `bento-ship` — the whole PR flow: commit, sync on the current base, QA, verify, pre-PR
@@ -130,6 +132,23 @@ It then writes the new principles wiring. Also drop `git submodule update --init
 any workspace setup script (e.g. Conductor's). Skill names changed from `/bento:ship` to
 `/bento-ship` (and `$bento:ship` to `$bento-ship`).
 
+## Scheduled refactor
+
+`bento-hotspots` has an unattended mode: each run picks the worst refactorable function, refactors
+it behind a test, and opens one draft PR labelled `hotspots`. Rejected PRs and the `## Leave`
+list in `.agents/bento/bento-hotspots.md` keep it from proposing the same thing twice.
+Schedule this prompt in the repo, with bento installed:
+
+```text
+Run /bento-hotspots in unattended mode.
+```
+
+- **Claude Code:** `/schedule` creates a cloud routine on a cron, e.g. daily at 2:00.
+- **GitHub Actions:** an `on: schedule` workflow running `anthropics/claude-code-action` with
+  that prompt.
+
+Either needs network access, so `uv` can fetch lizard.
+
 ## Develop
 
 ```bash
@@ -138,6 +157,7 @@ npx skills add . --list                      # what npx skills will install
 python3 -m unittest discover -s plugins/bento/skills/bento-init/scripts -p 'test_*.py'
 python3 -m unittest discover -s plugins/bento/skills/bento-learn/scripts -p 'test_*.py'
 python3 -m unittest discover -s plugins/bento/skills/bento-setup/scripts -p 'test_*.py'
+python3 -m unittest discover -s plugins/bento/skills/bento-hotspots/scripts -p 'test_*.py'  # needs uv
 claude plugin eval ./plugins/bento --runs 3 --ablation with-without --no-publish \
   --scaffold --allow-tools Bash               # scaffolded cases build a git repo per run
 ```

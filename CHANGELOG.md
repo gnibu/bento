@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **New `bento-hotspots`: measure code quality in Python, JavaScript and TypeScript.**
+  `hotspots.py` (lizard, via `uv run`) ranks functions by cognitive complexity x churn and
+  files by size x churn, and lists import cycles and fan-in/fan-out. The agent reads each top
+  entry and marks it refactor, leave or exclude before handing targets to `bento-refactor`.
+  Its diff mode (`--base`) reports only what the branch made worse: a function past a limit
+  (length, cyclomatic or cognitive complexity, nesting, parameters), a file past 500 lines, or
+  an import cycle a new import closed. `bento-ship` runs it while reviewing its own diff, and
+  `bento-refactor` uses the scan when no target is named.
+- **Scheduled refactor:** `Run /bento-hotspots in unattended mode` on a schedule opens at most one
+  draft PR per run, refactoring the top function behind a test. It skips functions with a
+  `hotspots` PR (closed means rejected) and the overlay's `## Leave` list. The README shows
+  how to schedule it.
 - **`bento-ship` puts Web UI screenshots on the ticket, not the PR.** The ticket comment
   attaches them; the PR's test plan says what each shows and points to the ticket. With no
   ticket update, they go in the PR as before.
