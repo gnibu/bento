@@ -37,7 +37,10 @@ maintenance job during setup. No Git repository → skip repository mappings.
    status), Approval (existing authority only) and source citations for each mapping. Reference
    manual sections rather than copying them. For forge/tracker identity, team, review status
    and ticket policy, link the owning AGENTS.md section or ship overlay; record only the
-   maintenance lookup method/access status here. Preserve everything outside the markers,
+   maintenance lookup method/access status here. Do not restate those policy fields, even
+   in a parenthetical beside the pointer. For example: `Policy: AGENTS.md:2; lookup:
+   glab mr list / glab issue list; access unverified (CLI unavailable)`.
+   Preserve everything outside the markers,
    including manual pins, protected paths and tracker policy. If a manual rule conflicts
    with discovery, report the drift and leave it intact; discovery grants no exception.
 5. **Report coverage/gaps.** List changed mappings, unavailable capabilities and unverified
