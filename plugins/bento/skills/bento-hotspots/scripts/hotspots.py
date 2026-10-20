@@ -25,6 +25,7 @@ from lizard_languages import get_reader_for  # type: ignore[import-untyped]
 
 PY_EXT = {".py"}
 JS_EXT = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs"]
+READ_AS = {".mts": ".ts", ".cts": ".ts"}  # lizard has no reader for these
 SKIP_DIRS = {"node_modules", "dist", "build", "vendor", "third_party", "__pycache__", "coverage", ".next",
              "fixtures", "__fixtures__", "testdata"}  # generated, vendored or deliberate test data
 LIMITS = {"nloc": 50, "ccn": 10, "cognitive": 15, "nesting": 3, "params": 5}
@@ -64,8 +65,14 @@ def is_source(path: str) -> bool:
     return not SKIP_DIRS.intersection(p.parts)
 
 
-def py_nesting(code: str) -> dict[int, int]:
-    """Max block depth per Python function, by def line. lizard's ns/nd miscount Python."""
+def reader_path(path: str) -> str:
+    suffix = PurePosixPath(path).suffix
+    return path[: -len(suffix)] + READ_AS[suffix] if suffix in READ_AS else path
+
+
+def py_functions(code: str) -> dict[int, tuple[str, int]]:
+    """(dotted name, max block depth) per Python def line. lizard miscounts Python nesting and
+    names a method without its class, so diff mode would pair `A.run` with `B.run`."""
     try:
         tree = ast.parse(code)
     except SyntaxError:
@@ -80,18 +87,27 @@ def py_nesting(code: str) -> dict[int, int]:
             best = max(best, depth(child, d + (isinstance(child, NESTS) and not elif_)))
         return best
 
-    return {n.lineno: depth(n, 0) for n in ast.walk(tree)
-            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    found: dict[int, tuple[str, int]] = {}
+
+    def visit(node: ast.AST, prefix: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                found[child.lineno] = (prefix + child.name, depth(child, 0))
+            visit(child, prefix + child.name + "." if isinstance(child, SCOPES[:3]) else prefix)
+
+    visit(tree, "")
+    return found
 
 
 def analyze(path: str, code: str) -> tuple[int, list[Function]]:
-    info = ANALYZER.analyze_source_code(path, code)
-    py = py_nesting(code) if path.endswith(".py") else None
-    return info.nloc, [
-        Function(path, f.name, f.start_line, f.nloc, f.cyclomatic_complexity, f.cognitive_complexity,
-                 py.get(f.start_line, 0) if py is not None else f.max_nested_structures, f.parameter_count)
-        for f in info.function_list
-    ]
+    info = ANALYZER.analyze_source_code(reader_path(path), code)
+    py = py_functions(code) if path.endswith(".py") else {}
+    functions = []
+    for f in info.function_list:
+        name, nesting = py.get(f.start_line, (f.name, f.max_nested_structures))
+        functions.append(Function(path, name, f.start_line, f.nloc, f.cyclomatic_complexity,
+                                  f.cognitive_complexity, nesting, f.parameter_count))
+    return info.nloc, functions
 
 
 def imports(path: str, code: str, files: set[str]) -> set[str]:
@@ -131,11 +147,9 @@ def py_imports(path: str, code: str, files: set[str]) -> set[str]:
             searches += [(roots, [a.name]) for a in node.names]
         elif isinstance(node, ast.ImportFrom):
             mod = node.module or ""
-            names = [f"{mod}.{a.name}".strip(".") for a in node.names] + [mod]
-            if node.level:
-                searches.append(([here.parents[node.level - 2] if node.level > 1 else here], names))
-            else:
-                searches.append((roots, names))
+            base = ([here.parents[node.level - 2] if node.level > 1 else here] if node.level else roots)
+            # each name is a submodule, else an attribute of the module it comes from
+            searches += [(base, [f"{mod}.{a.name}".strip("."), mod]) for a in node.names]
     return {hit for search_roots, names in searches if (hit := py_module(search_roots, names, files))}
 
 
@@ -144,20 +158,36 @@ def py_module(roots: list[PurePosixPath], names: list[str], files: set[str]) -> 
     return next((c for stem in stems for c in (f"{stem}.py", f"{stem}/__init__.py") if c in files), None)
 
 
+def js_tokens(path: str, code: str) -> list[tuple[str, int]]:
+    """Significant tokens (no whitespace or comments) with their line numbers."""
+    found, line = [], 1
+    for tok in get_reader_for(reader_path(path)).generate_tokens(code):
+        if tok.strip() and not tok.startswith(("//", "/*")):
+            found.append((tok, line))
+        line += tok.count("\n")
+    return found
+
+
 def js_imports(path: str, code: str, files: set[str]) -> set[str]:
-    here = PurePosixPath(path).parent
-    tokens = [t for t in get_reader_for(path).generate_tokens(code)
-              if t.strip() and not t.startswith(("//", "/*"))]
-    found: set[str] = set()
+    """Relative specifiers of static imports and of requires outside functions. Dynamic
+    import() and a require inside a function are deferred, like a function-local import."""
+    tokens = js_tokens(path, code)
+    words = [tok for tok, _ in tokens]
+    deferred = {n for f in ANALYZER.analyze_source_code(reader_path(path), code).function_list
+                for n in range(f.start_line, f.end_line + 1)} if "require" in code else set()
+    specs = []
     type_only = False  # `import type` / `export type`: erased at compile time
-    for i, tok in enumerate(tokens):
+    for i, (tok, line) in enumerate(tokens):
         if tok in ("import", "export"):
-            type_only = tokens[i + 1:i + 2] == ["type"]
-        # dynamic import() is deferred, like a function-local import, so only these count:
-        static = i > 0 and (tokens[i - 1] in ("from", "import") or tokens[i - 2:i] == ["require", "("])
-        if tok[0] in "'\"`" and static and not type_only and tok[1] == ".":
-            found.add(js_module(here, tok[1:-1], files) or "")
-    return found - {""}
+            type_only = words[i + 1:i + 2] == ["type"]
+        if i == 0 or tok[0] not in "'\"`" or tok[1:2] != ".":
+            continue
+        if words[i - 1] in ("from", "import") and not type_only:
+            specs.append(tok[1:-1])
+        elif words[i - 2:i] == ["require", "("] and line not in deferred:
+            specs.append(tok[1:-1])
+    here = PurePosixPath(path).parent
+    return {hit for spec in specs if (hit := js_module(here, spec, files))}
 
 
 def js_module(here: PurePosixPath, spec: str, files: set[str]) -> str | None:

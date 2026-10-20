@@ -142,6 +142,39 @@ class HotspotsTest(unittest.TestCase):
         self.assertIn("(1 files,", out.stdout)
         self.assertNotIn("b/n.py", out.stdout)
 
+    def test_scan_reads_mts_and_cts(self):
+        self.commit({"esm.mts": "export function m(a: number) { if (a) { return 1 } return 0 }\n",
+                     "cjs.cts": "export function c(a: number) { return a ? 1 : 0 }\n"})
+        out = self.run_script()
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertIn("- esm.mts:1 m ", out.stdout)
+        self.assertIn("- cjs.cts:1 c ", out.stdout)
+
+    def test_import_edges_follow_load_time_rules(self):
+        self.commit({
+            # each name of a from-import resolves on its own: x -> z closes a cycle
+            "p/__init__.py": "", "p/y.py": "", "p/x.py": "from . import y, z\n",
+            "p/z.py": "from p import x\n",
+            # `import type` ends at its specifier; the require after it is a real edge
+            "t.ts": "export type T = 1;\n",
+            "a.ts": "import type { T } from './t'; const b = require('./b');\n",
+            # a require inside a function is deferred: no b -> c edge, no cycle with c
+            "b.js": "const a = require('./a');\nfunction later() {\n  return require('./c');\n}\n",
+            "c.js": "const b = require('./b');\n",
+        })
+        out = self.run_script()
+        cycles = out.stdout.split("## Import cycles\n\n")[1].split("\n\n")[0].splitlines()
+        self.assertEqual(sorted(cycles), ["- a.ts <-> b.js", "- p/x.py <-> p/z.py"], out.stdout)
+
+    def test_diff_matches_python_methods_by_class(self):
+        method = "    def run(self, a, b, c, d, e, f):\n" + "".join("    " + l + "\n" for l in TANGLED.splitlines()[1:])
+        self.commit({"jobs.py": "class A:\n" + method + "\n\nclass B:\n    def run(self, x):\n        return x\n"})
+        self.git("checkout", "-q", "-b", "feature")
+        self.commit({"jobs.py": "class B:\n" + method})  # A gone, B.run now tangled
+        out = self.run_script("--base", "main")
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+        self.assertIn("jobs.py:2 B.run  cognitive 0->", out.stdout)
+
     def test_diff_clean_branch_passes(self):
         self.commit({"core.py": TANGLED, "calm.py": SIMPLE})
         self.git("checkout", "-q", "-b", "feature")
