@@ -25,7 +25,8 @@ from lizard_languages import get_reader_for  # type: ignore[import-untyped]
 
 PY_EXT = {".py"}
 JS_EXT = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs"]
-SKIP_DIRS = {"node_modules", "dist", "build", "vendor", "third_party", "__pycache__", "coverage", ".next"}
+SKIP_DIRS = {"node_modules", "dist", "build", "vendor", "third_party", "__pycache__", "coverage", ".next",
+             "fixtures", "__fixtures__", "testdata"}  # generated, vendored or deliberate test data
 LIMITS = {"nloc": 50, "ccn": 10, "cognitive": 15, "nesting": 3, "params": 5}
 FILE_LIMIT = 500  # NLOC
 ANALYZER = lizard.FileAnalyzer(lizard.get_extensions(["ns", "cognitive"]))  # ns: JS/TS nesting only
@@ -139,13 +140,8 @@ def py_imports(path: str, code: str, files: set[str]) -> set[str]:
 
 
 def py_module(roots: list[PurePosixPath], names: list[str], files: set[str]) -> str | None:
-    for root in roots:
-        for dotted in names:
-            stem = root.joinpath(*dotted.split(".")) if dotted else root
-            for candidate in (f"{stem}.py", f"{stem}/__init__.py"):
-                if candidate in files:
-                    return candidate
-    return None
+    stems = (root.joinpath(*dotted.split(".")) if dotted else root for root in roots for dotted in names)
+    return next((c for stem in stems for c in (f"{stem}.py", f"{stem}/__init__.py") if c in files), None)
 
 
 def js_imports(path: str, code: str, files: set[str]) -> set[str]:

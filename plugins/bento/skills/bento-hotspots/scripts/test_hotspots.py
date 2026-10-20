@@ -81,6 +81,7 @@ class HotspotsTest(unittest.TestCase):
             "src/b.ts": "import { a } from './a.js';\nexport function b() { return a; }\n",
             "src/view.tsx": "export function View({ on }: P) { return on ? <b/> : null; }\n",
             "dist/core.js": "function generated(a) { if (a) { if (a) { if (a) { return 1 } } } }\n",
+            "tests/fixtures/sample.py": TANGLED,
         })
         self.commit({"core.py": TANGLED + "\n"})
         out = self.run_script()
@@ -91,6 +92,7 @@ class HotspotsTest(unittest.TestCase):
         self.assertIn("src/a.ts <-> src/b.ts", out.stdout)
         self.assertIn("src/view.tsx", out.stdout)
         self.assertNotIn("dist/", out.stdout)
+        self.assertNotIn("fixtures/", out.stdout)
 
     def test_diff_flags_function_made_worse(self):
         self.commit({"core.py": "def tangled(a, b, c, d, e, f):\n    return a\n"})

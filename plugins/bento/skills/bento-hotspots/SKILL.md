@@ -25,7 +25,8 @@ script with any Python that already has lizard, such as the repo's `.venv/bin/py
 didn't run. The script measures, per function: `nloc`, `ccn` (cyclomatic), `cognitive`
 (Sonar cognitive complexity), `nesting` and `params`. Its limits are 50 / 10 / 15 / 3 / 5,
 plus 500 NLOC per file. Pass paths to narrow the scan. Generated code (`dist/`, `build/`,
-`*.min.js`, `*.d.ts`) and untracked files are skipped.
+`*.min.js`, `*.d.ts`), vendored code, test data (`fixtures/`, `testdata/`) and untracked
+files are skipped.
 
 ## Scan mode: "where should we refactor?" (paste as todos)
 
