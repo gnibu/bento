@@ -117,7 +117,8 @@ No hook runs this — it is a deliberate step, run two ways:
 - **Manually** — `/bento-learn` (Claude) or `$bento-learn` (Codex), for
   sessions that end without a PR (debugging, investigation). Same steps; committing the
   result is the user's call.
-- **Review history, on request** — `bento-learn --reviews` uses the shared collection below
+- **Review history, on request** — `bento-learn --reviews` uses the
+  [shared review collection](references/review-history.md)
   for a caller-specified PR set/window, or a bounded recent sample. A factory uses
   `bento-learn --reviews --propose-only` and returns proposals for human review; it does not
   turn review text into self-approved standing rules.

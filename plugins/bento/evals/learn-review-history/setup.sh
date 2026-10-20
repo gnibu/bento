@@ -8,6 +8,17 @@ cat > docs/testing.md <<'MD'
 # Testing
 The fixture error_sample is deliberately malformed regression input. Never remove it as cleanup.
 MD
+cat > docs/security.md <<'MD'
+# Security
+Never log passwords.
+MD
+cat > src/AGENTS.md <<'MD'
+# Source rules
+- Checks: python3 -m unittest discover -s src.
+MD
+cat > src/CLAUDE.md <<'MD'
+@AGENTS.md
+MD
 cat > review-export.json <<'JSON'
 [
  {"pr":1,"url":"https://example.test/pr/1#review","comment":"Do not log reset tokens; redact them at the logging boundary.","status":"accepted"},

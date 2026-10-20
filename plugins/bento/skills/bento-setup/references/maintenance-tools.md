@@ -19,7 +19,7 @@ maintenance job during setup. No Git repository → skip repository mappings.
    | Documentation | docs-upkeep | Docs roots, navigation/index config, audience/exclusion rules, link/build commands |
    | Dependency advisories | security-fix | Scanner or forge advisory access, package manager, consumed lockfiles, pins/cooldowns, dependency skill |
    | Error monitoring | error-fix | Provider/projects, environment, query/window, event lookup, candidate bound and diagnostic skill |
-   | Forge and tracker | overlap checks and caller delivery | Forge, PR/issue lookup method, tracker or explicit none, ticket policy |
+   | Forge and tracker | overlap checks and caller delivery | Pointer to the owning instructions/ship policy, plus PR/issue lookup method; no second tracker identity/team/status copy |
    | Protected paths | every task | Forbidden paths, generated files and deployment/production boundaries |
 
    Never infer a provider from another or choose a popular default. No monitoring declared
@@ -35,7 +35,9 @@ maintenance job during setup. No Git repository → skip repository mappings.
    `<!-- bento:maintenance:start -->` / `<!-- bento:maintenance:end -->`, creating it if absent.
    Use `## Discovered maintenance tools` with Trigger (task/scope), Action (tool/command and
    status), Approval (existing authority only) and source citations for each mapping. Reference
-   manual sections rather than copying them. Preserve everything outside the markers,
+   manual sections rather than copying them. For forge/tracker identity, team, review status
+   and ticket policy, link the owning AGENTS.md section or ship overlay; record only the
+   maintenance lookup method/access status here. Preserve everything outside the markers,
    including manual pins, protected paths and tracker policy. If a manual rule conflicts
    with discovery, report the drift and leave it intact; discovery grants no exception.
 5. **Report coverage/gaps.** List changed mappings, unavailable capabilities and unverified

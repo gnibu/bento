@@ -33,6 +33,16 @@
     },
     {
       "type": "regex",
+      "name": "stale-reference-removed",
+      "target": {
+        "source": "file",
+        "path": "area/AGENTS.md"
+      },
+      "pattern": "old-testing\\.md",
+      "match": "not_contains"
+    },
+    {
+      "type": "regex",
       "name": "safety-preserved",
       "target": {
         "source": "file",

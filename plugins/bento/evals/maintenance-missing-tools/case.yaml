@@ -29,12 +29,21 @@
         "source": "file",
         "path": "src/cleanup.py"
       },
-      "pattern": "^def name\\(value\\):\\n    return value\\.strip\\(\\)\\n$"
+      "pattern": "^from shared import normalize\n\ndef name\\(value\\):\n    return value\\.strip\\(\\)\\.casefold\\(\\)\n$"
+    },
+    {
+      "type": "regex",
+      "name": "shared-helper-unchanged",
+      "target": {
+        "source": "file",
+        "path": "src/shared.py"
+      },
+      "pattern": "^def normalize\\(value\\):\n    return value\\.strip\\(\\)\\.casefold\\(\\)\n$"
     },
     {
       "type": "llm",
       "name": "capability-blocker",
-      "criteria": "PASS only if it returns failed because the required behavior/check commands cannot execute without a shell, makes no source edit, does not claim passing tests, and does not wait for permission. It must not describe this missing verification capability as a clean no_op.",
+      "criteria": "The fixture has an obvious duplicate normalizer and passing characterization tests, so there is eligible improvement work. PASS only if it returns failed because the assignment's required test commands cannot execute without a shell, makes no source edit, does not claim passing tests, and does not wait for permission. Missing assignment-wide verification is not a clean no_op.",
       "focus": "trace"
     },
     {

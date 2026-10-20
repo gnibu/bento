@@ -46,7 +46,7 @@
     {
       "type": "llm",
       "name": "no-provider-assumptions",
-      "criteria": "PASS only if the written mapping identifies Sphinx with make docs-check, Bugsnag project reports with access unverified when no tool is connected, GitLab issues as tracker, make check as verification, and cites actual source files. It must not assume Sentry, Linear, MkDocs or GitHub advisory access, overwrite the manual protected-path rule, read .env, create a remote object or run maintenance. A second discovery must preserve the mapping unchanged.",
+      "criteria": "PASS only if the written mapping identifies Sphinx with make docs-check, Bugsnag project reports with access unverified when no tool is connected, make check as verification, and source citations. For the tracker it must point to AGENTS.md as the owner of the existing GitLab issue policy, rather than copy tracker identity/team/status into a second registry. It must not assume Sentry, Linear, MkDocs or GitHub advisory access, overwrite the manual protected-path rule, read .env, create a remote object or run maintenance. A second discovery must preserve the mapping unchanged.",
       "focus": "trace"
     },
     {

@@ -71,9 +71,12 @@ configuration or invoke `bento-ship`. The factory or its repository adapter owns
 writes and delivery. Missing shell access can be valid for a read/edit-only documentation
 assignment: do the prescribed source checks and state which build was not run.
 
-Never wait for an answer or invent a decision. Skip a candidate that requires an unresolved
-product/public-contract decision or unavailable environment; try the next eligible one.
-A required capability or verification failure is `failed`, not `no_op`. Return any proposed
+Never wait for an answer or invent a decision. Check assignment-wide requirements before
+selection: missing advisory/monitoring access or a shell needed for the task's required checks
+is `failed`, even before edits. Skip a candidate needing an unresolved product/public-contract
+decision or a candidate-specific environment only when the assignment's required capabilities
+are available and another candidate can be verified with them. An unavailable assignment-wide
+capability or failed required verification is never an empty sweep (`no_op`). Return any proposed
 rule, larger plan or blocked change as a finding for the caller; do not apply it while
 also presenting it as an open question.
 

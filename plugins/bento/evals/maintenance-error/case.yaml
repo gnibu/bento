@@ -42,7 +42,7 @@
       "type": "tool_used",
       "name": "no-git-delivery",
       "tool": "Bash",
-      "input_match": "git\\s+(?:add|commit|push|checkout|switch|reset|stash|rebase|merge|fetch)\\b|gh\\s+(?:pr\\s+(?:create|merge)|api[^\\n]*-X\\s*POST)",
+      "input_match": "\\bgit\\s+(?:(?:-[Cc]\\s+\\S+|--(?:git-dir|work-tree|namespace|config-env)(?:=\\S+|\\s+\\S+)|--(?:no-pager|no-optional-locks|literal-pathspecs))\\s+)*(?:(?:add|commit|push|pull|reset|stash|rebase|merge|fetch|cherry-pick|revert|am|switch|update-ref|read-tree|write-tree|commit-tree)\\b|checkout\\b(?!\\s+--(?:\\s|$))|restore\\b[^;|\\n]*(?:--staged|-S)\\b|apply\\b[^;|\\n]*(?:--index|--cached)\\b|branch\\s+(?:-[dDmMcCfF]\\b|--(?:delete|move|copy|force|edit-description|set-upstream-to|unset-upstream)\\b|[^-\\s]\\S*)|worktree\\s+(?:add|move|remove|prune|repair|lock|unlock)\\b|tag\\s+(?:-[adfsum]\\b|--(?:delete|annotate|force|sign|local-user|message|file)\\b|[^-\\s]\\S*))|\\bgh\\s+(?:--repo\\s+\\S+\\s+)*(?:(?:pr|issue)\\s+(?:create|merge|close|reopen|comment|edit|review|ready|lock|unlock)\\b|api\\b[^;|\\n]*(?:-X\\s*|--method(?:\\s+|=))(?:POST|PATCH|PUT|DELETE)\\b|api\\b(?![^;|\\n]*(?:-X\\s*GET|--method(?:\\s+|=)GET)\\b)[^;|\\n]*(?:-f|--field|--raw-field|-F)(?:\\s|=))",
       "arm": "both",
       "min": 0,
       "max": 0
