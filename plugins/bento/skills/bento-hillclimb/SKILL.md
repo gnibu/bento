@@ -4,8 +4,9 @@ description: |
   Tune anything measurable — retrieval quality, latency, eval scores, a prompt — by
   disciplined one-variable-at-a-time experiments with a kept/reverted log. Use when:
   (1) improving a metric, (2) tuning retrieval/RAG or performance, (3) iterating on a
-  prompt against a dataset. Triggers: "tune", "improve the score", "optimize",
-  "why did it get worse", "iterate on".
+  prompt against a dataset. An unexpected failure/regression belongs to bento-investigate
+  first; running an existing suite once is not tuning. Triggers: "tune", "improve the score",
+  "optimize a metric", "iterate on a measured baseline".
 ---
 
 # Hillclimb

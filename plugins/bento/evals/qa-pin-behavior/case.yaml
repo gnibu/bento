@@ -27,4 +27,5 @@ graders:
   - type: tool_used
     name: fired
     tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-qa"'
     arm: with-only

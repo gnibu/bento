@@ -1,0 +1,57 @@
+schema_version: '1.0'
+name: workflow-docs
+tags:
+- workflow
+execution:
+  prompt: The export CLI flag was renamed. Update the README usage examples to match the current
+    code, check the documented command, and add a release note in CHANGELOG.md under Unreleased.
+    Do not change the CLI.
+  max_turns: 16
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-docs"'
+  arm: with-only
+- type: regex
+  name: current-example
+  target:
+    source: file
+    path: README.md
+  pattern: python3 cli\.py --destination ./export
+- type: regex
+  name: no-old-example
+  target:
+    source: file
+    path: README.md
+  pattern: --output-dir
+  match: not_contains
+- type: regex
+  name: release-note
+  target:
+    source: file
+    path: CHANGELOG.md
+  pattern: '## Unreleased.*--destination'
+  flags: s
+- type: regex
+  name: cli-unchanged
+  target:
+    source: file
+    path: cli.py
+  pattern: ^import\ argparse\nparser\ =\ argparse\.ArgumentParser\(\)\nparser\.add_argument\("\-\-destination",\
+    required=True\)\nargs\ =\ parser\.parse_args\(\)\nprint\(args\.destination\)\n$
+- type: tool_used
+  name: ran-example
+  tool: Bash
+  input_match: python3 cli\.py --destination
+context:
+  scaffold_script: setup.sh

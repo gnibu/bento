@@ -44,6 +44,9 @@ naming its trigger, action and approval. Link a repo skill or doc instead of cop
 
 ## Gate first — should it exist?
 
+Check existing playbooks first. If one owns the task, amend that owner (or its repo overlay)
+instead of adding a competing skill.
+
 Add a playbook only when the same task shape has recurred (≥2–3 times) and you can name a
 concrete trigger. One occurrence → do it inline via `bento-figure-it-out`, don't skill it.
 Speculative playbooks are cost paid by every future reader. Default to not adding.

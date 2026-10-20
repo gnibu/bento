@@ -1,0 +1,28 @@
+schema_version: '1.0'
+name: workflow-authoring
+tags:
+- workflow
+execution:
+  prompt: Our release verification procedure has recurred three times across projects. Explain how
+    you would turn it into a bento playbook, including its trigger, ordered checklist, proof, and
+    how you would decide whether to keep it. Also explain where a rule that applies only to one repo
+    should go. Planning exercise only; do not inspect or change files.
+  max_turns: 5
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+graders:
+- type: llm
+  name: earned-playbook
+  criteria: PASS if the response checks for an existing owner before adding a playbook, specifies
+    concrete description triggers and an ordered checkable procedure with a real proof artifact,
+    requires with/without behavioral evaluation before keeping it, and routes the repo-only rule
+    to .agents/bento/<owner>.md rather than editing installed bento skills.
+  focus: last_message
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-authoring-a-playbook"'
+  arm: with-only
+context:
+  scaffold_script: setup.sh

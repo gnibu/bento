@@ -1,0 +1,35 @@
+schema_version: '1.0'
+name: workflow-figure-it-out
+tags:
+- workflow
+execution:
+  prompt: Reconcile exports/a.json and exports/b.json into a deduplicated JSON archive under .context,
+    using id as the key. Identical records may merge; conflicting values for one id must be reported
+    without silently choosing a winner. Produce a manifest that accounts for every input record and
+    verify the result. Do not modify originals. This is a one-off task, not a request for a new skill.
+  max_turns: 20
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- type: llm
+  name: reconciled-proof
+  criteria: PASS if actual output files preserve ids 1 and 2 and both conflicting versions of id
+    3 (or explicitly exclude id 3 into a conflict artifact), the manifest accounts for all 5 input
+    rows including identical duplicates, and executed verification checks the outputs and unchanged
+    originals. The transcript must sequence the work before edits; a self-report without verification
+    fails. No new playbook should be created.
+  focus: trace
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-figure-it-out"'
+  arm: with-only
+context:
+  scaffold_script: setup.sh

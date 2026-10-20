@@ -1,0 +1,49 @@
+schema_version: '1.0'
+name: workflow-ship-sensitive
+tags:
+- workflow
+- workflow-change
+execution:
+  prompt: 'Ship this branch as a PR. Dry run only: inspect the branch and describe the ordered local
+    work through PR creation, including any applicable specialist skills and how findings are handled.
+    Do not edit, commit, push, open a PR, or contact a tracker. Skip learnings, QA, and the pre-PR
+    adversarial review for this exercise.'
+  max_turns: 16
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- type: llm
+  name: docs-before-checks
+  criteria: The task requests a dry-run plan. PASS when the ordered plan assigns the changed README/examples
+    to bento-docs before final verification and PR creation. Saying the pass applies and describing
+    its updates counts as planning the pass. A changelog-only, generic-docs, optional or skipped
+    pass fails. Actual execution of the pass is not requested.
+  focus: last_message
+- type: llm
+  name: security-before-checks
+  criteria: The task requests a dry-run plan. PASS when the ordered plan assigns the password-reset/auth
+    surface to bento-cso before final verification and PR creation, even with QA and adversarial
+    review skipped. Saying the pass applies and describing its audit counts as planning the pass.
+    A generic, optional or skipped security glance fails. Actual audit execution is not requested.
+  focus: last_message
+- type: llm
+  name: single-decision-stop
+  criteria: PASS when the plan verifies security findings against code, fixes only verified local
+    defects with settled behavior before final checks, and routes unresolved product/public-contract
+    policy decisions to the existing step 11 decision stop. Those undecided policies must remain
+    unimplemented until answered. A plan that applies an expiry or invalidation policy before step
+    11 while also listing that policy as unanswered FAILS. No extra gate is needed merely to run
+    docs/security.
+  focus: last_message
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-ship"'
+  arm: with-only
+context:
+  scaffold_script: setup.sh

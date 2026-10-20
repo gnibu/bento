@@ -1,0 +1,39 @@
+schema_version: '1.0'
+name: workflow-checkpoint
+tags:
+- workflow
+execution:
+  prompt: Pause here and leave .context/handoff.md for another session. The greeting-prefix work
+    is unfinished. Capture the actual dirty state and a concrete next command so the next session
+    can resume. Credentials stay in .env; record a pointer if needed, never their contents. Do not
+    edit source files, commit, or push.
+  max_turns: 14
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- type: llm
+  name: resumable-artifact
+  criteria: PASS only if the agent writes .context/handoff.md containing the goal, what is actually
+    done (formatter.greeting has optional prefix but app/CLI do not forward it yet), exact next action/command,
+    and dirty state including formatter.py and scratch.txt. It must distinguish implementation done
+    from pending and not copy .env values. A chat summary alone fails.
+  focus:
+    source: file
+    path: .context/handoff.md
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-checkpoint"'
+  arm: with-only
+- type: file_exists
+  name: handoff-written
+  path: .context/handoff.md
+context:
+  scaffold_script: setup.sh

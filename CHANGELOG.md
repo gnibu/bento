@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- **Shipping checks affected docs and sensitive changes.** `bento-ship` calls `bento-docs`
+  before final checks for public behavior, CLI/API/config contracts or example changes, and
+  `bento-cso` for auth, trust-boundary, secret or sensitive-data exposure changes. Security
+  decisions use the existing decision stop; docs/security outcomes appear in the PR and report.
+- **Spec and planning preserve the requested scope.** Spec-only and plan-only requests stop
+  at their artifact. When used as preparation for an implementation request, they continue
+  the authorized work once the contract is settled, without another permission round.
+- **More precise skill routing and evals.** Debugging, tuning, comparisons and large-change
+  planning have clearer boundaries. All 18 skills now have behavioral cases; new workflow
+  cases cover secondary duties, continuation and trivial-task exclusions, and firing checks
+  identify the intended skill rather than any skill call. Playbook authoring checks for an
+  existing owner before adding a competing skill.
+- **Shorter handoff and fallback checklists.** `bento-checkpoint` and `bento-figure-it-out`
+  retain their evidence and scope rules with fewer steps and less repeated guidance.
 - **`bento-ship` puts Web UI screenshots on the ticket, not the PR.** The ticket comment
   attaches them; the PR's test plan says what each shows and points to the ticket. With no
   ticket update, they go in the PR as before.

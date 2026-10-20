@@ -1,0 +1,30 @@
+schema_version: '1.0'
+name: workflow-cso
+tags:
+- workflow
+execution:
+  prompt: Audit reset.py for security vulnerabilities. Report evidence with file/line and concrete
+    exploit paths; recommend fixes. Do not change files or run exploits against any shared service.
+  max_turns: 14
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- type: llm
+  name: evidenced-findings
+  criteria: PASS if findings identify both the predictable reset token (str(user_id)) allowing account
+    takeover and the unbound user_id supplied to consume_reset enabling reset of another account,
+    with concrete exploit reasoning and file/line evidence. Recommend cryptographically random, expiring,
+    single-use tokens bound to the stored user. Do not invent vulnerabilities in unrelated code.
+  focus: trace
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-cso"'
+  arm: with-only
+context:
+  scaffold_script: setup.sh

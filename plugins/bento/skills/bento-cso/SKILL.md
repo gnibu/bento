@@ -2,7 +2,8 @@
 name: bento-cso
 description: |
   Security audit of a change or surface — find vulnerabilities before they ship. Use for a
-  security review, or when touching auth, input handling, secrets, or data access. Triggers:
+  security review, or changes to auth/permissions, trust boundaries, secret handling or
+  sensitive data exposure. Routine internal data access alone is not a trigger. Triggers:
   "security review", "is this safe", "audit for vulnerabilities", "check for security issues".
 ---
 
@@ -10,6 +11,10 @@ description: |
 
 Review the code/change against the common vulnerability classes and report real, evidenced
 findings. Confidence-calibrated: don't surface what you can't point to.
+
+`bento-ship` calls this audit conditionally before final checks. Return the scope, findings
+and recommended fixes to the caller; the audit itself edits nothing. Ship triages local fixes
+and carries product/public-contract decisions into its existing decision stop.
 
 **Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
 overlay `.agents/bento/bento-cso.md` at the repo root; follow it under the

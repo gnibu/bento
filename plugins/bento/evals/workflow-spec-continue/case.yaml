@@ -1,0 +1,40 @@
+schema_version: '1.0'
+name: workflow-spec-continue
+tags:
+- workflow
+- workflow-change
+execution:
+  prompt: 'Implement blank-name handling: greet(None), greet(""), and greet("   ") must return "hi
+    anonymous"; shout uses the same normalization. Nonblank names keep their existing behavior. First
+    use the requirements-spec playbook to write a short spec with acceptance tests, then implement
+    and test it in this same task. These behavior decisions are settled. Work solo, do not commit
+    or push.'
+  max_turns: 22
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- type: llm
+  name: implemented
+  criteria: PASS only if the transcript contains actual implementation edits plus a passing test
+    run covering None, empty, and whitespace names through greet and shout. A spec and a request
+    for implementation approval fails. Existing nonblank behavior must be preserved.
+  focus: trace
+- type: llm
+  name: spec-contract
+  criteria: PASS if an actual spec artifact records the stated behavior and checkable acceptance
+    criteria before implementation. Do not reward merely promising to write a spec.
+  focus: trace
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-spec"'
+  arm: with-only
+context:
+  scaffold_script: setup.sh

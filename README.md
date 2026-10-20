@@ -25,14 +25,16 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   artifact:
   - `bento-eval-blind` — compare models/prompts without bias leaking into the verdict.
   - `bento-hillclimb` — tune a metric one variable at a time, keep-or-revert, logged.
-  - `bento-figure-it-out` — fallback for a task no playbook covers; frame it, then maybe capture it.
+  - `bento-figure-it-out` — fallback for unmatched multi-step work; frame it, then maybe capture it.
   - `bento-authoring-a-playbook` — how to write a new bento playbook (gate, checklist, prove, eval).
   - `bento-investigate` — evidence-first root-cause debugging; fix at the shared source.
   - `bento-checkpoint` — capture in-progress state so work survives a reset or handoff.
   - `bento-refactor` — change structure while holding behavior; pin first, prove equivalence.
   - `bento-prototype` — throwaway spike to make a design decision cheaply; decide by observation.
   - `bento-multi-phase-plan` — plan a large change as verifiable units before implementing.
-  - `bento-ship` — the whole PR flow: commit, sync on the current base, QA, verify, pre-PR
+    Plan-only requests stop at the plan; preparation inside a build request continues the work.
+  - `bento-ship` — the whole PR flow: commit, sync on the current base, affected docs, QA,
+    a conditional security audit, verify, pre-PR
     review, one stop for decisions, push/PR, ticket update. Reads the base branch, forge and
     tracker from the repo's AGENTS.md, so a repo needs no PR skill of its own.
   - `bento-adversarial-review` — the other model family (Codex under Claude, Claude under
@@ -41,8 +43,11 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-qa` — exercise a change on its real surface (browser/CLI/API), pin each changed
     behavior with a test, and bootstrap a test system when the repo has none. `bento-ship` runs it.
   - `bento-spec` — turn vague intent into a precise, executable spec before building.
+    Spec-only requests stop there; an implementation request resumes once the contract is settled.
   - `bento-cso` — security audit against common vuln classes; evidenced, confidence-calibrated.
-  - `bento-docs` — write/update docs to match current code; release notes.
+    Ship calls it for changes to auth/permissions, trust boundaries, secrets or sensitive data exposure.
+  - `bento-docs` — write/update docs to match current code; release notes. Ship calls it before
+    final checks when public behavior, CLI flags, API/config contracts or examples change.
 - **Forge** — the learning engine and generator:
   - `bento-learn` — Reflect → Route → Propose: route each session's learnings to their
     cheapest correct home (L1 bento / L2 repo), with an eval-gated keep-or-revert. Run it
@@ -54,9 +59,11 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   ticket, QA, pre-PR review…; `--preferences` re-asks); migrate an old install; `--purge` to
   unwire.
 
-Quality is built in: an **eval harness** (`claude plugin eval` with with/without ablation +
-a `tool_used` firing indicator) proves whether a skill actually changes behavior — see
-`plugins/bento/evals/`.
+The **eval harness** (`claude plugin eval` with with/without ablation) covers all 18 skills.
+Firing indicators check the intended skill, separately from behavior scores. Workflow cases
+check captured edits, commands and artifacts, including spec/plan continuation, conditional
+docs/security passes, and negative controls for routine test runs and tiny edits. See
+`plugins/bento/evals/`. Coverage alone is not evidence of lift; compare the scored behavior.
 
 ## Repo overlays
 
@@ -139,8 +146,12 @@ python3 -m unittest discover -s plugins/bento/skills/bento-init/scripts -p 'test
 python3 -m unittest discover -s plugins/bento/skills/bento-learn/scripts -p 'test_*.py'
 python3 -m unittest discover -s plugins/bento/skills/bento-setup/scripts -p 'test_*.py'
 claude plugin eval ./plugins/bento --runs 3 --ablation with-without --no-publish \
-  --scaffold --allow-tools Bash               # scaffolded cases build a git repo per run
+  --scaffold --allow-tools Bash Write Edit    # scaffolded cases build a git repo per run
 ```
+
+Use `--tag workflow` for the workflow and routing-boundary cases. Their graders inspect tool
+traces or a named output file, rather than trusting the final summary; negative Skill checks
+set `arm: both` so they remain scored under ablation.
 
 Use potion off-the-shelf when it meets your generation needs; use `bento-init` when
 you need bento's reviewed generation and baseline-aware updates.
@@ -148,7 +159,6 @@ you need bento's reviewed generation and baseline-aware updates.
 ## Not built yet (deliberately)
 
 - More playbooks — add only when a real recurring task needs one, never speculatively.
-- Eval cases for spec/cso/docs — the harness exists; the rest have cases.
 
 ## Credits
 
