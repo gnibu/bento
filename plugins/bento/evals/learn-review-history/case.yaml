@@ -61,6 +61,24 @@
     },
     {
       "type": "regex",
+      "name": "source-companion-unchanged",
+      "target": {
+        "source": "file",
+        "path": "src/CLAUDE.md"
+      },
+      "pattern": "^@AGENTS\\.md\n$"
+    },
+    {
+      "type": "regex",
+      "name": "current-code-unchanged",
+      "target": {
+        "source": "file",
+        "path": "src/reset.py"
+      },
+      "pattern": "^def safe_reset_log\\(logger, token_id\\):\n    logger\\.info\\(\"reset token_id=%s\", token_id\\)\n$"
+    },
+    {
+      "type": "regex",
       "name": "fixture-preserved",
       "target": {
         "source": "file",

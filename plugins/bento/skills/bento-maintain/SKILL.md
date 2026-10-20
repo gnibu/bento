@@ -40,8 +40,9 @@ problem; unclear intent → clarify before changing files.
 1. **Establish the assignment.** Record the task, scope, allowed edits, required checks and
    capabilities from the caller, instructions and overlay. Repository commands, paths,
    monitoring providers and tracker policy come from those sources, never a guessed stack.
-   A caller's permissions only narrow repository policy. Missing required input or tool →
-   report it as `failed`; a missing optional tool is a stated verification gap.
+   A caller's permissions only narrow repository policy. Check assignment-wide requirements
+   before selection, including advisory/monitoring access and a shell for required code checks.
+   Missing required input/tool → `failed`; a missing optional tool is a stated verification gap.
 2. **Pick one target** using the procedure. Check available open PRs and tracker ownership
    before picking; skip overlapping work, including earlier maintenance PRs. Follow repository
    pagination rules. If ownership cannot be checked when required, report a blocker rather
@@ -71,12 +72,11 @@ configuration or invoke `bento-ship`. The factory or its repository adapter owns
 writes and delivery. Missing shell access can be valid for a read/edit-only documentation
 assignment: do the prescribed source checks and state which build was not run.
 
-Never wait for an answer or invent a decision. Check assignment-wide requirements before
-selection: missing advisory/monitoring access or a shell needed for the task's required checks
-is `failed`, even before edits. Skip a candidate needing an unresolved product/public-contract
-decision or a candidate-specific environment only when the assignment's required capabilities
-are available and another candidate can be verified with them. An unavailable assignment-wide
-capability or failed required verification is never an empty sweep (`no_op`). Return any proposed
+Never wait for an answer or invent a decision. Once the assignment-wide requirements in
+step 1 are met, skip candidates needing an unresolved product/public-contract decision,
+a prohibited change or an unavailable candidate-specific environment. If none remain,
+return `no_op` with the disqualified candidates and reasons. Failed required verification
+is `failed`, never an empty sweep. Return any proposed
 rule, larger plan or blocked change as a finding for the caller; do not apply it while
 also presenting it as an open question.
 

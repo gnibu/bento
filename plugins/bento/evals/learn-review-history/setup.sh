@@ -1,9 +1,5 @@
 #!/bin/bash
 source "$(dirname "$0")/../_fixtures/maintenance.sh"
-cat > app.py <<'PY'
-def keep(value):
-    return value
-PY
 cat > docs/testing.md <<'MD'
 # Testing
 The fixture error_sample is deliberately malformed regression input. Never remove it as cleanup.
