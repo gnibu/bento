@@ -1,0 +1,31 @@
+schema_version: "1.0"
+name: hotspots-diff
+tags: [hotspots]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Before I open the PR: did this branch make the code quality worse? Fix what you find in the working tree, but don't commit or push."
+  max_turns: 25
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Edit, Write]
+graders:
+  - type: llm
+    name: branch-regression-only
+    criteria: |
+      The branch's last commit turned `shout()` in app.py into four levels of nested ifs.
+      legacy.py's `legacy()` is just as tangled but is already on master and untouched by the
+      branch.
+      PASS only if all hold: (a) it identifies `shout` as the branch's regression, with
+      measured numbers (nesting or complexity); (b) it simplifies `shout` in
+      the working tree with the same outputs for every argument combination (e.g. building
+      the string step by step), and says how it checked that; (c) it does not edit
+      legacy.py, and does not report `legacy` as this branch's problem (mentioning it as
+      pre-existing is fine).
+  - type: tool_used
+    name: ran-hotspots-diff
+    tool: Bash
+    input_match: "--base"
+    arm: with-only
+  - type: tool_used
+    name: fired
+    tool: Skill
+    arm: with-only
