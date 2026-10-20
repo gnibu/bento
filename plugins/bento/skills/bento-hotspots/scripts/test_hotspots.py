@@ -161,10 +161,14 @@ class HotspotsTest(unittest.TestCase):
             # a require inside a function is deferred: no b -> c edge, no cycle with c
             "b.js": "const a = require('./a');\nfunction later() {\n  return require('./c');\n}\n",
             "c.js": "const b = require('./b');\n",
+            # a callback on the require's own line doesn't defer it: e <-> f is a cycle
+            "e.js": "const f = require('./f').map((x) => x);\n",
+            "f.js": "const e = require('./e');\n",
         })
         out = self.run_script()
         cycles = out.stdout.split("## Import cycles\n\n")[1].split("\n\n")[0].splitlines()
-        self.assertEqual(sorted(cycles), ["- a.ts <-> b.js", "- p/x.py <-> p/z.py"], out.stdout)
+        self.assertEqual(sorted(cycles), ["- a.ts <-> b.js", "- e.js <-> f.js", "- p/x.py <-> p/z.py"],
+                         out.stdout)
 
     def test_diff_matches_python_methods_by_class(self):
         method = "    def run(self, a, b, c, d, e, f):\n" + "".join("    " + l + "\n" for l in TANGLED.splitlines()[1:])

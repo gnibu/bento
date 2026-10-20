@@ -173,8 +173,10 @@ def js_imports(path: str, code: str, files: set[str]) -> set[str]:
     import() and a require inside a function are deferred, like a function-local import."""
     tokens = js_tokens(path, code)
     words = [tok for tok, _ in tokens]
+    # lizard has no columns: only lines strictly inside a function body count as deferred, so
+    # `require('./b').map(x => x)` stays a load-time edge
     deferred = {n for f in ANALYZER.analyze_source_code(reader_path(path), code).function_list
-                for n in range(f.start_line, f.end_line + 1)} if "require" in code else set()
+                for n in range(f.start_line + 1, f.end_line)} if "require" in code else set()
     specs = []
     type_only = False  # `import type` / `export type`: erased at compile time
     for i, (tok, line) in enumerate(tokens):
