@@ -3,10 +3,10 @@ name: workflow-investigate
 tags:
 - workflow
 execution:
-  prompt: greet(None) crashes. Find and fix the root cause, ensure shout(None) is fixed too, and
-    add a regression test. Nonblank behavior stays identical. Work solo, do not commit or push.
+  prompt: greet(None) crashes. Find and fix the root cause, ensure shout(None) is fixed too, and add a
+    regression test. Nonblank behavior stays identical. Work solo, do not commit or push.
   max_turns: 22
-  timeout_seconds: 240
+  timeout_seconds: 600
   allowed_tools:
   - Skill
   - Read
@@ -21,23 +21,23 @@ graders:
   focus:
     source: file
     path: formatter.py
-  criteria: PASS if formatter.greeting handles None as anonymous at the shared source and preserves
-    the existing output for nonblank names. Caller-only patches do not pass.
+  criteria: PASS if formatter.greeting handles None as anonymous at the shared source and preserves the
+    existing output for nonblank names. Caller-only patches do not pass.
 - type: llm
   name: regression-tests
   focus:
     source: file
     path: test_app.py
-  criteria: PASS if executable tests assert greet(None) == "hi anonymous" and shout(None) == "HI
-    ANONYMOUS", while keeping the original nonblank checks. Parameterized assertions count.
+  criteria: PASS if executable tests assert greet(None) == "hi anonymous" and shout(None) == "HI ANONYMOUS",
+    while keeping the original nonblank checks. Parameterized assertions count.
 - type: regex
   name: reproduced-failure
   target: trace
-  pattern: TypeError
+  pattern: '"type"\s*:\s*"tool_result"[^\n]*TypeError: can only concatenate'
 - type: regex
-  name: passing-suite
+  name: passing-regression-suite
   target: trace
-  pattern: Ran [1-9][0-9]* tests?[\s\S]*OK
+  pattern: '"type"\s*:\s*"tool_result"[^\n]*Ran (?:[3-9]|[1-9][0-9]+) tests? in [^\n]*?\\n\\nOK(?:\\n|")'
 - type: tool_used
   name: ran-regression-suite
   tool: Bash

@@ -30,7 +30,9 @@ In every message, call the adversarial review the "pre-PR review (local)", never
 `## Ship preferences` block (between `<!-- bento:preferences:start -->` and `:end -->`); the
 user changes them with `/bento-setup --preferences`. Each one sets the *(default)* behaviour of
 the step it names. What the user asks in this run wins, then the recorded answer, then the
-default (listed first). No preference relaxes a guardrail.
+default (listed first). No preference relaxes a guardrail. In steps 5 and 7, overlays may
+replace documentation/version tooling and repo check commands; the conditional specialist
+triggers and security triage rules still apply.
 
 | Preference | Values | Step |
 |---|---|---|
@@ -123,7 +125,8 @@ default (listed first). No preference relaxes a guardrail.
     verified commit. Recheck affected docs and rerun the security audit if those commits change
     its surface; rerun the repo's checks. Then, unless step 10 was skipped, rerun the pre-PR
     review with the explicit scope "commits since `<reviewed>`" (the sha step 10 returned). Never stop a second
-    time: anything it raises, and every skipped decision with its default, goes under
+    time: new questions from the security audit or pre-PR review, and every skipped decision
+    with its default, go under
     `## Open review questions` in the PR body.
 12. **Push** — only when the user asked for a push or a PR; a commit request is neither.
     `git push -u origin HEAD`, or `HEAD:<branch>` for step 2's PR branch. An SSH push fails →

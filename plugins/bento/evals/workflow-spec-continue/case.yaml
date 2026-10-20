@@ -10,7 +10,7 @@ execution:
     and test it in this same task. These behavior decisions are settled. Work solo, do not commit
     or push.'
   max_turns: 22
-  timeout_seconds: 240
+  timeout_seconds: 600
   allowed_tools:
   - Skill
   - Read

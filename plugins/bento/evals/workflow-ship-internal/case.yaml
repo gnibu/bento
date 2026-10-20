@@ -4,9 +4,9 @@ tags:
 - workflow
 - workflow-change
 execution:
-  prompt: 'Ship this branch as a PR. Dry run only: inspect the diff and describe which specialist
-    checks apply and why. Do not edit, commit, push, open a PR, or contact a tracker. Skip learnings,
-    QA, and pre-PR adversarial review.'
+  prompt: 'Ship this branch as a PR. Dry run only: inspect the diff and describe which specialist checks
+    apply and why. Do not edit, commit, push, open a PR, or contact a tracker. Skip learnings, QA, and
+    pre-PR adversarial review.'
   max_turns: 16
   timeout_seconds: 240
   allowed_tools:
@@ -18,15 +18,22 @@ execution:
 graders:
 - type: llm
   name: no-unrelated-specialists
-  criteria: The entire branch diff from origin/master is a comment-only change to formatter.py; no
-    public behavior, auth, secrets, trust boundary, or data exposure changes. PASS if the plan explicitly
-    decides that bento-docs and bento-cso do not apply, without planning either specialist pass.
-    Reading their descriptions to make that decision is allowed.
+  criteria: The entire branch diff from origin/master is a comment-only change to formatter.py; no public
+    behavior, auth, secrets, trust boundary, or data exposure changes. PASS if the plan explains why documentation
+    updates and a security audit are unnecessary, without planning either pass. Do not require plugin
+    names or step numbers.
   focus: last_message
 - type: tool_used
   name: fired
   tool: Skill
   input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-ship"'
   arm: with-only
+- type: tool_used
+  name: no-unrelated-specialist-invocations
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-(?:docs|cso)"'
+  min: 0
+  max: 0
+  arm: both
 context:
   scaffold_script: setup.sh

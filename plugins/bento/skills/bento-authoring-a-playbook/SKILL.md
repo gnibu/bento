@@ -36,8 +36,8 @@ naming its trigger, action and approval. Link a repo skill or doc instead of cop
 - Action: add the `greptile` label to the PR.
 - Approval: the user's review request.
 
-## Lint (adds to Verify, a default step)
-- Trigger: step 7, Verify.
+## Lint (adds to the repo checks in step 7)
+- Trigger: step 7, Security, then the repo's own checks.
 - Action: also run `ruff check .`; see [docs/lint.md](../../docs/lint.md).
 - Approval: none, local and read-only.
 ```

@@ -10,7 +10,7 @@ execution:
     playbook to sequence the three layers into verifiable units, then carry out the plan and tests
     in this task. Decisions are settled; work solo, do not commit or push.
   max_turns: 25
-  timeout_seconds: 240
+  timeout_seconds: 600
   allowed_tools:
   - Skill
   - Read

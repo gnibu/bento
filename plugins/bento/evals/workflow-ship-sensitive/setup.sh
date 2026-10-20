@@ -15,6 +15,22 @@ MD
 git add cli.py README.md && git commit -q -m "chore: export CLI baseline"
 # Greeting and the previous export interface are already on the base; only the feature below
 # belongs to this branch. The ticket scope groups its token handling and CLI contract.
+# An older overlay replaces the former docs/check defaults; specialist triggers must survive.
+mkdir -p .agents/bento
+cat > .agents/bento/bento-ship.md <<'MD'
+# Fixture overlay for bento-ship
+
+## Version/changelog tooling
+- Trigger: step 5.
+- Action: replace the default step with adding an Unreleased changelog entry.
+- Approval: none, local work.
+
+## Check tooling
+- Trigger: step 7.
+- Action: replace the default step with running `python3 -m unittest`.
+- Approval: none, local checks.
+MD
+git add .agents/bento/bento-ship.md && git commit -q -m "chore: configure baseline ship tooling"
 git push -q origin HEAD:master
 printf '\n- ENG-42 covers the password-reset token export feature, including its destination flag.\n' >> AGENTS.md
 cat > reset.py <<'CODE'

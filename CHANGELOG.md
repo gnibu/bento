@@ -6,6 +6,7 @@
   before final checks for public behavior, CLI/API/config contracts or example changes, and
   `bento-cso` for auth, trust-boundary, secret or sensitive-data exposure changes. Security
   decisions use the existing decision stop; docs/security outcomes appear in the PR and report.
+  Repo overlays can customize tooling while retaining the specialist triggers and security triage.
 - **Spec and planning preserve the requested scope.** Spec-only and plan-only requests stop
   at their artifact. When used as preparation for an implementation request, they continue
   the authorized work once the contract is settled, without another permission round.

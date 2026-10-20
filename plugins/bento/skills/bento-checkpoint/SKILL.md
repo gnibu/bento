@@ -21,8 +21,8 @@ overlay `.agents/bento/bento-checkpoint.md` at the repo root; follow it under th
 2. **Record the goal and progress.** State the done-condition, completed work and decisions with file,
    commit or PR pointers; identify blockers and unresolved decisions.
 3. **Name the next action.** Give the exact command or file:line to resume from.
-4. **Write the handoff** in the requested shared task/checkpoint location, not private memory
-   or reusable docs. Inspect the saved artifact against the state you just checked.
+4. **Write the handoff** in the requested location, the repo's checkpoint location, or a shared
+   task file. Keep it out of private memory and reusable docs; inspect it against checked state.
 
 ## Guardrails
 

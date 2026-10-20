@@ -34,8 +34,8 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-multi-phase-plan` — plan a large change as verifiable units before implementing.
     Plan-only requests stop at the plan; preparation inside a build request continues the work.
   - `bento-ship` — the whole PR flow: commit, sync on the current base, affected docs, QA,
-    a conditional security audit, verify, pre-PR
-    review, one stop for decisions, push/PR, ticket update. Reads the base branch, forge and
+    a conditional security audit, verify, pre-PR review, one stop for decisions, push/PR,
+    ticket update. Reads the base branch, forge and
     tracker from the repo's AGENTS.md, so a repo needs no PR skill of its own.
   - `bento-adversarial-review` — the other model family (Codex under Claude, Claude under
     Codex) reviews the diff; every finding is triaged against the code before any fix.

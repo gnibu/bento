@@ -3,8 +3,8 @@ name: bento-investigate
 description: |
   Evidence-first root-cause debugging. Use when something is broken, erroring, or behaving
   wrong and you need the cause, not a symptom patch. Diagnose an unexpected regression here;
-  use bento-hillclimb to improve a measured baseline through experiments. Triggers: "why is this broken", "debug
-  this", "500 error", "it fails when", "find the root cause".
+  use bento-hillclimb to improve a measured baseline through experiments. Triggers:
+  "why is this broken", "debug this", "500 error", "it fails when", "find the root cause".
 ---
 
 # Investigate
