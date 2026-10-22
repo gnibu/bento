@@ -10,7 +10,7 @@ this gate catches a skipped ship flow, it is not a security boundary.
 
 Usage:
   push_gate.py                                  hook: tool-call JSON on stdin, exit 2 blocks
-  push_gate.py install <hooks.json> [--matcher Bash]
+  push_gate.py install <hooks.json>    (Claude settings.json or Codex hooks.json)
   push_gate.py uninstall <hooks.json>
 """
 import json
@@ -25,6 +25,7 @@ MESSAGE = "Run bento-ship first: no pre-PR review recorded for HEAD."
 BYPASS = "BENTO_PRE_PR_REVIEW=skip"
 FIX_SUBJECT = "fix: address adversarial review findings"  # bento-adversarial-review ship mode
 GIT_ARG_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
+SHELLS = {"sh", "bash", "zsh", "dash", "ksh"}
 
 
 def git_push_repo(tokens: list[str], i: int, here: str) -> str | None:
@@ -37,24 +38,58 @@ def git_push_repo(tokens: list[str], i: int, here: str) -> str | None:
     return repo if tokens[j:j + 1] == ["push"] else None
 
 
+def tokenize(command: str) -> list[str] | None:
+    lex = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lex.whitespace_split = True
+    try:
+        return list(lex)
+    except ValueError:  # unbalanced quotes, e.g. an apostrophe in a heredoc
+        return None
+
+
+def step_dir(tokens: list[str], i: int, here: str, saved: list[str]) -> str:
+    """The directory after tokens[i]: `cd` changes it, a `( … )` subshell restores it."""
+    tok = tokens[i]
+    if tok == "cd" and i + 1 < len(tokens):
+        return os.path.join(here, os.path.expanduser(tokens[i + 1]))
+    if set(tok) <= set("();<>|&"):  # shlex merges punctuation runs, e.g. ");"
+        for ch in tok:
+            if ch == "(":
+                saved.append(here)
+            elif ch == ")" and saved:
+                here = saved.pop()
+    return here
+
+
+def is_script(tokens: list[str], i: int) -> bool:
+    """tokens[i] is a script run by `eval` or `bash -c` (`-lc`, …)."""
+    prev = tokens[i - 1] if i else ""
+    shell = os.path.basename(tokens[i - 2]) in SHELLS if i > 1 else False
+    return prev == "eval" or (shell and re.fullmatch(r"-[a-z]*c", prev) is not None)
+
+
+def gated_at(tokens: list[str], i: int, here: str) -> list[str]:
+    tok = tokens[i]
+    if os.path.basename(tok) == "git":
+        repo = git_push_repo(tokens, i, here)
+        return [repo] if repo else []
+    if tok == "gh" and tokens[i + 1:i + 3] == ["pr", "create"]:
+        return [here]
+    return gated_dirs(tok, here) if is_script(tokens, i) else []
+
+
 def gated_dirs(command: str, cwd: str) -> list[str]:
     """The directory of each `git push` / `gh pr create` in a shell command, following `cd`."""
     if BYPASS in command:
         return []
-    lex = shlex.shlex(command, posix=True, punctuation_chars=True)
-    lex.whitespace_split = True
-    try:
-        tokens = list(lex)
-    except ValueError:  # unbalanced quotes, e.g. an apostrophe in a heredoc: match the raw text
+    tokens = tokenize(command)
+    if tokens is None:  # match the raw text
         return [cwd] if re.search(r"\bgit(\s+-\S+)*\s+push\b|\bgh\s+pr\s+create\b", command) else []
-    out, here = [], cwd
-    for i, (tok, arg) in enumerate(zip(tokens, tokens[1:] + [""])):
-        if tok == "cd":
-            here = os.path.join(here, os.path.expanduser(arg))
-        elif os.path.basename(tok) == "git" and (repo := git_push_repo(tokens, i, here)):
-            out.append(repo)
-        elif tok == "gh" and tokens[i + 1:i + 3] == ["pr", "create"]:
-            out.append(here)
+    out: list[str] = []
+    here, saved = cwd, list[str]()
+    for i in range(len(tokens)):
+        here = step_dir(tokens, i, here, saved)
+        out += gated_at(tokens, i, here)
     return out
 
 
@@ -92,6 +127,8 @@ def reviewed(repo: str) -> bool:
 def hook() -> int:
     try:
         event = json.load(sys.stdin)
+        if event.get("tool_name", "Bash") != "Bash":  # Codex sends apply_patch text as a command
+            return 0
         command = event.get("tool_input", {}).get("command")
         if isinstance(command, list):  # an argv, e.g. ["bash", "-lc", "git push"]
             command = " ".join(command)
@@ -104,8 +141,18 @@ def hook() -> int:
     return 2
 
 
-def ours(group: dict) -> bool:
-    return any("push_gate.py" in h.get("command", "") for h in group.get("hooks", []))
+def ours(handler: dict) -> bool:
+    return "push_gate.py" in handler.get("command", "")
+
+
+def without_ours(groups: list) -> list:
+    """The groups minus this gate's handlers; a group left with no handler is dropped."""
+    out = []
+    for group in groups:
+        kept = [h for h in group.get("hooks", []) if not ours(h)]
+        if kept or not group.get("hooks"):
+            out.append({**group, "hooks": kept})
+    return out
 
 
 def hook_command() -> str:
@@ -117,8 +164,10 @@ def hook_command() -> str:
         path = f'"${{CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}}/{rel}"'
     else:
         path = shlex.quote(str(script))
-    # A missing script must not block: python3 exits 2 (= block) on a file it can't open.
-    return f"f={path}; [ ! -f \"$f\" ] || python3 \"$f\""
+    # A missing script must not block every shell command (python3 exits 2 on a file it can't
+    # open, which means block): fail with a visible, non-blocking error instead.
+    return (f'f={path}; if [ -f "$f" ]; then python3 "$f"; else '
+            'echo "bento: pre-PR review gate missing at $f; rerun bento-setup" >&2; exit 1; fi')
 
 
 def edit(path: Path, change) -> str:
@@ -136,24 +185,24 @@ def edit(path: Path, change) -> str:
     return action
 
 
-def install(path: Path, matcher: str | None = None) -> str:
-    entry: dict = {"matcher": matcher} if matcher else {}
-    entry["hooks"] = [{"type": "command", "command": hook_command()}]
+def install(path: Path) -> str:
+    entry = {"matcher": "Bash", "hooks": [{"type": "command", "command": hook_command()}]}
 
     def change(groups: list) -> str:
-        old = [g for g in groups if ours(g)]
-        if old == [entry]:
+        others = without_ours(groups)
+        if groups == others + [entry]:
             return "unchanged"
-        groups[:] = [g for g in groups if not ours(g)] + [entry]
-        return "updated" if old else "added"
+        action = "added" if others == groups else "updated"
+        groups[:] = others + [entry]
+        return action
     return edit(path, change)
 
 
 def uninstall(path: Path) -> str:
     def change(groups: list) -> str:
-        kept = [g for g in groups if not ours(g)]
-        action = "removed" if len(kept) < len(groups) else "unchanged"
-        groups[:] = kept
+        others = without_ours(groups)
+        action = "unchanged" if others == groups else "removed"
+        groups[:] = others
         return action
     return edit(path, change) if path.exists() else "unchanged"
 
@@ -162,8 +211,8 @@ def main() -> int:
     args = sys.argv[1:]
     if not args:
         return hook()
-    if args[0] == "install" and len(args) in (2, 4) and args[2:3] in ([], ["--matcher"]):
-        print(f"bento: {install(Path(args[1]), args[3] if len(args) == 4 else None)} pre-PR review gate in {args[1]}")
+    if args[0] == "install" and len(args) == 2:
+        print(f"bento: {install(Path(args[1]))} pre-PR review gate in {args[1]}")
         return 0
     if args[0] == "uninstall" and len(args) == 2:
         print(f"bento: {uninstall(Path(args[1]))} pre-PR review gate in {args[1]}")

@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from push_gate import FIX_SUBJECT, MESSAGE, gated_dirs, install, reviewed, uninstall
+from push_gate import FIX_SUBJECT, MESSAGE, gated_dirs, hook_command, install, reviewed, uninstall
 
 SCRIPT = Path(__file__).resolve().parent / "push_gate.py"
 
@@ -21,6 +21,9 @@ class GatedDirsTest(unittest.TestCase):
         self.assertEqual(gated_dirs("cd /a && git status&&gh pr create --fill", "/r"), ["/a"])
         self.assertEqual(gated_dirs("bash -lc git push origin", "/r"), ["/r"])
         self.assertEqual(gated_dirs("git commit -F - <<'EOF'\nIt's done\nEOF\ngit push", "/r"), ["/r"])
+        self.assertEqual(gated_dirs('bash -lc "cd sub && git push"', "/r"), ["/r/sub"])
+        self.assertEqual(gated_dirs("eval 'gh pr create --fill'", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("(cd /tmp); git push", "/r"), ["/r"])
 
     def test_ignores_other_commands_and_the_bypass(self):
         self.assertEqual(gated_dirs('git commit -m "push it"', "/r"), [])
@@ -63,7 +66,11 @@ class ReviewedTest(unittest.TestCase):
         self.assertTrue(reviewed(tempfile.mkdtemp()))
 
     def test_hook_blocks_with_exit_2(self):
-        event = json.dumps({"tool_input": {"command": "git push"}, "cwd": str(self.repo)})
+        patch = json.dumps({"tool_name": "apply_patch", "tool_input": {"command": "+git push"},
+                            "cwd": str(self.repo)})
+        run = subprocess.run([sys.executable, str(SCRIPT)], input=patch, capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0)
+        event = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git push"}, "cwd": str(self.repo)})
         run = subprocess.run([sys.executable, str(SCRIPT)], input=event, capture_output=True, text=True)
         self.assertEqual((run.returncode, run.stderr.strip()), (2, MESSAGE))
         self.record()
@@ -74,16 +81,27 @@ class ReviewedTest(unittest.TestCase):
 class InstallTest(unittest.TestCase):
     def test_idempotent_and_keeps_other_hooks(self):
         path = Path(tempfile.mkdtemp()) / "settings.json"
-        other = {"matcher": "Bash", "hooks": [{"type": "command", "command": "other.sh"}]}
-        path.write_text(json.dumps({"model": "x", "hooks": {"PreToolUse": [other]}}))
-        self.assertEqual(install(path, "Bash"), "added")
-        self.assertEqual(install(path, "Bash"), "unchanged")
+        other = {"type": "command", "command": "other.sh"}
+        stale = {"type": "command", "command": "python3 old/push_gate.py"}
+        path.write_text(json.dumps({"model": "x", "hooks": {"PreToolUse": [
+            {"matcher": "Bash", "hooks": [other, stale]}]}}))
         self.assertEqual(install(path), "updated")
+        self.assertEqual(install(path), "unchanged")
         groups = json.loads(path.read_text())["hooks"]["PreToolUse"]
+        self.assertEqual(groups[0], {"matcher": "Bash", "hooks": [other]})
         self.assertEqual(len(groups), 2)
         self.assertEqual(uninstall(path), "removed")
-        self.assertEqual(json.loads(path.read_text()), {"model": "x", "hooks": {"PreToolUse": [other]}})
+        self.assertEqual(json.loads(path.read_text()),
+                         {"model": "x", "hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [other]}]}})
         self.assertEqual(uninstall(path), "unchanged")
+        empty = path.with_name("hooks.json")
+        self.assertEqual(install(empty), "added")
+
+    def test_missing_script_warns_without_blocking(self):
+        command = hook_command().replace("push_gate.py", "gone.py")
+        run = subprocess.run(["bash", "-c", command], input="{}", capture_output=True, text=True)
+        self.assertEqual(run.returncode, 1)
+        self.assertIn("rerun bento-setup", run.stderr)
 
 
 if __name__ == "__main__":

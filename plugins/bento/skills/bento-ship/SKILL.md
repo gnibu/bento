@@ -113,7 +113,8 @@ default (listed first). No preference relaxes a guardrail.
     scope, commits verified fixes, and returns the reviewed sha and any questions. Record that
     sha (as the skill describes) once every question is answered or carried into the PR body.
     After verified fixes, rerun affected docs/security passes and repo checks if their surface
-    changed; carry any new questions to step 11. Also skip if the user says "skip adversarial
+    changed; carry any new questions to step 11. If those reruns commit anything, rerun the
+    pre-PR review on "commits since `<reviewed>`" and record its sha, so step 12's gate passes. Also skip if the user says "skip adversarial
     review" or the skill isn't installed.
 11. **The single stop before pushing** — only if there are L2 learnings to approve, or QA,
     security or pre-PR review questions to answer. Show each learning's diff, then end with:

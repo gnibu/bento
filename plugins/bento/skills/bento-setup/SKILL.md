@@ -92,13 +92,12 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    sha `bento-adversarial-review` recorded is `HEAD` (or only its fix commits follow), or the
    overlay says `Pre-PR review: skip`. For each agent that was an install target:
 
-   - Claude: `python3 "<skill>/scripts/push_gate.py" install <file> --matcher Bash` with
-     `.claude/settings.json` (project) or `<claude-dir>/settings.json` (global).
-   - Codex: `python3 "<skill>/scripts/push_gate.py" install <file>` with `.codex/hooks.json`
-     (project) or `${CODEX_HOME:-~/.codex}/hooks.json` (global). Codex runs a new or changed
-     hook only after the user trusts it; say so in the report.
+   - Claude: `.claude/settings.json` (project) or `<claude-dir>/settings.json` (global).
+   - Codex: `.codex/hooks.json` (project) or `${CODEX_HOME:-~/.codex}/hooks.json` (global).
+     Codex runs a new or changed hook only after the user trusts it; say so in the report.
 
-   The script prints `added`, `updated` or `unchanged` and keeps every other hook.
+   Run `python3 "<skill>/scripts/push_gate.py" install <file>` on each. It prints `added`,
+   `updated` or `unchanged` and keeps every other hook.
 6. **Ship preferences** (inside a git repo, either scope). The repo's answers to
    [bento-ship's preferences](../bento-ship/SKILL.md#preferences) live in a marker-bounded
    block of its overlay `.agents/bento/bento-ship.md`:
