@@ -24,6 +24,8 @@ class GatedDirsTest(unittest.TestCase):
         self.assertEqual(gated_dirs('bash -lc "cd sub && git push"', "/r"), ["/r/sub"])
         self.assertEqual(gated_dirs("eval 'gh pr create --fill'", "/r"), ["/r"])
         self.assertEqual(gated_dirs("(cd /tmp); git push", "/r"), ["/r"])
+        self.assertEqual(gated_dirs('cd /t && printf "(" && cd /a && printf ")" && git push', "/r"), ["/a"])
+        self.assertEqual(gated_dirs('git -C "my dir" push', "/r"), ["/r/my dir"])
 
     def test_ignores_other_commands_and_the_bypass(self):
         self.assertEqual(gated_dirs('git commit -m "push it"', "/r"), [])

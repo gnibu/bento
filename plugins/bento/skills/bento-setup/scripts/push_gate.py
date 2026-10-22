@@ -26,6 +26,7 @@ BYPASS = "BENTO_PRE_PR_REVIEW=skip"
 FIX_SUBJECT = "fix: address adversarial review findings"  # bento-adversarial-review ship mode
 GIT_ARG_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
 SHELLS = {"sh", "bash", "zsh", "dash", "ksh"}
+PUNCT = set("();<>|&")
 
 
 def git_push_repo(tokens: list[str], i: int, here: str) -> str | None:
@@ -38,26 +39,28 @@ def git_push_repo(tokens: list[str], i: int, here: str) -> str | None:
     return repo if tokens[j:j + 1] == ["push"] else None
 
 
-def tokenize(command: str) -> list[str] | None:
-    lex = shlex.shlex(command, posix=True, punctuation_chars=True)
+def tokenize(command: str) -> tuple[list[str], set[int]] | None:
+    """Unquoted tokens, and the indices of shell operators (unquoted punctuation runs)."""
+    lex = shlex.shlex(command, posix=False, punctuation_chars=True)
     lex.whitespace_split = True
     try:
-        return list(lex)
+        raw = list(lex)
+        ops = {i for i, tok in enumerate(raw) if set(tok) <= PUNCT}
+        return [tok if i in ops else "".join(shlex.split(tok)) for i, tok in enumerate(raw)], ops
     except ValueError:  # unbalanced quotes, e.g. an apostrophe in a heredoc
         return None
 
 
-def step_dir(tokens: list[str], i: int, here: str, saved: list[str]) -> str:
+def step_dir(tokens: list[str], i: int, here: str, saved: list[str], op: bool) -> str:
     """The directory after tokens[i]: `cd` changes it, a `( … )` subshell restores it."""
     tok = tokens[i]
     if tok == "cd" and i + 1 < len(tokens):
         return os.path.join(here, os.path.expanduser(tokens[i + 1]))
-    if set(tok) <= set("();<>|&"):  # shlex merges punctuation runs, e.g. ");"
-        for ch in tok:
-            if ch == "(":
-                saved.append(here)
-            elif ch == ")" and saved:
-                here = saved.pop()
+    for ch in tok if op else "":
+        if ch == "(":
+            saved.append(here)
+        elif ch == ")" and saved:
+            here = saved.pop()
     return here
 
 
@@ -82,13 +85,14 @@ def gated_dirs(command: str, cwd: str) -> list[str]:
     """The directory of each `git push` / `gh pr create` in a shell command, following `cd`."""
     if BYPASS in command:
         return []
-    tokens = tokenize(command)
-    if tokens is None:  # match the raw text
+    parsed = tokenize(command)
+    if parsed is None:  # match the raw text
         return [cwd] if re.search(r"\bgit(\s+-\S+)*\s+push\b|\bgh\s+pr\s+create\b", command) else []
+    tokens, ops = parsed
     out: list[str] = []
     here, saved = cwd, list[str]()
     for i in range(len(tokens)):
-        here = step_dir(tokens, i, here, saved)
+        here = step_dir(tokens, i, here, saved, i in ops)
         out += gated_at(tokens, i, here)
     return out
 
