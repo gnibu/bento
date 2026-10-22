@@ -27,33 +27,42 @@ FIX_SUBJECT = "fix: address adversarial review findings"  # bento-adversarial-re
 GIT_ARG_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
 
 
+def git_push_repo(tokens: list[str], i: int, here: str) -> str | None:
+    """The repo of the `git` at tokens[i] when its subcommand is `push`, else None."""
+    repo, j = here, i + 1
+    while j < len(tokens) and tokens[j].startswith("-"):
+        if tokens[j] == "-C" and j + 1 < len(tokens):
+            repo = os.path.join(here, tokens[j + 1])
+        j += 2 if tokens[j] in GIT_ARG_OPTS else 1
+    return repo if tokens[j:j + 1] == ["push"] else None
+
+
 def gated_dirs(command: str, cwd: str) -> list[str]:
     """The directory of each `git push` / `gh pr create` in a shell command, following `cd`."""
+    if BYPASS in command:
+        return []
     lex = shlex.shlex(command, posix=True, punctuation_chars=True)
     lex.whitespace_split = True
     try:
         tokens = list(lex)
     except ValueError:  # unbalanced quotes, e.g. an apostrophe in a heredoc: match the raw text
-        if BYPASS in command:
-            return []
         return [cwd] if re.search(r"\bgit(\s+-\S+)*\s+push\b|\bgh\s+pr\s+create\b", command) else []
-    if BYPASS in tokens:
-        return []
     out, here = [], cwd
-    for i, tok in enumerate(tokens):
-        if tok == "cd" and i + 1 < len(tokens):
-            here = os.path.join(here, os.path.expanduser(tokens[i + 1]))
-        elif os.path.basename(tok) == "git":
-            repo, j = here, i + 1
-            while j < len(tokens) and tokens[j].startswith("-"):
-                if tokens[j] == "-C" and j + 1 < len(tokens):
-                    repo = os.path.join(here, tokens[j + 1])
-                j += 2 if tokens[j] in GIT_ARG_OPTS else 1
-            if j < len(tokens) and tokens[j] == "push":
-                out.append(repo)
+    for i, (tok, arg) in enumerate(zip(tokens, tokens[1:] + [""])):
+        if tok == "cd":
+            here = os.path.join(here, os.path.expanduser(arg))
+        elif os.path.basename(tok) == "git" and (repo := git_push_repo(tokens, i, here)):
+            out.append(repo)
         elif tok == "gh" and tokens[i + 1:i + 3] == ["pr", "create"]:
             out.append(here)
     return out
+
+
+def review_skipped(top: str) -> bool:
+    """The repo's bento-ship overlay records `Pre-PR review: skip`."""
+    overlay = Path(top, ".agents/bento/bento-ship.md")
+    return overlay.is_file() and bool(
+        re.search(r"^- Pre-PR review:\s*skip\s*$", overlay.read_text(), re.M | re.I))
 
 
 def reviewed(repo: str) -> bool:
@@ -62,11 +71,8 @@ def reviewed(repo: str) -> bool:
         return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True)
 
     top = git("rev-parse", "--show-toplevel")
-    if top.returncode:
-        return True  # not a repo: nothing to push
-    overlay = Path(top.stdout.strip(), ".agents/bento/bento-ship.md")
-    if overlay.is_file() and re.search(r"^- Pre-PR review:\s*skip\s*$", overlay.read_text(), re.M | re.I):
-        return True
+    if top.returncode or review_skipped(top.stdout.strip()):
+        return True  # not a repo (nothing to push), or the repo opted out
     try:
         sha = Path(repo, git("rev-parse", "--git-path", "adversarial-review.head").stdout.strip()).read_text().strip()
     except OSError:

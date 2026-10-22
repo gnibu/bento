@@ -2,8 +2,8 @@
 name: bento-setup
 description: |
   Wire Bento's principles, skill links and pre-PR review gate, migrate legacy installs, record
-  ship preferences and discover the repository's real maintenance tools. Idempotent and local, so run after
-  every Bento npx skills add/update. Args: --yes uses preference defaults; --preferences
+  ship preferences and discover the repository's real maintenance tools. Idempotent and local,
+  so run after every Bento npx skills add/update. Args: --yes uses preference defaults; --preferences
   re-asks them; --purge unwires.
 ---
 
@@ -152,7 +152,8 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    unavailable or unverified capabilities.
 
 Project-scope changes (`CLAUDE.md`, `AGENTS.md`, `.agents/`, `.claude/skills/`,
-`.claude/settings.json`, `.codex/hooks.json`, `skills-lock.json`) are for the user to review and commit. Setup owns only the preferences
+`.claude/settings.json`, `.codex/hooks.json`, `skills-lock.json`) are for the user to review
+and commit. Setup owns only the preferences
 block of `.agents/bento/bento-ship.md` and the discovered-tools block of
 `.agents/bento/bento-maintain.md`, creating either file if needed. Setup, migrate and purge
 never delete an overlay or touch its hand-authored sections.
