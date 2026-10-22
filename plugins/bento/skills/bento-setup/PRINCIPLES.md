@@ -35,3 +35,11 @@ a self-report. If you can't show the artifact, the task isn't finished.
 The best change is the smallest one that holds. Reuse what exists before writing new;
 prefer deletion over addition; don't build for a need that isn't here yet. One stated
 simplification beats a paragraph defending complexity.
+
+## Ship through bento-ship
+
+> Commit, push or PR requests go through bento-ship.
+
+However short the request ("commit PR", "push", "commit this"), run `bento-ship` rather than
+`git commit`, `git push` or `gh pr create` yourself: it is where QA, the pre-PR review and the
+ticket update happen, and a direct commit skips all three.

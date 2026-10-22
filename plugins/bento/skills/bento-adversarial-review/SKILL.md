@@ -218,8 +218,9 @@ else.
    NEEDS INFO; drop DISAGREE with its reason.
 2. Verify with the repo's checks that cover the touched files. A fix you can't get green is
    reverted and goes back as NEEDS HUMAN.
-3. Commit the fixes on their own: `fix: address adversarial review findings`. Stage only the
-   hunks you changed.
+3. Commit the fixes on their own: `fix: address adversarial review findings` (exactly: the
+   pre-PR review gate lets only this subject follow the recorded sha). Stage only the hunks
+   you changed.
 4. Return `<reviewed>` (below), the table with an `Outcome` column (`fixed` / `dropped` /
    `needs human`), and one one-line-answerable question per NEEDS HUMAN or NEEDS INFO finding,
    with the default you'd pick ("keep X or switch to Y? default: keep"). The caller asks them;

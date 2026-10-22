@@ -62,9 +62,10 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-init` — bootstrap a fresh repo's L2 from code, docs, and merged PR reviews, with
     human checkpoints and a generated baseline for later three-way merges. See
     [the workflow and file contract](plugins/bento/skills/bento-init/references/init.md).
-- **`bento-setup`** — wire the principles; ask the repo's ship preferences once (missing
-  ticket, QA, pre-PR review…; `--preferences` re-asks); migrate an old install; `--purge` to
-  unwire. Discover the repository's actual maintenance tools and source-cited commands into
+- **`bento-setup`** — wire the principles; install the pre-PR review gate (a Claude Code /
+  Codex hook that blocks `git push` and `gh pr create` until `bento-ship`'s pre-PR review
+  covers `HEAD`); ask the repo's ship preferences once (missing ticket, QA, pre-PR review…;
+  `--preferences` re-asks); migrate an old install; `--purge` to unwire. Discover the repository's actual maintenance tools and source-cited commands into
   the maintenance overlay, preserving manual rules and reporting missing integrations.
 
 The **eval harness** (`claude plugin eval` with with/without ablation) has cases for all 20 skills.
@@ -101,7 +102,8 @@ updates, so no skill is left without a link. Commit them.
 `~/.claude/skills/` (`$CLAUDE_CONFIG_DIR/skills/` when set).
 
 Then start a fresh session and run **`/bento-setup`** (Claude) or **`$bento-setup`** (Codex). It
-adds the principles import to `CLAUDE.md` and the principles block to `AGENTS.md` (project
+adds the principles import to `CLAUDE.md`, the principles block to `AGENTS.md` and the pre-PR
+review gate to `.claude/settings.json` / `.codex/hooks.json` (project
 files, or the user `CLAUDE.md` / `AGENTS.md` under `$CLAUDE_CONFIG_DIR` / `$CODEX_HOME`,
 defaulting to `~/.claude` / `~/.codex`, for a global install).
 

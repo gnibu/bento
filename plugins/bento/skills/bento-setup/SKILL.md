@@ -1,9 +1,9 @@
 ---
 name: bento-setup
 description: |
-  Wire Bento's principles and skill links, migrate legacy installs, record ship preferences
-  and discover the repository's real maintenance tools. Idempotent and local, so run after
-  every Bento npx skills add/update. Args: --yes uses preference defaults; --preferences
+  Wire Bento's principles, skill links and pre-PR review gate, migrate legacy installs, record
+  ship preferences and discover the repository's real maintenance tools. Idempotent and local,
+  so run after every Bento npx skills add/update. Args: --yes uses preference defaults; --preferences
   re-asks them; --purge unwires.
 ---
 
@@ -86,7 +86,19 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    `./AGENTS.md` (project) or `${CODEX_HOME:-~/.codex}/AGENTS.md` (global). The block is
    marker-bounded and distilled; the script prints `added`, `updated` or `unchanged` (no
    write). Edit the `AGENTS.md` source, never a `CLAUDE.md` symlink.
-5. **Ship preferences** (inside a git repo, either scope). The repo's answers to
+5. **Pre-PR review gate.** A skill runs only when the agent picks it, so a hook backs the
+   principle "commit, push or PR requests go through bento-ship": it blocks `git push` and
+   `gh pr create` with "Run bento-ship first: no pre-PR review recorded for HEAD." unless the
+   sha `bento-adversarial-review` recorded is `HEAD` (or only its fix commits follow), or the
+   overlay says `Pre-PR review: skip`. For each agent that was an install target:
+
+   - Claude: `.claude/settings.json` (project) or `<claude-dir>/settings.json` (global).
+   - Codex: `.codex/hooks.json` (project) or `${CODEX_HOME:-~/.codex}/hooks.json` (global).
+     Codex runs a new or changed hook only after the user trusts it; say so in the report.
+
+   Run `python3 "<skill>/scripts/push_gate.py" install <file>` on each. It prints `added`,
+   `updated` or `unchanged` and keeps every other hook.
+6. **Ship preferences** (inside a git repo, either scope). The repo's answers to
    [bento-ship's preferences](../bento-ship/SKILL.md#preferences) live in a marker-bounded
    block of its overlay `.agents/bento/bento-ship.md`:
 
@@ -115,13 +127,13 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    - `--preferences` → ask every question again, the recorded answers as defaults.
    - Write only between the markers: create the overlay (title `# Overlay for bento-ship`) or
      append the block if it has none; keep every other line.
-6. **Discover maintenance tools** (inside a Git repo, either install scope, when
+7. **Discover maintenance tools** (inside a Git repo, either install scope, when
    `bento-maintain` is installed). Follow [maintenance-tools.md](references/maintenance-tools.md)
    to map the actual docs system, monitoring, advisory tooling, checks, forge and tracker to
    their consuming tasks. Record source-cited mappings and gaps in the marker-bounded section
    of `.agents/bento/bento-maintain.md`; preserve manual rules. No service is assumed or
    provisioned. Missing providers remain unavailable until the repository supplies them.
-7. **Verify.** Show the diff of each file touched. A running session doesn't reload skills,
+8. **Verify.** Show the diff of each file touched. A running session doesn't reload skills,
    so ask fresh headless sessions from the repo root and compare with `ls -d .agents/skills/bento-*`
    (global: `~/.agents/skills/bento-*`):
 
@@ -132,14 +144,15 @@ ran, run the `add` command it printed (or the full one above), then this skill.
 
    Run the agents that were install targets. A missing skill is a failure to report, not a
    pass.
-8. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
+9. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
    each one's `##` rule headings, so the user sees which bento skills are customised here.
    None → say so. Then the ship preferences, marking those written this run and whether each
    is a default or the user's answer. Include maintenance mappings, their sources and any
    unavailable or unverified capabilities.
 
 Project-scope changes (`CLAUDE.md`, `AGENTS.md`, `.agents/`, `.claude/skills/`,
-`skills-lock.json`) are for the user to review and commit. Setup owns only the preferences
+`.claude/settings.json`, `.codex/hooks.json`, `skills-lock.json`) are for the user to review
+and commit. Setup owns only the preferences
 block of `.agents/bento/bento-ship.md` and the discovered-tools block of
 `.agents/bento/bento-maintain.md`, creating either file if needed. Setup, migrate and purge
 never delete an overlay or touch its hand-authored sections.
@@ -179,4 +192,6 @@ Detect each legacy piece; remove only what is present. Report each removal.
    Keep the `.claude/skills` link: the repo's own skills may live behind it.
 2. Remove the `<!-- bento:start -->` … `<!-- bento:end -->` block from the `AGENTS.md`,
    keeping unrelated instructions.
-3. The skills themselves: `npx skills remove` each `bento-*` skill, same scope (`-g` for global).
+3. Run `python3 "<skill>/scripts/push_gate.py" uninstall <file>` on each file Apply step 5
+   writes for the scope.
+4. The skills themselves: `npx skills remove` each `bento-*` skill, same scope (`-g` for global).
