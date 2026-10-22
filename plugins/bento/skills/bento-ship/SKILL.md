@@ -3,8 +3,10 @@ name: bento-ship
 description: |
   Land a change safely: sync base, update affected docs, QA, audit sensitive changes, verify,
   review the diff (self + a pre-PR review by the other model family), then commit/push/PR and update the
-  ticket. Use when finishing a piece of work. Triggers: "ship it", "land this", "open a PR",
-  "create a PR", "commit and push", "ready to merge".
+  ticket. Use for ANY request to commit, push, or open/update a PR; never run git commit /
+  git push / gh pr create directly. Triggers: "ship it", "land this", "commit PR", "PR",
+  "make a PR", "open a PR", "create a PR", "commit this", "commit and push", "push",
+  "ready to merge".
 ---
 
 # Ship
@@ -132,6 +134,10 @@ default (listed first). No preference relaxes a guardrail.
     with its default, go under
     `## Open review questions` in the PR body.
 12. **Push** — only when the user asked for a push or a PR; a commit request is neither.
+    `bento-setup`'s pre-PR review gate blocks `git push` and `gh pr create` unless the recorded
+    sha is `HEAD` or only the review's own fix commits follow it: record the last `<reviewed>`
+    from step 10 or 11 first. Pre-PR review skipped in this run (user request, or the skill
+    isn't installed) → prefix both commands with `BENTO_PRE_PR_REVIEW=skip`.
     `git push -u origin HEAD`, or `HEAD:<branch>` for step 2's PR branch. An SSH push fails →
     retry through the forge CLI's auth. Rejected as non-fast-forward → fetch, then
     `git cherry -v HEAD origin/<branch>`: every remote-only commit marked `-` (it has a local

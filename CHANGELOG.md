@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Commit, push and PR requests go through `bento-ship`.** Its description now names terse
+  requests ("commit PR", "PR", "push", "commit this") and forbids running `git commit`,
+  `git push` or `gh pr create` directly; the principles block says the same. `bento-setup`
+  also installs a pre-PR review gate, a Claude Code and Codex `PreToolUse` hook that blocks
+  `git push` and `gh pr create` unless the recorded pre-PR review covers `HEAD` (only the
+  review's own fix commits may follow it). The repo's `Pre-PR review: skip` preference turns it off.
+
 - **Setup maps real tools to maintenance.** Setup discovers each repository's checks,
   documentation system, monitoring provider, advisory access, forge and tracker into a
   source-cited overlay block. It preserves manual rules and records unavailable/unverified

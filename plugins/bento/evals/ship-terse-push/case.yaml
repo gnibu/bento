@@ -1,0 +1,15 @@
+schema_version: "1.0"
+name: ship-terse-push
+tags: [routing]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "push"
+  max_turns: 6
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Edit, Write]
+graders:
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-ship"'
+    arm: with-only
