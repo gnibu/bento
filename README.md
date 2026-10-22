@@ -200,6 +200,10 @@ claude plugin eval ./plugins/bento --runs 3 --ablation with-without --no-publish
   --scaffold --allow-tools Bash Write Edit    # scaffolded cases build a git repo per run
 ```
 
+Skill scripts must run on Python 3.9, the `python3` macOS ships with the Command Line Tools:
+use `from __future__ import annotations` for `X | None` hints, and no `match` or other 3.10+
+syntax. Run the tests under `/usr/bin/python3` too.
+
 Use `--tag workflow` for the workflow and routing-boundary cases. Their graders inspect tool
 traces or a named output file, rather than trusting the final summary; negative Skill checks
 set `arm: both` so they remain scored under ablation.

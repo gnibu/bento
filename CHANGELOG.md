@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **The pre-PR review gate works on macOS system Python and fails closed.** It crashed on
+  Python 3.9 (`/usr/bin/python3`), and the crash let `git push` and `gh pr create` through.
+  It now runs on 3.9, the documented minimum for bento scripts, and a gate that crashes blocks
+  the command with a message instead. Rerun `bento-setup` to update installed hooks.
+
 - **Commit, push and PR requests go through `bento-ship`.** Its description now names terse
   requests ("commit PR", "PR", "push", "commit this") and forbids running `git commit`,
   `git push` or `gh pr create` directly; the principles block says the same. `bento-setup`
