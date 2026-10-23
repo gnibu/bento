@@ -24,8 +24,9 @@ After editing `PRINCIPLES.md`, rerun
 `python3 plugins/bento/skills/bento-setup/scripts/agents_block.py AGENTS.md`.
 
 <!-- bento:start -->
-<!-- bento:terse=on -->
 ## bento (shared agent operating layer)
+
+Terse reports: on.
 
 **Always-on principles — apply to every task, no exceptions:**
 

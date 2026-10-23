@@ -81,7 +81,8 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    script prints `added`, `updated` or `unchanged` (no write) per file. Edit the `AGENTS.md`
    source, never a `CLAUDE.md` symlink.
 
-   **Terse reports** ("Report what matters") are opt-in, and the answer lives in the block.
+   **Terse reports** ("Report what matters") are opt-in, and the answer lives in the block as `Terse reports: on.` or `off.`; with
+   `off`, playbooks give their full reports too.
    Exit 3 means no block records it yet (a new install, or one from before the option): ask
    once, "Terse reports: agents lead with the result and report only decisions, failures,
    risks and side effects? on (default) / off", then rerun with `--terse on|off`. A recorded

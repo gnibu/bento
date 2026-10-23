@@ -22,7 +22,6 @@ from pathlib import Path
 
 START = "<!-- bento:start -->"
 END = "<!-- bento:end -->"
-TERSE = "<!-- bento:terse={} -->"
 TERSE_SECTION = "Report what matters"
 PRINCIPLES = Path(__file__).resolve().parent.parent / "PRINCIPLES.md"
 
@@ -43,8 +42,9 @@ def principle_sections() -> list[tuple[str, str]]:
 def build_block(terse: bool) -> str:
     principles = "\n\n".join(s for h, s in principle_sections() if terse or h != TERSE_SECTION)
     return f"""{START}
-{TERSE.format("on" if terse else "off")}
 ## bento (shared agent operating layer)
+
+Terse reports: {"on" if terse else "off"}.
 
 **Always-on principles — apply to every task, no exceptions:**
 
@@ -58,7 +58,8 @@ local files the user reviews before committing.
 
 def recorded_terse(text: str) -> str | None:
     """The `--terse` answer (`on` or `off`) recorded in an existing block, or None."""
-    m = re.search(re.escape(START) + r"\n<!-- bento:terse=(on|off) -->", text)
+    block = re.search(re.escape(START) + r".*?" + re.escape(END), text, flags=re.S)
+    m = block and re.search(r"^Terse reports: (on|off)\.$", block.group(0), flags=re.M)
     return m.group(1) if m else None
 
 

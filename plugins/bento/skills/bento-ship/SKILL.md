@@ -171,6 +171,9 @@ default (listed first). No preference relaxes a guardrail.
     - each of `QA`, `Docs`, `Security`, `Pre-PR review (local)` and CI that failed, was
       skipped, or left an open question, with its reason, e.g. `QA: skipped, docs-only change`.
 
+    When the principles block says `Terse reports: off.`, report a line for every step instead: `Ticket`, `QA` (with tests added),
+    `Docs`, `Security`, `Pre-PR review (local)`, `PR reviewers` and CI.
+
     Each line a preference decided names its source: `(repo preference)`, `(default)` or
     `(your request)`, e.g. `Ticket: created TT-150 (repo preference)`.
 

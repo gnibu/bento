@@ -82,7 +82,8 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    PR's test plan from it. Interactive mode's message keeps the `QA:` line with counts and
    where the proof lives (`pass — 3 paths exercised, 2 tests added; evidence: <screenshot dir>,
    <test command>`), `Harness:` only when bootstrapped, and the `Defects`, `Untested` and
-   `Questions` lines; the passing `Exercised` and `Tests added` lines stay out.
+   `Questions` lines; the passing `Exercised` and `Tests added` lines stay out. When
+   the principles block says `Terse reports: off.`, interactive mode reports every line too.
 
    ```
    QA: <pass | defects open | no behavior changed>

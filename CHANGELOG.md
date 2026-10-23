@@ -8,7 +8,7 @@
   once whether you want it (default on), records the answer in the principles block and keeps
   it on every update; `/bento-setup --preferences` asks again. `bento-ship`, `bento-qa`,
   `bento-adversarial-review` and `bento-hotspots` reports now drop lines for checks that
-  passed as expected.
+  passed as expected; with terse reports off they keep every line.
 
 - **The principles block holds every principle whole, not just its one-line summary.**
   Codex, and Claude where `CLAUDE.md` links to `AGENTS.md`, now see the full text. A
