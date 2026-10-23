@@ -18,5 +18,6 @@ Written by `bento-setup`; change with `/bento-setup --preferences`.
 - PR reviewers: none
 <!-- bento:preferences:end -->
 OVERLAY
-git add -A && git commit -q -m "chore: add bento-ship preferences"
+python3 "$(dirname "$0")/../../../skills/bento-setup/scripts/agents_block.py" --terse off AGENTS.md >/dev/null
+git add -A && git commit -q -m "chore: add bento preferences"
 git push -q origin master && git switch -q "$branch" && git rebase -q master

@@ -28,8 +28,8 @@ bento (plugins/bento/skills/, every skill self-contained and prefixed bento-)
 ```
 
 - **Principles** are always-on → a skill can't ship always-on text, so `bento-setup` wires
-  them: a `CLAUDE.md` `@import` of the installed `PRINCIPLES.md`, and a distilled,
-  marker-bounded block in `AGENTS.md` for Codex.
+  them: a marker-bounded block in `AGENTS.md` that copies every principle whole, also written
+  into a `CLAUDE.md` that neither links to nor imports that `AGENTS.md`.
 - **Conventions** are the meta-layer: rules about *how the instruction layer itself is
   written*. This is where the instruction-pricing model and skill-routing discipline live.
 - **Playbooks** are triggered skills.
@@ -91,15 +91,14 @@ directory, and `ship`, `qa` or `setup` would collide.
 
 | scope | where skills land | pinning | principles wiring |
 |---|---|---|---|
-| project (default) | `.agents/skills/bento-*` (Codex), `.claude/skills -> ../.agents/skills` (Claude, one link) | committed files + `skills-lock.json` | repo `CLAUDE.md` import + `AGENTS.md` block |
-| global (`-g`) | `~/.agents/skills/`, `${CLAUDE_CONFIG_DIR:-~/.claude}/skills/` | none — re-add to update | user `CLAUDE.md` import + `${CODEX_HOME:-~/.codex}/AGENTS.md` block |
+| project (default) | `.agents/skills/bento-*` (Codex), `.claude/skills -> ../.agents/skills` (Claude, one link) | committed files + `skills-lock.json` | `AGENTS.md` block (+ repo `CLAUDE.md` block) |
+| global (`-g`) | `~/.agents/skills/`, `${CLAUDE_CONFIG_DIR:-~/.claude}/skills/` | none — re-add to update | user `CLAUDE.md` + `${CODEX_HOME:-~/.codex}/AGENTS.md` blocks |
 
-Project scope is the team path: the committed skills *are* the pin, and a committed
-`@.claude/skills/bento-setup/PRINCIPLES.md` import finally gives principles a stable in-repo
-path. Global scope is the personal path.
+Project scope is the team path: the committed skills *are* the pin, and the committed
+principles block travels with them. Global scope is the personal path.
 
 Updates: rerun `npx skills add gnibu/bento --skill '*'` (same scope), then `bento-setup` to
-refresh the distilled `AGENTS.md` block. Not `npx skills update`: it re-adds only skills whose
+refresh the `AGENTS.md` principles block. Not `npx skills update`: it re-adds only skills whose
 hash changed, so a new bento skill that an updated playbook calls never lands. Agents run
 `bento-setup` on their own after either command: it is idempotent and local. No hook
 nags about updates.

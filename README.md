@@ -17,7 +17,8 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
 
 Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-contained:
 
-- **Principles** — always-on standing rules (autonomy, prove-on-artifact, subtract-before-add),
+- **Principles** — always-on standing rules (autonomy, prove-on-artifact, subtract-before-add,
+  report-what-matters, ship-through-bento-ship),
   in `bento-setup/PRINCIPLES.md`. `bento-setup` wires them into `CLAUDE.md` / `AGENTS.md`.
 - **Conventions** — how to author a repo's L2 (instruction-file pricing, pointer form, where
   each fact goes), in `bento-learn/references/instruction-layer.md`.
@@ -102,7 +103,8 @@ updates, so no skill is left without a link. Commit them.
 `~/.claude/skills/` (`$CLAUDE_CONFIG_DIR/skills/` when set).
 
 Then start a fresh session and run **`/bento-setup`** (Claude) or **`$bento-setup`** (Codex). It
-adds the principles import to `CLAUDE.md`, the principles block to `AGENTS.md` and the pre-PR
+adds the principles block to `AGENTS.md` (and to a `CLAUDE.md` that doesn't already read it),
+asks once whether you want terse reports, and adds the pre-PR
 review gate to `.claude/settings.json` / `.codex/hooks.json` (project
 files, or the user `CLAUDE.md` / `AGENTS.md` under `$CLAUDE_CONFIG_DIR` / `$CODEX_HOME`,
 defaulting to `~/.claude` / `~/.codex`, for a global install).
@@ -117,9 +119,8 @@ Re-add rather than `npx skills update`: update re-adds only skills whose hash ch
 skills installed before skill-path tracking (it prints their `add` command instead), and never
 installs a skill bento added since, so a playbook that starts calling one would find it
 missing. Then run `bento-setup`; agents do this on their own after either command. It refreshes
-the distilled `AGENTS.md` block and the `.claude/skills` link (the `CLAUDE.md` import follows
-the installed file automatically). For a project install, commit the updated skills
-and `skills-lock.json`; that commit is the version bump. Roll back with git.
+the principles block (keeping your terse-reports answer) and the `.claude/skills` link. For a
+project install, commit the updated skills and `skills-lock.json`; that commit is the version bump. Roll back with git.
 
 **Content self-update:** `bento-learn` routes generic learnings back into bento (L1) as PRs —
 the framework evolving from real use, not just version bumps.

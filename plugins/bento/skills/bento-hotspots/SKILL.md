@@ -43,9 +43,9 @@ files are skipped.
    - **exclude:** generated or vendored code the skip rules missed. Rerun on narrower paths.
 3. **Cycles:** for each, name the one import edge that should go and where its code should
    live instead.
-4. **Report** a ranked table: location, the metrics, the verdict, a one-line reason, and for
-   each **refactor** its target shape. High fan-in modules raise the stakes of a change;
-   say so next to them.
+4. **Report** a ranked table of the **refactor** verdicts: location, the metrics, a one-line
+   reason and the target shape. High fan-in modules raise the stakes of a change; say so next
+   to them. **Leave** and **exclude** verdicts get one closing line: location and reason each.
 5. **Hand off, don't refactor here.** Each target the user picks goes through
    `bento-refactor` as its own change (pin behaviour, reshape, prove), and its rerun of the
    scan shows the metric dropped.

@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- **New principle, "Report what matters", opt-in.** Agents lead every message with the result
+  and report only decisions, failures, risks and side effects; errors, failing tests,
+  security warnings and destructive confirmations are never shortened. `bento-setup` asks
+  once whether you want it (default on), records the answer in the principles block and keeps
+  it on every update; `/bento-setup --preferences` asks again. `bento-ship`, `bento-qa`,
+  `bento-adversarial-review` and `bento-hotspots` reports now drop lines for checks that
+  passed as expected.
+
+- **The principles block holds every principle whole, not just its one-line summary.**
+  Codex, and Claude where `CLAUDE.md` links to `AGENTS.md`, now see the full text. A
+  standalone `CLAUDE.md` gets the same block in place of the `@…/PRINCIPLES.md` import, which
+  setup removes so nothing loads twice. Rerun `bento-setup` to update.
+
 - **The pre-PR review gate works on macOS system Python and fails closed.** It crashed on
   Python 3.9 (`/usr/bin/python3`), and the crash let `git push` and `gh pr create` through.
   It now runs on 3.9, the documented minimum for bento scripts, and a gate that crashes blocks

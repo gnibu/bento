@@ -78,7 +78,10 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    green, re-run the path on the surface.
 7. **Run the full suite.** Green, with the new tests in it. Commit the tests (ship mode, or when
    asked) in conventional style, one logical change per commit.
-8. **Report**, blockers first:
+8. **Report**, blockers first. Ship mode returns every line below: the ship flow builds the
+   PR's test plan from it. Interactive mode's message keeps the `QA:` line with counts
+   (`pass — 3 paths exercised, 2 tests added`), `Harness:` only when bootstrapped, and the
+   `Defects`, `Untested` and `Questions` lines; everything that passed stays out.
 
    ```
    QA: <pass | defects open | no behavior changed>
