@@ -8,6 +8,7 @@
   `plugins/bento/skills/*/scripts/` directory; skill behavior evals under `plugins/bento/evals/`
   (`claude plugin eval`).
 - **Scripts run on Python 3.9** (the macOS system `python3`): also run their tests under `/usr/bin/python3`.
+  Not `tests/`: it needs 3.11+ (`tomllib`).
 - **Running several eval cases:** `claude plugin eval --case` takes one glob; a repeated
   `--case` keeps only the last, and `[...]` classes match nothing. Use `--tag` or one run per glob.
 - **Evals read the live tree:** edit no skill mid-run; `--keep-temp` keeps traces.

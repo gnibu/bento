@@ -120,26 +120,42 @@ default (listed first). No preference relaxes a guardrail.
     pre-PR review on "commits since `<reviewed>`" and record its sha, so step 12's gate stays silent. Also skip if the user says "skip adversarial
     review" or the skill isn't installed.
 11. **The single stop before pushing** — only if there are L2 learnings to approve, or QA,
-    security or pre-PR review questions to answer. Show each learning's diff, then end with:
+    security or pre-PR review questions to answer. Wait for any background check first: the
+    stop is your last message, and one that ends after it means writing the whole stop again.
+    Show each learning's diff, then end with this, leaving out empty sections:
 
-    ```markdown
-    **ACTION REQUIRED**
-
-    **Learnings**: reply APPLY, APPLY 1,3 or SKIP
-    1. `<file>` gets: "<the new text, verbatim or its first line>"
-       - Why: <what went wrong on this branch, in plain words>
-
-    **Decisions**: reply e.g. "B1 <answer>"; a skipped decision keeps its default
-    - **B1.** `<file:line>`: <the problem, in plain words>
-      - **<answer>**: <what it does> (default, because <reason>)
-      - **<other answer>**: <what it would change>
-    ```
+    > **Ready to push: waiting on your reply below.** <what QA and the reviews found, in one
+    > line>. Nothing is pushed yet.
+    >
+    > **Fixed** (`<sha>`)
+    > - **<what was wrong>**
+    >   - Before: <old behavior>. Now: <new behavior>.
+    >   - Proof: <the test or run that shows it>
+    >
+    > **Dismissed**
+    > - **<the finding>**
+    >   - Why: <the evidence, and what changing it would break>
+    >
+    > **ACTION REQUIRED**: reply in one line, e.g. `A1 apply, B1 <answer>`. An unanswered
+    > learning is not applied; an unanswered decision keeps its default.
+    >
+    > **Learnings**
+    > - **A1. `<file>`, <section>**
+    >   - Adds: "<the new text, verbatim or its first line>"
+    >   - Why: <what went wrong on this branch, in plain words>
+    >
+    > **Decisions**
+    > - **B1. `<file:line>`: <the problem, in plain words>**
+    >   - **<answer>** (default, because <reason>): <what it does>
+    >   - **<other answer>**: <what it would change>
 
     Write it as Markdown, never inside a code block: a code block renders each entry on one
-    unwrapped line. Rewrite each question QA, the security audit or the pre-PR review returned
-    into this form, keeping its default and reason, and reading the code when the question
-    alone doesn't say what is at stake: a reader who did not watch the review must know what
-    each answer does without opening the diff.
+    unwrapped line. A learning changes a file; a follow-up that changes none goes under
+    `## Open review questions` in the PR body, not in the list. Rewrite each question QA, the
+    security audit or the pre-PR review returned into this form, keeping its default and
+    reason, and reading the code when the question alone doesn't say what is at stake: a
+    reader who did not watch the review must know what each answer does without opening the
+    diff.
 
     After the reply, commit approved learnings on their own and each decision as its own
     verified commit. Recheck affected docs and rerun the security audit if those commits change
