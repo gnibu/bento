@@ -14,6 +14,7 @@ Written by `bento-setup`; change with `/bento-setup --preferences`.
 - Tracker: Linear, team ENG, review status In Review
 - QA: always
 - Pre-PR review: always
+- Pre-PR review gate: all branches
 - Learnings: yes
 - PR reviewers: none
 <!-- bento:preferences:end -->

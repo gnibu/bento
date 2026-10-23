@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **The pre-PR review gate skips branches other automation pushes.** A new ship preference,
+  `Pre-PR review gate: except <glob>[, <glob>…]`, silences the gate on matching branches, so
+  a factory that commits and pushes its own branches (e.g. `nightshift/*`) gets no reminder
+  to use `bento-ship`. `bento-setup` proposes `except nightshift/*` when it
+  finds a `.nightshift/` folder or a `nightshift-*` skill; default `all branches`.
+  `bento-ship` still runs its pre-PR review on an exempt branch.
+
 - **New principle, "Report what matters", opt-in.** Agents lead every message with the result
   and report only decisions, failures, risks and side effects; errors, failing tests,
   security warnings and destructive confirmations are never shortened. `bento-setup` asks
@@ -15,17 +22,18 @@
   standalone `CLAUDE.md` gets the same block in place of the `@…/PRINCIPLES.md` import, which
   setup removes so nothing loads twice. Rerun `bento-setup` to update.
 
-- **The pre-PR review gate works on macOS system Python and fails closed.** It crashed on
-  Python 3.9 (`/usr/bin/python3`), and the crash let `git push` and `gh pr create` through.
-  It now runs on 3.9, the documented minimum for bento scripts, and a gate that crashes blocks
-  the command with a message instead. Rerun `bento-setup` to update installed hooks.
+- **The pre-PR review gate works on macOS system Python.** It crashed on Python 3.9
+  (`/usr/bin/python3`). It now runs on 3.9, the documented minimum for bento scripts, and a
+  gate that crashes prints a visible error. Rerun `bento-setup` to update installed hooks.
 
 - **Commit, push and PR requests go through `bento-ship`.** Its description now names terse
   requests ("commit PR", "PR", "push", "commit this") and forbids running `git commit`,
   `git push` or `gh pr create` directly; the principles block says the same. `bento-setup`
-  also installs a pre-PR review gate, a Claude Code and Codex `PreToolUse` hook that blocks
-  `git push` and `gh pr create` unless the recorded pre-PR review covers `HEAD` (only the
-  review's own fix commits may follow it). The repo's `Pre-PR review: skip` preference turns it off.
+  also installs a pre-PR review gate, a Claude Code and Codex `PreToolUse` hook. It never
+  blocks: on `git push` and `gh pr create` it reminds the agent to go through `bento-ship`
+  unless the recorded pre-PR review covers `HEAD` (only the review's own fix commits may
+  follow it). An earlier version blocked those commands and broke automation that pushes
+  its own branches. The repo's `Pre-PR review: skip` preference turns it off.
 
 - **Setup maps real tools to maintenance.** Setup discovers each repository's checks,
   documentation system, monitoring provider, advisory access, forge and tracker into a

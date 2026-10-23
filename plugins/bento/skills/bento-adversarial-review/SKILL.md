@@ -223,7 +223,7 @@ else.
 2. Verify with the repo's checks that cover the touched files. A fix you can't get green is
    reverted and goes back as NEEDS HUMAN.
 3. Commit the fixes on their own: `fix: address adversarial review findings` (exactly: the
-   pre-PR review gate lets only this subject follow the recorded sha). Stage only the hunks
+   pre-PR review gate accepts only this subject after the recorded sha). Stage only the hunks
    you changed.
 4. Return `<reviewed>` (below), the table with an `Outcome` column (`fixed` / `dropped` /
    `needs human`), and one one-line-answerable question per NEEDS HUMAN or NEEDS INFO finding,

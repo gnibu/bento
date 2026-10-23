@@ -64,8 +64,9 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
     human checkpoints and a generated baseline for later three-way merges. See
     [the workflow and file contract](plugins/bento/skills/bento-init/references/init.md).
 - **`bento-setup`** — wire the principles; install the pre-PR review gate (a Claude Code /
-  Codex hook that blocks `git push` and `gh pr create` until `bento-ship`'s pre-PR review
-  covers `HEAD`); ask the repo's ship preferences once (missing ticket, QA, pre-PR review…;
+  Codex hook that reminds the agent, without blocking, to use `bento-ship` when it runs
+  `git push` or `gh pr create` before a pre-PR review covers `HEAD`; other automation that pushes its own branches goes in
+  `Pre-PR review gate: except …`); ask the repo's ship preferences once (missing ticket, QA, pre-PR review…;
   `--preferences` re-asks); migrate an old install; `--purge` to unwire. Discover the repository's actual maintenance tools and source-cited commands into
   the maintenance overlay, preserving manual rules and reporting missing integrations.
 
