@@ -227,7 +227,9 @@ else.
    you changed.
 4. Return `<reviewed>` (below), the table with an `Outcome` column (`fixed` / `dropped` /
    `needs human`), and one one-line-answerable question per NEEDS HUMAN or NEEDS INFO finding,
-   with the default you'd pick ("keep X or switch to Y? default: keep"). The caller asks them;
+   with the default you'd pick and what each answer changes ("`auth.py:40` retries forever on
+   a 401: keep, or stop after 3 and surface the error? default: keep, no caller hits it
+   today"). The caller asks them;
    don't guess and don't block.
 
 ## Record the review
