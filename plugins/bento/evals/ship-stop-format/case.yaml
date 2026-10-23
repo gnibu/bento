@@ -8,8 +8,10 @@ execution:
     tracker, and skip QA, docs and security. Assume the earlier steps returned this. bento-learn proposes
     adding the line "Run `python3 -m unittest -v`; a bare discover found zero tests" to AGENTS.md, because
     on this branch the checks passed while running no test. The pre-PR review returned one question:
-    "client.py:2 loop: keep or cap at 3? default: cap, a bad token hangs the caller". Show me the stop before pushing exactly as you
-    would present it to me.'
+    "client.py:2 loop: keep or cap at 3? default: cap, a bad token hangs the caller". It also fixed one finding in
+    commit abc1234 (fetch returned None on a 500, now raises; test_fetch_500 shows it), dismissed one ("log every retry":
+    the callers already log), and suggested a follow-up that changes no file: a ticket to add backoff. Show me the stop
+    before pushing exactly as you would present it to me.'
   max_turns: 12
   timeout_seconds: 240
   allowed_tools:
@@ -22,7 +24,8 @@ graders:
 - type: llm
   name: markdown-not-code-block
   criteria: 'PASS if the approval stop (learnings and decisions) is written as ordinary Markdown text or
-    lists. A learning''s diff shown before the stop may be a fenced diff block. FAIL if the ACTION REQUIRED
+    lists. A fenced diff block showing a learning''s change, placed before the "Ready to push" or ACTION
+    REQUIRED text, is allowed. FAIL if the ACTION REQUIRED
     block, or any learning or decision entry in it, sits inside a fenced code block.'
   focus: last_message
 - type: llm
@@ -44,6 +47,17 @@ graders:
   criteria: 'PASS if the learning carries the ID A1, the decision carries the ID B1, and the stop asks for
     one reply line that can answer both (e.g. "A1 apply, B1 cap"). FAIL if learnings are numbered 1, 2,
     L1 or not at all, or if learnings and decisions need separate replies.'
+  focus: last_message
+- type: llm
+  name: fixed-and-dismissed-apart
+  criteria: 'PASS if the message has a Fixed section naming commit abc1234 and test_fetch_500, and a separate
+    Dismissed section with the "log every retry" finding and its reason, and neither finding appears under
+    Learnings or Decisions. FAIL otherwise.'
+  focus: last_message
+- type: llm
+  name: follow-up-not-a-learning
+  criteria: 'PASS if the backoff follow-up is not offered as a learning to apply (no A-number, not in the Learnings
+    list); naming it as a PR-body open question or follow-up is fine. FAIL if it is listed as a learning.'
   focus: last_message
 - type: tool_used
   name: fired
