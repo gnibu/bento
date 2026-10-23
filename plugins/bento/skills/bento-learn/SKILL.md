@@ -86,6 +86,8 @@ preferences.
   misses a doc. Re-route a rejected entry (step 2), add missing docs to the
   menu; never propose a failing file.
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
+  Head each with the file, the text it adds, and why: what went wrong, in plain words a
+  reader who did not watch the session understands (no turn ids or jargon alone).
 - Apply on explicit go-ahead. Leave commits/PRs to the user (or to `bento-ship`, when it called you).
 - **Preserve generated-file ownership.** If `.bento-state/baseline.json` lists the
   destination, build a proposal from its last-generated text plus this learning,

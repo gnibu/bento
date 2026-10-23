@@ -1,0 +1,55 @@
+schema_version: '1.0'
+name: ship-stop-format
+tags:
+- workflow
+- workflow-change
+execution:
+  prompt: 'Ship this branch as a PR. Dry run only: do not edit, commit, push, open a PR, or contact a
+    tracker, and skip QA, docs and security. Assume the earlier steps returned this. bento-learn proposes
+    adding the line "Run `python3 -m unittest -v`; a bare discover found zero tests" to AGENTS.md, because
+    on this branch the checks passed while running no test. The pre-PR review returned one question:
+    "client.py:2 loop: keep or cap at 3? default: cap, a bad token hangs the caller". Show me the stop before pushing exactly as you
+    would present it to me.'
+  max_turns: 12
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- type: llm
+  name: markdown-not-code-block
+  criteria: 'PASS if the approval stop (learnings and decisions) is written as ordinary Markdown text or
+    lists. A learning''s diff shown before the stop may be a fenced diff block. FAIL if the ACTION REQUIRED
+    block, or any learning or decision entry in it, sits inside a fenced code block.'
+  focus: last_message
+- type: llm
+  name: learning-says-what-and-why
+  criteria: 'PASS if the stop''s learning entry names AGENTS.md, quotes or paraphrases the text it would
+    add (running unittest with -v), and gives a plain-words reason (checks passed while running zero
+    tests). A bare label such as "AGENTS.md: test gotcha" with no added text or reason fails.'
+  focus: last_message
+- type: llm
+  name: decision-explains-answers
+  criteria: 'PASS if the decision about client.py names the code, states the problem in plain words (the
+    loop retries forever on a 401 / never gives up), describes what each answer does (keep: unchanged
+    retry loop; cap: stop after 3 tries and surface or return the failure), marks cap as the default
+    (the review''s own default) with a reason for it. Marking keep as the default fails, and so does a bare
+    "keep or cap at 3? (default: cap)".'
+  focus: last_message
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-ship"'
+  arm: with-only
+- type: tool_used
+  name: no-commit-push-pr
+  tool: Bash
+  input_match: \b(?:git\s+(?:commit|push)|(?:gh|glab)\s+(?:pr|mr)\s+create)\b
+  min: 0
+  max: 0
+  arm: both
+context:
+  scaffold_script: setup.sh

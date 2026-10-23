@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Learning approvals say what you accept and why.** Each learning in `bento-ship`'s
+  approval stop, and each `bento-learn` proposal, now names the file, the text it adds and
+  the problem on the branch that prompted it, instead of a one-line label. Each decision names
+  the code it concerns, the problem in plain words, what each answer changes and why the
+  default was picked.
+
 - **The pre-PR review gate skips branches other automation pushes.** A new ship preference,
   `Pre-PR review gate: except <glob>[, <glob>…]`, silences the gate on matching branches, so
   a factory that commits and pushes its own branches (e.g. `nightshift/*`) gets no reminder
