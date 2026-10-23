@@ -11,6 +11,7 @@
 - **Running several eval cases:** `claude plugin eval --case` takes one glob; a repeated
   `--case` keeps only the last, and `[...]` classes match nothing. Use `--tag` or one run per glob.
 - **Evals read the live tree:** edit no skill mid-run; `--keep-temp` keeps traces.
+- **Testing a hook under Codex:** `codex exec --dangerously-bypass-hook-trust` runs an untrusted `.codex/hooks.json`.
 
 ## Dogfooding
 
