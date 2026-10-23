@@ -38,7 +38,7 @@ class DogfoodTest(unittest.TestCase):
         text = (ROOT / "AGENTS.md").read_text()
         terse = AGENTS_BLOCK["recorded_terse"](text)
         self.assertIsNotNone(terse, "AGENTS.md block records no --terse answer")
-        self.assertEqual(AGENTS_BLOCK["apply"](text, AGENTS_BLOCK["build_block"](terse))[1], "unchanged",
+        self.assertEqual(AGENTS_BLOCK["apply"](text, AGENTS_BLOCK["build_block"](terse == "on"))[1], "unchanged",
                          "rerun plugins/bento/skills/bento-setup/scripts/agents_block.py AGENTS.md")
 
 

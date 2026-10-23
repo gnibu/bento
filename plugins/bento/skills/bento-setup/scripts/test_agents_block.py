@@ -39,7 +39,7 @@ class BlockTest(unittest.TestCase):
         self.assertIn("### Report what matters", on)
         self.assertNotIn("### Report what matters", off)
         self.assertIn("### Ship through bento-ship", off)
-        self.assertEqual((recorded_terse(on), recorded_terse(off), recorded_terse("# repo")), (True, False, None))
+        self.assertEqual((recorded_terse(on), recorded_terse(off), recorded_terse("# repo")), ("on", "off", None))
 
 
 class CliTest(unittest.TestCase):

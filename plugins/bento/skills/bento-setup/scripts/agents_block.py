@@ -56,10 +56,10 @@ local files the user reviews before committing.
 {END}"""
 
 
-def recorded_terse(text: str) -> bool | None:
-    """The `--terse` answer recorded in an existing block, or None."""
+def recorded_terse(text: str) -> str | None:
+    """The `--terse` answer (`on` or `off`) recorded in an existing block, or None."""
     m = re.search(re.escape(START) + r"\n<!-- bento:terse=(on|off) -->", text)
-    return m.group(1) == "on" if m else None
+    return m.group(1) if m else None
 
 
 def apply(text: str, block: str) -> tuple[str, str]:
@@ -77,16 +77,16 @@ def main() -> None:
     args = parser.parse_args()
     targets = [Path(f) for f in args.files]
     texts = [t.read_text() if t.exists() else "" for t in targets]
-    terse = args.terse == "on" if args.terse else next(
-        (r for r in map(recorded_terse, texts) if r is not None), None)
-    if terse is None:
+    terse = args.terse or next(filter(None, map(recorded_terse, texts)), None)
+    if not terse:
         print("bento: terse reports not chosen yet; ask the user, then rerun with --terse on|off")
         sys.exit(3)
+    block = build_block(terse == "on")
     for target, text in zip(targets, texts):
-        new, action = apply(text, build_block(terse))
+        new, action = apply(text, block)
         if action != "unchanged":
             target.write_text(new)
-        print(f"bento: {action} principles block in {target} (terse reports {'on' if terse else 'off'})")
+        print(f"bento: {action} principles block in {target} (terse reports {terse})")
 
 
 if __name__ == "__main__":
