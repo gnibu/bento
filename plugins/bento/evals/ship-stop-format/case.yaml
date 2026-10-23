@@ -8,7 +8,7 @@ execution:
     tracker, and skip QA, docs and security. Assume the earlier steps returned this. bento-learn proposes
     adding the line "Run `python3 -m unittest -v`; a bare discover found zero tests" to AGENTS.md, because
     on this branch the checks passed while running no test. The pre-PR review returned one question:
-    "client.py:2 loop: keep or cap at 3? default: keep". Show me the stop before pushing exactly as you
+    "client.py:2 loop: keep or cap at 3? default: cap, a bad token hangs the caller". Show me the stop before pushing exactly as you
     would present it to me.'
   max_turns: 12
   timeout_seconds: 240
@@ -35,8 +35,9 @@ graders:
   name: decision-explains-answers
   criteria: 'PASS if the decision about client.py names the code, states the problem in plain words (the
     loop retries forever on a 401 / never gives up), describes what each answer does (keep: unchanged
-    retry loop; cap: stop after 3 tries and surface or return the failure), marks keep as the default
-    and gives a reason for that default. A bare "keep or cap at 3? (default: keep)" fails.'
+    retry loop; cap: stop after 3 tries and surface or return the failure), marks cap as the default
+    (the review''s own default) with a reason for it. Marking keep as the default fails, and so does a bare
+    "keep or cap at 3? (default: cap)".'
   focus: last_message
 - type: tool_used
   name: fired

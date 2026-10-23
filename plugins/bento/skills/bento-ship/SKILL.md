@@ -129,17 +129,17 @@ default (listed first). No preference relaxes a guardrail.
     1. `<file>` gets: "<the new text, verbatim or its first line>"
        - Why: <what went wrong on this branch, in plain words>
 
-    **Decisions**: reply e.g. "B1 keep"; a skipped decision keeps its default
+    **Decisions**: reply e.g. "B1 <answer>"; a skipped decision keeps its default
     - **B1.** `<file:line>`: <the problem, in plain words>
-      - **keep**: <what stays as is> (default, because <reason>)
+      - **<answer>**: <what it does> (default, because <reason>)
       - **<other answer>**: <what it would change>
     ```
 
     Write it as Markdown, never inside a code block: a code block renders each entry on one
     unwrapped line. Rewrite each question QA, the security audit or the pre-PR review returned
-    into this form, reading the code when the question alone doesn't say what is at stake: a
-    reader who did not watch the review must know what each answer does without opening the
-    diff.
+    into this form, keeping its default and reason, and reading the code when the question
+    alone doesn't say what is at stake: a reader who did not watch the review must know what
+    each answer does without opening the diff.
 
     After the reply, commit approved learnings on their own and each decision as its own
     verified commit. Recheck affected docs and rerun the security audit if those commits change
