@@ -35,7 +35,7 @@ Match where bento's skills are installed:
 - **global** — `~/.agents/skills/bento-setup/` or `<claude-dir>/skills/bento-setup/`.
 
 `<claude-dir>` is `$CLAUDE_CONFIG_DIR` if set, else `~/.claude`, resolved to an absolute
-path (npx skills uses the same rule; `CLAUDE.md` imports don't expand variables).
+path (npx skills uses the same rule).
 
 Both present → ask (`--yes`: project). Neither → stop and tell the user to run
 `npx skills add gnibu/bento --skill '*'` (add `-g` for global).
@@ -66,26 +66,29 @@ ran, run the `add` command it printed (or the full one above), then this skill.
      with no `.claude/skills` entry.
 
    Global scope: leave `<claude-dir>/skills/` alone; it holds the user's other skills.
-3. **Claude principles.** If `CLAUDE.md` (project or global) is a symlink to the `AGENTS.md`
-   of step 4, skip this step and report "Claude reads the AGENTS.md block via the CLAUDE.md
-   symlink": an import would load the principles twice for Claude and leave a stray `@path`
-   line in Codex's file. Otherwise ensure the target `CLAUDE.md` contains the import line, appended as
-   its own block at the end (imports mid-file are disallowed):
+3. **Claude principles.** Claude must load them exactly once. First remove any old bento
+   import (the `# bento (always-on principles)` heading and its `@…/PRINCIPLES.md` line) from
+   the target `CLAUDE.md` and the `AGENTS.md` it links to: step 4's block now holds the
+   principles whole, so the import would load them twice.
+   - `CLAUDE.md` is a symlink to the `AGENTS.md` of step 4, or imports it (an `@` line
+     naming that file) → nothing more; report "Claude reads the AGENTS.md block".
+   - Otherwise, when Claude was an install target (`.claude/skills/bento-setup/` or
+     `<claude-dir>/skills/bento-setup/` exists), step 4 writes the block into that
+     `CLAUDE.md` too: `./CLAUDE.md` (project) or `<claude-dir>/CLAUDE.md` (global).
+4. **Principles block.** Run `python3 "<skill>/scripts/agents_block.py" <AGENTS.md> [<CLAUDE.md>]`
+   with `./AGENTS.md` (project) or `${CODEX_HOME:-~/.codex}/AGENTS.md` (global), plus the
+   `CLAUDE.md` step 3 named. The block is marker-bounded and holds every principle whole; the
+   script prints `added`, `updated` or `unchanged` (no write) per file. Edit the `AGENTS.md`
+   source, never a `CLAUDE.md` symlink.
 
-   ```
-   # bento (always-on principles)
-   @<import>
-   ```
-
-   - project: `./CLAUDE.md`, import `.claude/skills/bento-setup/PRINCIPLES.md`
-   - global: `<claude-dir>/CLAUDE.md`, import `<claude-dir>/skills/bento-setup/PRINCIPLES.md`
-
-   Skip if the line is present. Check the import target exists; if it doesn't, Claude
-   wasn't an install target (`npx skills add ... -a claude-code`).
-4. **Codex principles.** `python3 "<skill>/scripts/agents_block.py" <AGENTS.md>` with
-   `./AGENTS.md` (project) or `${CODEX_HOME:-~/.codex}/AGENTS.md` (global). The block is
-   marker-bounded and distilled; the script prints `added`, `updated` or `unchanged` (no
-   write). Edit the `AGENTS.md` source, never a `CLAUDE.md` symlink.
+   **Terse reports** ("Report what matters") are opt-in, and the answer lives in the block as `Terse reports: on.` or `off.`; with
+   `off`, playbooks give their full reports too.
+   Exit 3 means no block records it yet (a new install, or one from before the option): ask
+   once, "Terse reports: agents lead with the result and report only decisions, failures,
+   risks and side effects? on (default) / off", then rerun with `--terse on|off`. A recorded
+   answer is reused, so an update asks nothing and refreshes the principle text. `--yes`, or
+   no one to answer → `on`, listed in the report. `--preferences` → ask again, the recorded
+   answer as default.
 5. **Pre-PR review gate.** A skill runs only when the agent picks it, so a hook backs the
    principle "commit, push or PR requests go through bento-ship": it blocks `git push` and
    `gh pr create` with "Run bento-ship first: no pre-PR review recorded for HEAD." unless the
@@ -146,8 +149,8 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    pass.
 9. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
    each one's `##` rule headings, so the user sees which bento skills are customised here.
-   None → say so. Then the ship preferences, marking those written this run and whether each
-   is a default or the user's answer. Include maintenance mappings, their sources and any
+   None → say so. Then the terse reports answer and the ship preferences, marking those
+   written this run and whether each is a default or the user's answer. Include maintenance mappings, their sources and any
    unavailable or unverified capabilities.
 
 Project-scope changes (`CLAUDE.md`, `AGENTS.md`, `.agents/`, `.claude/skills/`,
@@ -183,15 +186,14 @@ Detect each legacy piece; remove only what is present. Report each removal.
    Remove `.codex/skills/` once empty.
 5. **Old principles import.** Remove the `# bento (personal agent kit — always-on principles)`
    heading and its `@…/principles/PRINCIPLES.md` line from `<claude-dir>/CLAUDE.md`.
-   Apply step 3 writes the new one. The `AGENTS.md` block keeps its markers, so Apply step 4
-   rewrites it in place.
+   The `AGENTS.md` block keeps its markers, so Apply step 4 rewrites it in place.
 
 ## Purge (`--purge`)
 
-1. Remove the `# bento (always-on principles)` block from the `CLAUDE.md` for the scope.
-   Keep the `.claude/skills` link: the repo's own skills may live behind it.
-2. Remove the `<!-- bento:start -->` … `<!-- bento:end -->` block from the `AGENTS.md`,
-   keeping unrelated instructions.
-3. Run `python3 "<skill>/scripts/push_gate.py" uninstall <file>` on each file Apply step 5
+1. Remove the `<!-- bento:start -->` … `<!-- bento:end -->` block, and any old
+   `# bento (always-on principles)` import, from the scope's `AGENTS.md` and `CLAUDE.md`,
+   keeping unrelated instructions. Keep the `.claude/skills` link: the repo's own skills may
+   live behind it.
+2. Run `python3 "<skill>/scripts/push_gate.py" uninstall <file>` on each file Apply step 5
    writes for the scope.
-4. The skills themselves: `npx skills remove` each `bento-*` skill, same scope (`-g` for global).
+3. The skills themselves: `npx skills remove` each `bento-*` skill, same scope (`-g` for global).

@@ -16,7 +16,8 @@ graders:
       at least what to do about a missing ticket (create automatically by default), whether to
       run QA on ship, and whether to run the pre-PR review; and it would record the answers in
       .agents/bento/bento-ship.md. It should ask for the Linear team, not for the tracker or
-      review status AGENTS.md already names. FAIL if it would ask no preference question.
+      review status AGENTS.md already names. It should also ask whether to turn on terse reports
+      ("Report what matters", on by default). FAIL if it would ask no preference question.
   - type: tool_used
     name: fired
     tool: Skill

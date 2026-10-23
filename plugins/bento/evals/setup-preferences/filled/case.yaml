@@ -13,10 +13,11 @@ graders:
     criteria: |
       The repo is a fresh checkout whose AGENTS.md names GitHub, the tracker Linear and the review status `In Review`, but no Linear team or project. The user asked for a dry run of bento setup. The overlay .agents/bento/bento-ship.md already records every ship preference
       (missing ticket, ticket update, tracker with team ENG, QA, pre-PR review, learnings, PR
-      reviewers).
-      PASS only if the response asks the user no preference question and would leave the
-      recorded preferences unchanged. FAIL if it would ask any preference question or rewrite
-      the preferences.
+      reviewers), and the AGENTS.md principles block records terse reports `off`.
+      PASS only if the response asks the user no preference question, terse reports included,
+      and would leave the recorded preferences unchanged, with terse reports still off. FAIL if
+      it would ask any preference question or rewrite the preferences. Writing other setup
+      files (e.g. a new .agents/bento/bento-maintain.md) is fine.
   - type: tool_used
     name: fired
     tool: Skill

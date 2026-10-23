@@ -199,11 +199,15 @@ rules), or is a redesign rather than a local fix. These are the operator's call 
 
 ## Phase 3 (interactive) — Present and block
 
-One table, ranked by your assessed severity, not the reviewer's:
+One table of the findings still in play (AGREE, PARTLY, NEEDS INFO), ranked by your assessed
+severity, not the reviewer's:
 
 ```
 | # | Sev | Finding | file:line | Verdict | Proposed action |
 ```
+
+DISAGREE findings get one closing line instead of rows: `Dismissed: #4 (guarded upstream), …`.
+When the principles block says `Terse reports: off.`, every finding gets a row, DISAGREE included.
 
 Then the findings you'd act on as a numbered plan, one line each. **Stop. Edit nothing.** Ask
 which numbers to apply (`1,3`, `all`, `none`). Touch only the approved items; don't quietly fix

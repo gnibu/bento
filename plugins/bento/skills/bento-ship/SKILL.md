@@ -164,13 +164,18 @@ default (listed first). No preference relaxes a guardrail.
     afterwards; forge-to-tracker automations often move it back, so set it again if they did.
     Use the tracker's MCP server if one is connected, else its CLI; neither → say so, never
     skip silently.
-15. **Report.** The PR URL, then separate lines: `Ticket: <outcome>`,
-    `QA: <outcome, tests added>`, `Docs: <outcome, or not applicable with reason>`,
-    `Security: <scope and outcome, or not applicable with reason>`,
-    `Pre-PR review (local): <outcome>` and
-    `PR reviewers: <names, or none>`. Each line a preference decided names its source:
-    `(repo preference)`, `(default)` or `(your request)`, e.g.
-    `Ticket: created TT-150 (repo preference)`. Note CI status if it runs.
+15. **Report.** The PR URL, then a line only for what the user acts on; the PR body holds
+    the full record, so a step that passed as expected gets no line:
+    - outward side effects: `Ticket: <outcome>` (created, updated or skipped, and why) and
+      `PR reviewers: <names>`;
+    - each of `QA`, `Docs`, `Security`, `Pre-PR review (local)` and CI that failed, was
+      skipped, or left an open question, with its reason, e.g. `QA: skipped, docs-only change`.
+
+    When the principles block says `Terse reports: off.`, report a line for every step instead: `Ticket`, `QA` (with tests added),
+    `Docs`, `Security`, `Pre-PR review (local)`, `PR reviewers` and CI.
+
+    Each line a preference decided names its source: `(repo preference)`, `(default)` or
+    `(your request)`, e.g. `Ticket: created TT-150 (repo preference)`.
 
 ## Guardrails
 

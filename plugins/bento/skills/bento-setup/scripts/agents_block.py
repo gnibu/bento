@@ -1,46 +1,50 @@
 #!/usr/bin/env python3
-"""Install/update the bento principles block in an AGENTS.md (idempotent).
+"""Install/update the bento principles block in AGENTS.md or CLAUDE.md files (idempotent).
 
-Principles are always-on: they are INLINED (distilled from ../PRINCIPLES.md, the single
-source) so they stay resident every task — a pointer would only be a suggestion to fetch.
+Principles are always-on: every section of ../PRINCIPLES.md (the single source) is INLINED
+whole, so it stays resident every task: a pointer would only be a suggestion to fetch.
 Playbooks are native `bento-*` skills, so the block does not point at them.
 
+"Report what matters" (terse reports) is opt-in. The answer is recorded in the block, so a
+rerun keeps it; with no `--terse` and no recorded answer the script writes nothing and exits 3,
+for bento-setup to ask the user.
+
 Marker-bounded, so re-running updates the block in place instead of duplicating it.
-Usage: python3 agents_block.py [path/to/AGENTS.md]   (default: ./AGENTS.md)
+Usage: python3 agents_block.py [--terse on|off] [FILE ...]   (default: ./AGENTS.md)
 Edit the AGENTS.md source, never a CLAUDE.md symlink.
 """
+from __future__ import annotations
+
+import argparse
 import re
 import sys
 from pathlib import Path
 
 START = "<!-- bento:start -->"
 END = "<!-- bento:end -->"
+TERSE_SECTION = "Report what matters"
 PRINCIPLES = Path(__file__).resolve().parent.parent / "PRINCIPLES.md"
 
 
-def distill_principles() -> list[tuple[str, str]]:
-    """Each `## Heading` + its `> summary` line, from PRINCIPLES.md.
-
-    The `> ...` blockquote right after a heading is the deliberate one-line summary; fall
-    back to the first sentence of prose if a section has none.
-    """
-    text = PRINCIPLES.read_text()
+def principle_sections() -> list[tuple[str, str]]:
+    """(heading, section) per `## Heading` of PRINCIPLES.md: `### Heading`, the `>` summary
+    in bold, then the body unchanged. The file's title and intro stay out."""
     out = []
-    for m in re.finditer(r"^## (.+?)\n+(.+?)(?:\n\n|\Z)", text, flags=re.M | re.S):
-        heading = m.group(1).strip()
-        body = m.group(2).strip()
-        if body.startswith(">"):
-            summary = body.splitlines()[0].lstrip("> ").strip()
-        else:
-            summary = re.split(r"(?<=\.)\s", " ".join(body.split()), maxsplit=1)[0]
-        out.append((heading, summary.rstrip(".")))
+    for section in re.split(r"^## ", PRINCIPLES.read_text(), flags=re.M)[1:]:
+        m = re.match(r"([^\n]+)\n+> ([^\n]+)\n+(.*)", section, flags=re.S)
+        if not m:
+            sys.exit(f"bento: PRINCIPLES.md section '## {section.splitlines()[0]}' needs a '> summary' line")
+        heading, summary, body = (g.strip() for g in m.groups())
+        out.append((heading, f"### {heading}\n\n**{summary}**\n\n{body}"))
     return out
 
 
-def build_block() -> str:
-    principles = "\n".join(f"- **{h}:** {s}." for h, s in distill_principles())
+def build_block(terse: bool) -> str:
+    principles = "\n\n".join(s for h, s in principle_sections() if terse or h != TERSE_SECTION)
     return f"""{START}
 ## bento (shared agent operating layer)
+
+Terse reports: {"on" if terse else "off"}.
 
 **Always-on principles — apply to every task, no exceptions:**
 
@@ -52,6 +56,13 @@ local files the user reviews before committing.
 {END}"""
 
 
+def recorded_terse(text: str) -> str | None:
+    """The `--terse` answer (`on` or `off`) recorded in an existing block, or None."""
+    block = re.search(re.escape(START) + r".*?" + re.escape(END), text, flags=re.S)
+    m = block and re.search(r"^Terse reports: (on|off)\.$", block.group(0), flags=re.M)
+    return m.group(1) if m else None
+
+
 def apply(text: str, block: str) -> tuple[str, str]:
     """Return (new text, action): action is added, updated or unchanged."""
     if START in text and END in text:
@@ -61,12 +72,22 @@ def apply(text: str, block: str) -> tuple[str, str]:
 
 
 def main() -> None:
-    target = Path(sys.argv[1] if len(sys.argv) > 1 else "AGENTS.md")
-    text = target.read_text() if target.exists() else ""
-    new, action = apply(text, build_block())
-    if action != "unchanged":
-        target.write_text(new)
-    print(f"bento: {action} principles block in {target}")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--terse", choices=["on", "off"])
+    parser.add_argument("files", nargs="*", default=["AGENTS.md"])
+    args = parser.parse_args()
+    targets = [Path(f) for f in args.files]
+    texts = [t.read_text() if t.exists() else "" for t in targets]
+    terse = args.terse or next(filter(None, map(recorded_terse, texts)), None)
+    if not terse:
+        print("bento: terse reports not chosen yet; ask the user, then rerun with --terse on|off")
+        sys.exit(3)
+    block = build_block(terse == "on")
+    for target, text in zip(targets, texts):
+        new, action = apply(text, block)
+        if action != "unchanged":
+            target.write_text(new)
+        print(f"bento: {action} principles block in {target} (terse reports {terse})")
 
 
 if __name__ == "__main__":
