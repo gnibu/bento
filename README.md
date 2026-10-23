@@ -199,6 +199,7 @@ python3 -m unittest discover -s plugins/bento/skills/bento-setup/scripts -p 'tes
 python3 -m unittest discover -s plugins/bento/skills/bento-hotspots/scripts -p 'test_*.py'  # needs uv
 claude plugin eval ./plugins/bento --runs 3 --ablation with-without --no-publish \
   --scaffold --allow-tools Bash Write Edit    # scaffolded cases build a git repo per run
+# Parallel eval processes need their own --output-dir: runs started together share a results dir
 ```
 
 Skill scripts must run on Python 3.9, the `python3` macOS ships with the Command Line Tools:
