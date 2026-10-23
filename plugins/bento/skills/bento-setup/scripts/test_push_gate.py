@@ -98,6 +98,12 @@ class ReviewedTest(unittest.TestCase):
         git(self.repo, "switch", "-q", "--detach")
         self.assertFalse(reviewed(str(self.repo)))
 
+    def test_unreadable_overlay_fails_open(self):
+        overlay = self.repo / ".agents/bento/bento-ship.md"
+        overlay.parent.mkdir(parents=True)
+        overlay.write_bytes(b"- Pre-PR review: always\n\xff\n")
+        self.assertTrue(reviewed(str(self.repo)))
+
     def run_hook(self, event, exe=sys.executable):
         """The hook's exit code and the reminder it gave the agent, if any."""
         run = subprocess.run([exe, str(SCRIPT)], input=event, capture_output=True, text=True)

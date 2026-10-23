@@ -93,8 +93,8 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    principle "commit, push or PR requests go through bento-ship". It never blocks: when an agent
    runs `git push` or `gh pr create`, it reminds the agent to go through bento-ship and to tell
    the user if it didn't. It stays silent when the sha `bento-adversarial-review` recorded is
-   `HEAD` (or only its fix commits follow), when the overlay says `Pre-PR review: skip`, or when the current branch matches its
-   `Pre-PR review gate: except <glob>, …` (step 6). For each agent that was an install target:
+   `HEAD` (or only its fix commits follow), when the overlay says `Pre-PR review: skip`, or
+   when the current branch matches its `Pre-PR review gate: except <glob>, …` (step 6). For each agent that was an install target:
 
    - Claude: `.claude/settings.json` (project) or `<claude-dir>/settings.json` (global).
    - Codex: `.codex/hooks.json` (project) or `${CODEX_HOME:-~/.codex}/hooks.json` (global).
