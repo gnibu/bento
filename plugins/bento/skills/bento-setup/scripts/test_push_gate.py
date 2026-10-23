@@ -80,25 +80,51 @@ class ReviewedTest(unittest.TestCase):
         self.assertTrue(reviewed(str(self.repo)))
         self.assertTrue(reviewed(tempfile.mkdtemp()))
 
-    def test_hook_blocks_with_exit_2(self):
+    def test_overlay_exempts_matching_branches(self):
+        overlay = self.repo / ".agents/bento/bento-ship.md"
+        overlay.parent.mkdir(parents=True)
+        overlay.write_text("- Pre-PR review: always\n")
+        git(self.repo, "switch", "-q", "-c", "nightshift/run-42")
+        self.assertFalse(reviewed(str(self.repo)))  # no preference line: gated
+        overlay.write_text("- Pre-PR review: always\n- Pre-PR review gate: except nightshift/*\n")
+        self.assertTrue(reviewed(str(self.repo)))
+        git(self.repo, "switch", "-q", "-c", "feature/x")
+        self.assertFalse(reviewed(str(self.repo)))
+        overlay.write_text("- Pre-PR review gate: except nightshift/*, renovate/*\n")
+        git(self.repo, "switch", "-q", "-c", "renovate/deps")
+        self.assertTrue(reviewed(str(self.repo)))
+        git(self.repo, "switch", "-q", "nightshift/run-42")
+        self.assertTrue(reviewed(str(self.repo)))
+        git(self.repo, "switch", "-q", "--detach")
+        self.assertFalse(reviewed(str(self.repo)))
+
+    def test_unreadable_overlay_fails_open(self):
+        overlay = self.repo / ".agents/bento/bento-ship.md"
+        overlay.parent.mkdir(parents=True)
+        overlay.write_bytes(b"- Pre-PR review: always\n\xff\n")
+        self.assertTrue(reviewed(str(self.repo)))
+
+    def run_hook(self, event, exe=sys.executable):
+        """The hook's exit code and the reminder it gave the agent, if any."""
+        run = subprocess.run([exe, str(SCRIPT)], input=event, capture_output=True, text=True)
+        out = json.loads(run.stdout)["hookSpecificOutput"]["additionalContext"] if run.stdout.strip() else None
+        return run.returncode, out
+
+    def test_hook_reminds_without_blocking(self):
         patch = json.dumps({"tool_name": "apply_patch", "tool_input": {"command": "+git push"},
                             "cwd": str(self.repo)})
-        run = subprocess.run([sys.executable, str(SCRIPT)], input=patch, capture_output=True, text=True)
-        self.assertEqual(run.returncode, 0)
+        self.assertEqual(self.run_hook(patch), (0, None))
         event = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git push"}, "cwd": str(self.repo)})
-        run = subprocess.run([sys.executable, str(SCRIPT)], input=event, capture_output=True, text=True)
-        self.assertEqual((run.returncode, run.stderr.strip()), (2, MESSAGE))
+        self.assertEqual(self.run_hook(event), (0, MESSAGE))
         self.record()
-        run = subprocess.run([sys.executable, str(SCRIPT)], input=event, capture_output=True, text=True)
-        self.assertEqual(run.returncode, 0)
+        self.assertEqual(self.run_hook(event), (0, None))
 
-    def test_hook_blocks_under_the_oldest_python(self):
+    def test_hook_reminds_under_the_oldest_python(self):
         exe = oldest_python()
         if not exe:
             self.skipTest(f"no Python {OLDEST[0]}.{OLDEST[1]} found")
         event = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git push"}, "cwd": str(self.repo)})
-        run = subprocess.run([exe, str(SCRIPT)], input=event, capture_output=True, text=True)
-        self.assertEqual((run.returncode, run.stderr.strip()), (2, MESSAGE))
+        self.assertEqual(self.run_hook(event, exe), (0, MESSAGE))
 
 
 class InstallTest(unittest.TestCase):
@@ -126,13 +152,13 @@ class InstallTest(unittest.TestCase):
         self.assertEqual(run.returncode, 1)
         self.assertIn("rerun bento-setup", run.stderr)
 
-    def test_crashing_script_blocks(self):
+    def test_crashing_script_warns_without_blocking(self):
         boom = Path(tempfile.mkdtemp()) / "boom.py"
         boom.write_text("raise TypeError('old python')\n")
         command = f"f={boom}; " + hook_command().split("; ", 1)[1]
         run = subprocess.run(["bash", "-c", command], input="{}", capture_output=True, text=True)
-        self.assertEqual(run.returncode, 2)
-        self.assertIn("gate failed (exit 1), blocking", run.stderr)
+        self.assertEqual(run.returncode, 1)
+        self.assertIn("gate failed (exit 1); rerun bento-setup", run.stderr)
 
 
 if __name__ == "__main__":

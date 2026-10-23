@@ -41,10 +41,13 @@ default (listed first). No preference relaxes a guardrail.
 | `Tracker` | tracker, team or project, review status | 2, 14 |
 | `QA` | `always` / `ask` / `skip` | 6 |
 | `Pre-PR review` | `always` / `skip` | 10 |
+| `Pre-PR review gate` | `all branches` / `except <glob>[, <glob>…]` | 12 |
 | `Learnings` | `yes` / `no` | 4 |
 | `PR reviewers` | `none` / names | 13, 15 |
 
 `Tracker` fills in what `AGENTS.md` doesn't name; where both name a value, `AGENTS.md` wins.
+`Pre-PR review gate` names branches other automation pushes, e.g.
+`- Pre-PR review gate: except nightshift/*`.
 
 ## Steps (paste as todos)
 
@@ -114,7 +117,7 @@ default (listed first). No preference relaxes a guardrail.
     sha (as the skill describes) once every question is answered or carried into the PR body.
     After verified fixes, rerun affected docs/security passes and repo checks if their surface
     changed; carry any new questions to step 11. If those reruns commit anything, rerun the
-    pre-PR review on "commits since `<reviewed>`" and record its sha, so step 12's gate passes. Also skip if the user says "skip adversarial
+    pre-PR review on "commits since `<reviewed>`" and record its sha, so step 12's gate stays silent. Also skip if the user says "skip adversarial
     review" or the skill isn't installed.
 11. **The single stop before pushing** — only if there are L2 learnings to approve, or QA,
     security or pre-PR review questions to answer. Show each learning's diff, then end with:
@@ -135,10 +138,13 @@ default (listed first). No preference relaxes a guardrail.
     with its default, go under
     `## Open review questions` in the PR body.
 12. **Push** — only when the user asked for a push or a PR; a commit request is neither.
-    `bento-setup`'s pre-PR review gate blocks `git push` and `gh pr create` unless the recorded
-    sha is `HEAD` or only the review's own fix commits follow it: record the last `<reviewed>`
-    from step 10 or 11 first. Pre-PR review skipped in this run (user request, or the skill
-    isn't installed) → prefix both commands with `BENTO_PRE_PR_REVIEW=skip`.
+    `bento-setup`'s pre-PR review gate reminds the agent, without blocking, on `git push` and
+    `gh pr create` unless the recorded sha is `HEAD` or only the review's own fix commits
+    follow it: record the last `<reviewed>` from step 10 or 11 first. Pre-PR review skipped in
+    this run (user request, or the skill isn't installed) → prefix both commands with
+    `BENTO_PRE_PR_REVIEW=skip`. The gate stays silent on a `Pre-PR review gate: except`
+    branch, but this flow still runs step 10 there: the exemption is for other flows, not a
+    way to skip the review.
     `git push -u origin HEAD`, or `HEAD:<branch>` for step 2's PR branch. An SSH push fails →
     retry through the forge CLI's auth. Rejected as non-fast-forward → fetch, then
     `git cherry -v HEAD origin/<branch>`: every remote-only commit marked `-` (it has a local

@@ -90,10 +90,11 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    no one to answer → `on`, listed in the report. `--preferences` → ask again, the recorded
    answer as default.
 5. **Pre-PR review gate.** A skill runs only when the agent picks it, so a hook backs the
-   principle "commit, push or PR requests go through bento-ship": it blocks `git push` and
-   `gh pr create` with "Run bento-ship first: no pre-PR review recorded for HEAD." unless the
-   sha `bento-adversarial-review` recorded is `HEAD` (or only its fix commits follow), or the
-   overlay says `Pre-PR review: skip`. For each agent that was an install target:
+   principle "commit, push or PR requests go through bento-ship". It never blocks: when an agent
+   runs `git push` or `gh pr create`, it reminds the agent to go through bento-ship and to tell
+   the user if it didn't. It stays silent when the sha `bento-adversarial-review` recorded is
+   `HEAD` (or only its fix commits follow), when the overlay says `Pre-PR review: skip`, or
+   when the current branch matches its `Pre-PR review gate: except <glob>, …` (step 6). For each agent that was an install target:
 
    - Claude: `.claude/settings.json` (project) or `<claude-dir>/settings.json` (global).
    - Codex: `.codex/hooks.json` (project) or `${CODEX_HOME:-~/.codex}/hooks.json` (global).
@@ -115,6 +116,7 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    - Tracker: Linear, team TT, review status In Review
    - QA: always
    - Pre-PR review: always
+   - Pre-PR review gate: all branches
    - Learnings: yes
    - PR reviewers: none
    <!-- bento:preferences:end -->
@@ -125,8 +127,12 @@ ran, run the `add` command it printed (or the full one above), then this skill.
      nothing, so a rerun after an update asks only questions a newer bento added.
    - `Tracker`: take the tracker, team or project and review status from `AGENTS.md`/`CLAUDE.md`
      and ask only for what's missing (no tracker → `none`).
-   - `--yes`, or no one to answer (an unattended run) → record the defaults and list them in
-     the report.
+   - `Pre-PR review gate`: default `all branches`, unless known automation that pushes its
+     own branches is detected: a `.nightshift/` folder, or a `nightshift-*` skill in
+     `skills-lock.json` → propose `except nightshift/*`. Name the file that triggered the
+     proposal so the user can judge it.
+   - `--yes`, or no one to answer (an unattended run) → record the defaults (a detected
+     `Pre-PR review gate` default included) and list them in the report.
    - `--preferences` → ask every question again, the recorded answers as defaults.
    - Write only between the markers: create the overlay (title `# Overlay for bento-ship`) or
      append the block if it has none; keep every other line.
@@ -149,7 +155,8 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    pass.
 9. **Report overlays.** List the repo's overlays (`.agents/bento/*.md` at the repo root) with
    each one's `##` rule headings, so the user sees which bento skills are customised here.
-   None → say so. Then the terse reports answer and the ship preferences, marking those
+   None → say so. Then the terse reports answer and the ship preferences (the `Pre-PR review gate` among
+   them, with the file that triggered a detected default), marking those
    written this run and whether each is a default or the user's answer. Include maintenance mappings, their sources and any
    unavailable or unverified capabilities.
 

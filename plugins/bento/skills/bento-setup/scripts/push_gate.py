@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 """Pre-PR review gate: a PreToolUse hook (Claude Code and Codex) on shell commands.
 
-Blocks `git push` and `gh pr create` unless bento-adversarial-review's recorded sha
+Reminds the agent, without blocking, to go through bento-ship when it runs `git push` or
+`gh pr create` before a pre-PR review covers HEAD: bento-adversarial-review's recorded sha
 (`git rev-parse --git-path adversarial-review.head`) is HEAD, or is followed only by that
-review's own fix commits. Allowed without a record when the repo's bento-ship overlay says
-`- Pre-PR review: skip`, or the command carries `BENTO_PRE_PR_REVIEW=skip` (a review the
-user skipped for this run). Not a repo, unreadable input or an unparsable command → allow:
-this gate catches a skipped ship flow, it is not a security boundary.
+review's own fix commits. Silent without a record when the repo's bento-ship overlay says
+`- Pre-PR review: skip`, or `- Pre-PR review gate: except <glob>[, <glob>…]` matches the
+current branch (another automation's branches, e.g. `nightshift/*`), or the command carries
+`BENTO_PRE_PR_REVIEW=skip` (a review the user skipped for this run). Not a repo, unreadable
+input or an unparsable command → silent. It never blocks: a block broke automation bento
+does not own, and the routing evals credit bento-ship's description, not a block, for
+sending push requests through it.
 
 Usage:
-  push_gate.py                                  hook: tool-call JSON on stdin, exit 2 blocks
+  push_gate.py                                  hook: tool-call JSON on stdin, exit 0
   push_gate.py install <hooks.json>    (Claude settings.json or Codex hooks.json)
   push_gate.py uninstall <hooks.json>
 """
 from __future__ import annotations  # `str | None` hints on Python 3.9, the macOS system python3
 
+import fnmatch
 import json
 import os
 import re
@@ -23,7 +28,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-MESSAGE = "Run bento-ship first: no pre-PR review recorded for HEAD."
+MESSAGE = ("bento: no pre-PR review recorded for HEAD. Commit, push and PR requests go through "
+           "bento-ship (QA, pre-PR review, ticket update). If this ran outside it, tell the user.")
 BYPASS = "BENTO_PRE_PR_REVIEW=skip"
 FIX_SUBJECT = "fix: address adversarial review findings"  # bento-adversarial-review ship mode
 GIT_ARG_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
@@ -99,11 +105,32 @@ def gated_dirs(command: str, cwd: str) -> list[str]:
     return out
 
 
+def overlay_text(top: str) -> str:
+    """The repo's bento-ship overlay, or "" when it is missing."""
+    overlay = Path(top, ".agents/bento/bento-ship.md")
+    return overlay.read_text() if overlay.is_file() else ""
+
+
 def review_skipped(top: str) -> bool:
     """The repo's bento-ship overlay records `Pre-PR review: skip`."""
-    overlay = Path(top, ".agents/bento/bento-ship.md")
-    return overlay.is_file() and bool(
-        re.search(r"^- Pre-PR review:\s*skip\s*$", overlay.read_text(), re.M | re.I))
+    return bool(re.search(r"^- Pre-PR review:\s*skip\s*$", overlay_text(top), re.M | re.I))
+
+
+def exempt_branch(top: str) -> bool:
+    """The current branch matches the overlay's `Pre-PR review gate: except <glob>, …`."""
+    line = re.search(r"^- Pre-PR review gate:\s*except\s+(.+)$", overlay_text(top), re.M | re.I)
+    branch = subprocess.run(["git", "-C", top, "symbolic-ref", "--quiet", "--short", "HEAD"],
+                            capture_output=True, text=True).stdout.strip()  # "" when detached
+    globs = [glob.strip() for glob in line.group(1).split(",")] if line else []
+    return bool(branch) and any(glob and fnmatch.fnmatchcase(branch, glob) for glob in globs)
+
+
+def opted_out(top: str) -> bool:
+    """The overlay skips the review or exempts this branch; unreadable → True (fail open)."""
+    try:
+        return review_skipped(top) or exempt_branch(top)
+    except (OSError, UnicodeDecodeError):
+        return True
 
 
 def reviewed(repo: str) -> bool:
@@ -112,7 +139,7 @@ def reviewed(repo: str) -> bool:
         return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True)
 
     top = git("rev-parse", "--show-toplevel")
-    if top.returncode or review_skipped(top.stdout.strip()):
+    if top.returncode or opted_out(top.stdout.strip()):
         return True  # not a repo (nothing to push), or the repo opted out
     try:
         sha = Path(repo, git("rev-parse", "--git-path", "adversarial-review.head").stdout.strip()).read_text().strip()
@@ -141,10 +168,9 @@ def hook() -> int:
         dirs = gated_dirs(command, event.get("cwd") or os.getcwd()) if isinstance(command, str) else []
     except (ValueError, AttributeError):  # not a tool-call JSON
         return 0
-    if all(reviewed(d) for d in dirs):
-        return 0
-    print(MESSAGE, file=sys.stderr)
-    return 2
+    if not all(reviewed(d) for d in dirs):
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": MESSAGE}}))
+    return 0
 
 
 def ours(handler: dict) -> bool:
@@ -170,13 +196,10 @@ def hook_command() -> str:
         path = f'"${{CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}}/{rel}"'
     else:
         path = shlex.quote(str(script))
-    # A missing script must not block every shell command (python3 exits 2 on a file it can't
-    # open, which means block): fail with a visible, non-blocking error instead. A script that
-    # crashes (exit 1, e.g. an old python3) must not let pushes through: block (fail closed).
-    return (f'f={path}; if [ -f "$f" ]; then python3 "$f"; rc=$?; '
-            'if [ $rc -eq 0 ] || [ $rc -eq 2 ]; then exit $rc; fi; '
-            'echo "bento: pre-PR review gate failed (exit $rc), blocking; fix it or rerun bento-setup" >&2; '
-            'exit 2; else '
+    # Exit 2 means block, and python3 exits 2 on a file it can't open: a missing or crashing
+    # script fails with a visible, non-blocking error (exit 1) instead.
+    return (f'f={path}; if [ -f "$f" ]; then python3 "$f" && exit 0; '
+            'echo "bento: pre-PR review gate failed (exit $?); rerun bento-setup" >&2; exit 1; else '
             'echo "bento: pre-PR review gate missing at $f; rerun bento-setup" >&2; exit 1; fi')
 
 
