@@ -39,6 +39,12 @@ graders:
     (the review''s own default) with a reason for it. Marking keep as the default fails, and so does a bare
     "keep or cap at 3? (default: cap)".'
   focus: last_message
+- type: llm
+  name: ids-and-one-reply
+  criteria: 'PASS if the learning carries the ID A1, the decision carries the ID B1, and the stop asks for
+    one reply line that can answer both (e.g. "A1 apply, B1 cap"). FAIL if learnings are numbered 1, 2,
+    L1 or not at all, or if learnings and decisions need separate replies.'
+  focus: last_message
 - type: tool_used
   name: fired
   tool: Skill

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **`bento-ship`'s stop before pushing is laid out in sections.** It opens with a verdict, then
+  lists what the reviews fixed (before, now, proof) and dismissed (why), then the questions:
+  learnings numbered A1, A2…, decisions B1, B2…, each with sub-bullets saying what it does,
+  answered in one reply such as `A1 apply, B1 keep`. The agent waits for background checks so
+  the stop is its last message, and a follow-up that changes no file goes to the PR body
+  instead of the learnings.
+
 - **Learning approvals say what you accept and why.** Each learning in `bento-ship`'s
   approval stop, and each `bento-learn` proposal, now names the file, the text it adds and
   the problem on the branch that prompted it, instead of a one-line label. Each decision names
