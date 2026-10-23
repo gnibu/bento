@@ -2,14 +2,15 @@
 """Pre-PR review gate: a PreToolUse hook (Claude Code and Codex) on shell commands.
 
 Reminds the agent, without blocking, to go through bento-ship when it runs `git push` or
-`gh pr create` and bento-adversarial-review's recorded sha
+`gh pr create` before a pre-PR review covers HEAD: bento-adversarial-review's recorded sha
 (`git rev-parse --git-path adversarial-review.head`) is HEAD, or is followed only by that
 review's own fix commits. Silent without a record when the repo's bento-ship overlay says
 `- Pre-PR review: skip`, or `- Pre-PR review gate: except <glob>[, <glob>…]` matches the
 current branch (another automation's branches, e.g. `nightshift/*`), or the command carries
-`BENTO_PRE_PR_REVIEW=skip` (a review the user skipped for this run). Not a repo, unreadable input or an unparsable command → silent.
-It never blocks: a block broke automation bento does not own, and the routing evals credit
-bento-ship's description, not a block, for sending push requests through it.
+`BENTO_PRE_PR_REVIEW=skip` (a review the user skipped for this run). Not a repo, unreadable
+input or an unparsable command → silent. It never blocks: a block broke automation bento
+does not own, and the routing evals credit bento-ship's description, not a block, for
+sending push requests through it.
 
 Usage:
   push_gate.py                                  hook: tool-call JSON on stdin, exit 0
@@ -124,17 +125,22 @@ def exempt_branch(top: str) -> bool:
     return bool(branch) and any(glob and fnmatch.fnmatchcase(branch, glob) for glob in globs)
 
 
+def opted_out(top: str) -> bool:
+    """The overlay skips the review or exempts this branch; unreadable → True (fail open)."""
+    try:
+        return review_skipped(top) or exempt_branch(top)
+    except (OSError, UnicodeDecodeError):
+        return True
+
+
 def reviewed(repo: str) -> bool:
     """True when HEAD needs no further pre-PR review before it leaves this machine."""
     def git(*args: str) -> subprocess.CompletedProcess:
         return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True)
 
     top = git("rev-parse", "--show-toplevel")
-    try:
-        if top.returncode or review_skipped(top.stdout.strip()) or exempt_branch(top.stdout.strip()):
-            return True  # not a repo (nothing to push), or the repo opted out
-    except (OSError, UnicodeDecodeError):  # unreadable overlay: fail open, as documented
-        return True
+    if top.returncode or opted_out(top.stdout.strip()):
+        return True  # not a repo (nothing to push), or the repo opted out
     try:
         sha = Path(repo, git("rev-parse", "--git-path", "adversarial-review.head").stdout.strip()).read_text().strip()
     except OSError:
