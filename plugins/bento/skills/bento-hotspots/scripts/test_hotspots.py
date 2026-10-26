@@ -156,10 +156,10 @@ class HotspotsTest(unittest.TestCase):
         out = self.run_script()
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         self.assertIn(" bindings.ts:", out.stdout)
-        self.assertIn(" migrate ", out.stdout)
+        self.assertIn(" load ", out.stdout)
 
         self.git("checkout", "-q", "-b", "feature")
-        (self.repo / "bindings.ts").write_text(source.replace("verify();", "verify(true);"))
+        (self.repo / "bindings.ts").write_text(source.replace("toBe(false)", "toBe(true)"))
         out = self.run_script("--base", "main")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         self.assertIn("No new hotspots in 1 changed", out.stdout)
