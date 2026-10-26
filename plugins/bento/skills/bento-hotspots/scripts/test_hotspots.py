@@ -150,6 +150,19 @@ class HotspotsTest(unittest.TestCase):
         self.assertIn("- esm.mts:1 m ", out.stdout)
         self.assertIn("- cjs.cts:1 c ", out.stdout)
 
+    def test_typescript_binding_regression_scan_and_diff(self):
+        source = (FIXTURES / "bindings.ts").read_text()
+        self.commit({"bindings.ts": source})
+        out = self.run_script()
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn("- bindings.ts  nloc=", out.stdout)
+
+        self.git("checkout", "-q", "-b", "feature")
+        (self.repo / "bindings.ts").write_text(source.replace("toBe(false)", "toBe(true)"))
+        out = self.run_script("--base", "main")
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn("No new hotspots in 1 changed", out.stdout)
+
     def test_import_edges_follow_load_time_rules(self):
         self.commit({
             # each name of a from-import resolves on its own: x -> z closes a cycle

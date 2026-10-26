@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["lizard>=1.17,<2"]
+# dependencies = ["lizard==1.24.1"]
 # ///
 """Rank refactoring candidates in Python, JavaScript and TypeScript, or flag what a branch made worse.
 
