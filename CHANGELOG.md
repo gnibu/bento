@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Hotspot scans pin Lizard to 1.24.1.** Scan and diff modes avoid the TypeScript
+  binding-parser crash in 1.24.2 and 1.24.3 while keeping the cognitive extension
+  missing from 1.24.0. Offline fallback instructions use the same verified version.
+
 - **`bento-ship`'s stop before pushing is laid out in sections.** It opens with a verdict, then
   lists what the reviews fixed (before, now, proof) and dismissed (why), then the questions:
   learnings numbered A1, A2…, decisions B1, B2…, each with sub-bullets saying what it does,

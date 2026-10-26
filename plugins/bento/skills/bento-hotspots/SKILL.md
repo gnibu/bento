@@ -19,9 +19,10 @@ overlay `.agents/bento/bento-hotspots.md` at the repo root; follow it under the
 [overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
 
 **Run** from inside the repo: `uv run <this skill>/scripts/hotspots.py` (or `pipx run`).
-Both read the script's inline `lizard` dependency. If they can't fetch it (offline), run the
-script with any Python that already has lizard, such as the repo's `.venv/bin/python`, or
-`pip install lizard` first. Never estimate the metrics by hand: if nothing runs, say the scan
+Both read the script's inline `lizard==1.24.1` dependency. If they can't fetch it (offline), run the
+script with a compatible Python that already has that version, such as the repo's `.venv/bin/python`, or
+`pip install lizard==1.24.1` first. Versions 1.24.2 and 1.24.3 crash on TypeScript;
+1.24.0 lacks the cognitive extension. Never estimate the metrics by hand: if nothing runs, say the scan
 didn't run. The script measures, per function: `nloc`, `ccn` (cyclomatic), `cognitive`
 (Sonar cognitive complexity), `nesting` and `params`. Its limits are 50 / 10 / 15 / 3 / 5,
 plus 500 NLOC per file. Pass paths to narrow the scan. Generated code (`dist/`, `build/`,
