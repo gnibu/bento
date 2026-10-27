@@ -6,7 +6,7 @@ description: |
   ticket. Use for ANY request to commit, push, or open/update a PR; never run git commit /
   git push / gh pr create directly. Triggers: "ship it", "land this", "commit PR", "PR",
   "make a PR", "open a PR", "create a PR", "commit this", "commit and push", "push",
-  "ready to merge".
+  "ready to merge". Not for a rebase: rebase directly and ask before force-pushing.
 ---
 
 # Ship

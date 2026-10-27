@@ -29,7 +29,8 @@ import sys
 from pathlib import Path
 
 MESSAGE = ("bento: no pre-PR review recorded for HEAD. Commit, push and PR requests go through "
-           "bento-ship (QA, pre-PR review, ticket update). If this ran outside it, tell the user.")
+           "bento-ship (QA, pre-PR review, ticket update). If this ran outside it, tell the user; "
+           "a rebase push needs no bento-ship run.")
 BYPASS = "BENTO_PRE_PR_REVIEW=skip"
 FIX_SUBJECT = "fix: address adversarial review findings"  # bento-adversarial-review ship mode
 GIT_ARG_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
