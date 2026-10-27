@@ -8,4 +8,4 @@ for s in "$(dirname "$0")"/../../skills/bento-*; do
 done
 mkdir -p .claude && ln -s ../.agents/skills .claude/skills
 git add -A
-git commit -q -m "test: bento installed without wup"
+git commit -q -m "test: install bento"

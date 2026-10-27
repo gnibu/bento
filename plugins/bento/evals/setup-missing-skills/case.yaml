@@ -20,13 +20,14 @@ graders:
 - type: tool_used
   name: lists-bento-skills
   tool: Bash
-  input_match: npx skills add gnibu/bento [^"]*--list
+  input_match: skills add gnibu/bento [^"]*(--list|\s-l\b)
 - type: llm
   name: reports-wup-missing
-  criteria: PASS only if the run looked for bento skills missing from .agents/skills/ and the final
-    reply names wup as missing, with either a run of `npx skills add gnibu/bento --skill wup ...` or,
-    when that could not run, that command for the user to run. FAIL if it claims every bento skill is
-    installed, or only suggests rerunning npx skills update.
+  criteria: PASS only if the run checked bento's skill list against .agents/skills/ and the final
+    reply either names wup as missing with a `npx skills add gnibu/bento --skill ...` command
+    (run, or given to the user when it could not run), or says the list could not be fetched so
+    new bento skills may be missing, with the command to finish. FAIL if it claims every bento
+    skill is installed, or only suggests rerunning npx skills update.
   focus: trace
 - type: tool_used
   name: fired

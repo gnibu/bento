@@ -43,8 +43,8 @@ Both present → ask (`--yes`: project). Neither → stop and tell the user to r
 To update, run `npx skills update` (or rerun the `add` command above), then this skill.
 `update` never installs a skill bento added since, one an updated playbook may call, so
 before Apply install the missing ones: list bento's skills with
-`npx skills add gnibu/bento --list`, and for any absent from the scope's `.agents/skills/`
-run `npx skills add gnibu/bento --skill <names…> -a claude-code codex -y` (add `-g` for
+`npx skills add gnibu/bento --list`, and for any absent from both of the scope's skill folders
+above (a real folder in the Claude one is installed, not missing) run `npx skills add gnibu/bento --skill <names…> -a claude-code codex -y` (add `-g` for
 global). Also run any `npx skills add … -y` command `update` printed for a skill it skipped.
 Offline → skip this, and report that new bento skills may be missing.
 
