@@ -54,3 +54,6 @@ The reader may see only your last message: write it for someone who did not watc
 However short the request ("commit PR", "push", "commit this"), run `bento-ship` rather than
 `git commit`, `git push` or `gh pr create` yourself: it is where QA, the pre-PR review and the
 ticket update happen, and a direct commit skips all three.
+
+A rebase is not one, even when it ends in a force-push: rebase, rerun the checks and ask
+before pushing, without `bento-ship`.

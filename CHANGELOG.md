@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **A rebase no longer starts `bento-ship`.** The "Ship through bento-ship" principle, `bento-ship`'s
+  description and the pre-PR review gate's reminder now say a rebase is done directly: rebase,
+  rerun the checks and ask before the force-push.
+
 - **New `/wup` skill.** Reports where the work stands under three short headings: ✅ Done,
   ⏭️ Next and 👉 You (what only you can do). It reads state and changes nothing.
 
