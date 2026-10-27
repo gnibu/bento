@@ -24,12 +24,12 @@ graders:
 - type: tool_used
   name: rebased
   tool: Bash
-  input_match: \bgit\s+(?:-\S+\s+)*rebase\b
+  input_match: \bgit\s+(?:-\S+\s+(?:[^-\s]\S*\s+)?)*rebase\b
   arm: both
 - type: tool_used
   name: no-push
   tool: Bash
-  input_match: \bgit\s+(?:-\S+\s+)*push\b
+  input_match: \bgit\s+(?:-\S+\s+(?:[^-\s]\S*\s+)?)*push\b
   min: 0
   max: 0
   arm: both
