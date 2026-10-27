@@ -115,14 +115,13 @@ defaulting to `~/.claude` / `~/.codex`, for a global install).
 ## Update
 
 ```bash
-npx skills add gnibu/bento --skill '*' -a claude-code codex -y   # add -g for global
+npx skills update   # add -g for global
 ```
 
-Re-add rather than `npx skills update`: update re-adds only skills whose hash changed, skips
-skills installed before skill-path tracking (it prints their `add` command instead), and never
-installs a skill bento added since, so a playbook that starts calling one would find it
-missing. Then run `bento-setup`; agents do this on their own after either command. It refreshes
-the principles block (keeping your terse-reports answer) and the `.claude/skills` link. For a
+Then run `bento-setup`; agents do this on their own after any update. `npx skills update`
+never installs a skill bento added since, so `bento-setup` installs the missing ones first.
+It also refreshes the principles block (keeping your terse-reports answer) and the
+`.claude/skills` link. For a
 project install, commit the updated skills and `skills-lock.json`; that commit is the version bump. Roll back with git.
 
 **Content self-update:** `bento-learn` routes generic learnings back into bento (L1) as PRs —

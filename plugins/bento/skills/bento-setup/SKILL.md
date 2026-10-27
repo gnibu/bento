@@ -40,11 +40,13 @@ path (npx skills uses the same rule).
 Both present → ask (`--yes`: project). Neither → stop and tell the user to run
 `npx skills add gnibu/bento --skill '*'` (add `-g` for global).
 
-To update, rerun that same `npx skills add` command, then this skill. Prefer it to
-`npx skills update`, which re-adds only skills whose hash changed: it skips skills installed
-before skill-path tracking (printing their `npx skills add … -y` command instead) and never
-installs a skill bento added since, one an updated playbook may call. If `update` already
-ran, run the `add` command it printed (or the full one above), then this skill.
+To update, run `npx skills update` (or rerun the `add` command above), then this skill.
+`update` never installs a skill bento added since, one an updated playbook may call, so
+before Apply install the missing ones: list bento's skills with
+`npx skills add gnibu/bento --list`, and for any absent from the scope's `.agents/skills/`
+run `npx skills add gnibu/bento --skill <names…> -a claude-code codex -y` (add `-g` for
+global). Also run any `npx skills add … -y` command `update` printed for a skill it skipped.
+Offline → skip this, and report that new bento skills may be missing.
 
 ## Apply
 
