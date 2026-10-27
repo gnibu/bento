@@ -1,0 +1,30 @@
+schema_version: '1.0'
+name: workflow-wup
+tags:
+- workflow
+execution:
+  prompt: wup? I'm adding an optional greeting prefix that app.py and cli.py should forward. Only
+    I can decide the default prefix.
+  max_turns: 8
+  timeout_seconds: 180
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- type: llm
+  name: three-headings
+  criteria: PASS only if the final reply is three headings, ✅ Done, ⏭️ Next and 👉 You, each with
+    at most three short bullets and no preamble or closing question. It must not present the prefix
+    feature as finished or committed; listing the formatter.py change under Done is fine only when it
+    says the change is uncommitted or partial. Next names forwarding the prefix in app.py/cli.py.
+    You names choosing the default prefix; other actions only the user can take are allowed.
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?wup"'
+  arm: with-only
+context:
+  scaffold_script: setup.sh

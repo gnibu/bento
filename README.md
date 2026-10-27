@@ -72,7 +72,7 @@ Everything ships as skills (`bento-*`, plus `wup`) under `plugins/bento/skills/`
   `--preferences` re-asks); migrate an old install; `--purge` to unwire. Discover the repository's actual maintenance tools and source-cited commands into
   the maintenance overlay, preserving manual rules and reporting missing integrations.
 
-The **eval harness** (`claude plugin eval` with with/without ablation) has cases for all 20 skills.
+The **eval harness** (`claude plugin eval` with with/without ablation) has cases for all 21 skills.
 Firing indicators check the intended skill, separately from behavior scores. Workflow cases
 check captured edits, commands and artifacts, including spec/plan continuation, conditional
 docs/security passes, and negative controls for routine test runs and tiny edits. See
