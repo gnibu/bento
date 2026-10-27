@@ -20,8 +20,9 @@ SKIP_DIRS = {".git", ".context", "node_modules", ".venv", "venv",
              "__pycache__", "dist", "build", ".next", "vendor"}
 
 
-# Installed bento skills (`.agents/skills/bento-*`, `.claude/skills/bento-*`) are L1.
-L1_PREFIX = "bento-"
+# Installed bento skills (`bento-*` and `wup` under `.agents/skills/`, `.claude/skills/`) are L1.
+def l1_skill(name):
+    return name.startswith("bento-") or name == "wup"
 
 
 class Invalid(ValueError):
@@ -58,7 +59,7 @@ def managed_path(name):
     if any(part.startswith(".") for part in p.parts[:-1]):
         return (len(p.parts) >= 4 and p.parts[:2] in
                 ((".claude", "skills"), (".agents", "skills")) and
-                not p.parts[2].startswith(L1_PREFIX) and
+                not l1_skill(p.parts[2]) and
                 all(not part.startswith(".") for part in p.parts[2:]) and p.suffix == ".md")
     return (p.name in {"AGENTS.md", "CLAUDE.md"} or
             (len(p.parts) >= 2 and p.parts[0] == "docs" and p.suffix == ".md"))
@@ -118,7 +119,7 @@ def greenfield(repo):
         agent_layer = any(parts[i] in {".claude", ".agents"} and
                           parts[i + 1] in {"skills", "commands", "rules"} and
                           not (parts[i + 1] == "skills" and len(parts) > i + 2 and
-                               parts[i + 2].startswith(L1_PREFIX))
+                               l1_skill(parts[i + 2]))
                           for i in range(len(parts) - 1))
         if parts[-1] in {"AGENTS.md", "CLAUDE.md"} or agent_layer:
             raise Invalid(f"Tracked L2: {name}; use bento-learn (even if deleted locally)")
@@ -137,7 +138,7 @@ def greenfield(repo):
                     continue
                 if name == "skills" and name in dirs and not (here / name).is_symlink():
                     entries = os.listdir(here / name)
-                    if entries and all(entry.startswith(L1_PREFIX) for entry in entries):
+                    if entries and all(l1_skill(entry) for entry in entries):
                         continue
                 if name in dirs or name in files:
                     raise Invalid(f"Existing L2: {(here / name).relative_to(repo)}; use bento-learn")

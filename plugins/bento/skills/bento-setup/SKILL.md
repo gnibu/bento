@@ -62,8 +62,8 @@ ran, run the `add` command it printed (or the full one above), then this skill.
      not their targets).
    - Anything else (real folders, e.g. from `--copy`, or links elsewhere) → *confirm*: list
      them and offer to move each real folder to `.agents/skills/<name>` (stop on a name clash)
-     before linking. `--yes` or declined → leave it and report the `.agents/skills/bento-*`
-     with no `.claude/skills` entry.
+     before linking. `--yes` or declined → leave it and report the bento skills
+     (`.agents/skills/bento-*` and `wup`) with no `.claude/skills` entry.
 
    Global scope: leave `<claude-dir>/skills/` alone; it holds the user's other skills.
 3. **Claude principles.** Claude must load them exactly once. First remove any old bento
@@ -143,12 +143,12 @@ ran, run the `add` command it printed (or the full one above), then this skill.
    of `.agents/bento/bento-maintain.md`; preserve manual rules. No service is assumed or
    provisioned. Missing providers remain unavailable until the repository supplies them.
 8. **Verify.** Show the diff of each file touched. A running session doesn't reload skills,
-   so ask fresh headless sessions from the repo root and compare with `ls -d .agents/skills/bento-*`
-   (global: `~/.agents/skills/bento-*`):
+   so ask fresh headless sessions from the repo root and compare with `ls -d .agents/skills/bento-* .agents/skills/wup`
+   (global: under `~/.agents/skills/`):
 
    ```sh
-   claude -p "Without using any tool, print the count and names of your skills starting with 'bento-'." --max-turns 1
-   codex exec "Without using any tool, print the count and names of your skills starting with 'bento-'."
+   claude -p "Without using any tool, print the count and names of your skills starting with 'bento-', plus wup." --max-turns 1
+   codex exec "Without using any tool, print the count and names of your skills starting with 'bento-', plus wup."
    ```
 
    Run the agents that were install targets. A missing skill is a failure to report, not a
@@ -203,4 +203,4 @@ Detect each legacy piece; remove only what is present. Report each removal.
    live behind it.
 2. Run `python3 "<skill>/scripts/push_gate.py" uninstall <file>` on each file Apply step 5
    writes for the scope.
-3. The skills themselves: `npx skills remove` each `bento-*` skill, same scope (`-g` for global).
+3. The skills themselves: `npx skills remove` each `bento-*` skill and `wup`, same scope (`-g` for global).
