@@ -101,6 +101,10 @@ class L2StateTests(unittest.TestCase):
         for agent in (".agents", ".claude"):
             (self.repo / agent / "skills/bento-ship").mkdir(parents=True)
             (self.repo / agent / "skills/bento-ship/SKILL.md").write_text("Shared L1\n")
+            (self.repo / agent / "skills/wup").mkdir()
+            (self.repo / agent / "skills/wup/SKILL.md").write_text("Shared L1\n")
+        self.cli("check")
+        subprocess.run(["git", "-C", str(self.repo), "add", "-A"], check=True)
         self.cli("check")
         self.init()
         self.assertEqual((self.repo / ".agents/skills/bento-ship/SKILL.md").read_text(), "Shared L1\n")

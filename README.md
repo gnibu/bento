@@ -15,7 +15,7 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
 
 ## What's in it
 
-Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-contained:
+Everything ships as skills (`bento-*`, plus `wup`) under `plugins/bento/skills/`, each self-contained:
 
 - **Principles** — always-on standing rules (autonomy, prove-on-artifact, subtract-before-add,
   report-what-matters, ship-through-bento-ship),
@@ -30,6 +30,7 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   - `bento-authoring-a-playbook` — how to write a new bento playbook (gate, checklist, prove, eval).
   - `bento-investigate` — evidence-first root-cause debugging; fix at the shared source.
   - `bento-checkpoint` — capture in-progress state so work survives a reset or handoff.
+  - `wup` — three-heading status on demand: what's done, what's next, what you must do.
   - `bento-refactor` — change structure while holding behavior; pin first, prove equivalence.
   - `bento-maintain` — one bounded maintenance change with proof: code improvement, instruction
     upkeep, documentation upkeep, dependency security, or a monitoring-driven fix. Reads repo
@@ -71,7 +72,7 @@ Everything ships as `bento-*` skills under `plugins/bento/skills/`, each self-co
   `--preferences` re-asks); migrate an old install; `--purge` to unwire. Discover the repository's actual maintenance tools and source-cited commands into
   the maintenance overlay, preserving manual rules and reporting missing integrations.
 
-The **eval harness** (`claude plugin eval` with with/without ablation) has cases for all 20 skills.
+The **eval harness** (`claude plugin eval` with with/without ablation) has cases for all 21 skills.
 Firing indicators check the intended skill, separately from behavior scores. Workflow cases
 check captured edits, commands and artifacts, including spec/plan continuation, conditional
 docs/security passes, and negative controls for routine test runs and tiny edits. See
