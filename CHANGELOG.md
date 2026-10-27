@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **New `/wup` skill.** Asks where the work stands and answers in three short headings:
+  what's done, what's next, and what you need to do. It reads state and changes nothing.
+
 - **Hotspot scans pin Lizard to 1.24.1.** Scan and diff modes avoid the TypeScript
   binding-parser crash in 1.24.2 and 1.24.3 and retain cognitive complexity support,
   which 1.24.0 lacks. Offline fallback instructions use the same verified version.
