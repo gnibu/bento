@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **`npx skills update` now brings new bento skills.** `bento-setup`, which agents run after
+  every update, installs any bento skill missing from the install, such as `/wup`. Re-adding
+  the whole package is no longer needed.
+
 - **A rebase no longer starts `bento-ship`.** The "Ship through bento-ship" principle, `bento-ship`'s
   description and the pre-PR review gate's reminder now say a rebase is done directly: rebase,
   rerun the checks and ask before the force-push.

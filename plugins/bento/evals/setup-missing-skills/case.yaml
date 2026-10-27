@@ -1,0 +1,36 @@
+schema_version: '1.0'
+name: setup-missing-skills
+tags:
+- setup
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: I just ran npx skills update for bento in this repo. Run bento-setup --yes, but only the
+    install part; skip the principles, link, review gate, preferences and verification steps.
+  max_turns: 15
+  timeout_seconds: 300
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+# The eval sandbox has no network, so the install itself can't run; pin the check and the report.
+- type: tool_used
+  name: lists-bento-skills
+  tool: Bash
+  input_match: skills add gnibu/bento [^"]*(--list|\s-l\b)
+- type: llm
+  name: reports-wup-missing
+  criteria: PASS only if the run checked bento's skill list against .agents/skills/ and the final
+    reply either names wup as missing with a `npx skills add gnibu/bento --skill ...` command
+    (run, or given to the user when it could not run), or says the list could not be fetched so
+    new bento skills may be missing, with the command to finish. FAIL if it claims every bento
+    skill is installed, or only suggests rerunning npx skills update.
+  focus: trace
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-setup"'
+  arm: with-only
