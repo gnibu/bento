@@ -220,6 +220,16 @@ class HotspotsTest(unittest.TestCase):
                       out.stdout)
         self.assertIn("- old.py doomed  removed or renamed (was cognitive 23, nesting 6, params 6)", out.stdout)
 
+    def test_diff_reports_a_shrunk_file_beside_its_findings(self):
+        self.commit({"big.py": "".join(f"def f{i}(a):\n    return a\n" for i in range(260))})
+        self.git("checkout", "-q", "-b", "feature")
+        self.commit({"big.py": "".join(f"def f{i}(a):\n    return a\n" for i in range(255)) + TANGLED})
+        out = self.run_script("--base", "main")
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)  # the new finding still fails it
+        self.assertIn("- big.py:511 tangled  cognitive new->23", out.stdout)
+        self.assertIn("\n# Hotspots this branch improved (vs main)\n\n- big.py  file nloc 520->519 (still over limit 500)",
+                      out.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
