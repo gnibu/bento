@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **`bento-learn` finds sessions that built the branch from another directory.** `sessions.py`
+  also lists transcripts started elsewhere (another Conductor workspace, say) that name the
+  worktree's path or the branch, including its names before a `git branch -m`, under
+  "other directory".
+
 - **`/wup` follows the repo's reporting rules.** It reads `AGENTS.md` and an optional
   `.agents/bento/wup.md` overlay first; either can replace its default headings and length.
 

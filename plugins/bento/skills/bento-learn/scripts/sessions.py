@@ -10,6 +10,10 @@ time window matters as much as the path. For each session, oldest first, prints 
 transcript path, then operator turns (U), failed tool calls (ERR) and blocking hook
 errors (HOOK). Those are ~3% of transcript bytes and carry the Reflect signal; open
 the printed path when a session needs more context.
+
+A second pass adds sessions run from another directory (another workspace working here by
+absolute path) whose transcript names the worktree path or one of the branch's names, old
+names from `git branch -m` included. They print under "(other directory: <cwd>)".
 """
 import argparse
 import json
@@ -91,20 +95,53 @@ def signal(record):
             yield "ERR", str(item.get("aggregated_output") or item.get("stderr") or item)[:600]
 
 
-def transcripts(root, since):
+def branch_names(repo):
+    """The current branch's name plus every old name it had before a `git branch -m`."""
+    branch = git(repo, "symbolic-ref", "-q", "--short", "HEAD")
+    if not branch:
+        return set()
+    log = git(repo, "reflog", "show", "--format=%gs", branch)
+    names = {branch, *re.findall(r"^Branch: renamed refs/heads/(\S+) to ", log, re.M)}
+    # A renamed default branch would match nearly every transcript.
+    return names - {"main", "master", git(repo, "rev-parse", "--abbrev-ref", "origin/HEAD")[len("origin/"):]}
+
+
+def mentions(path, pattern):
+    with path.open(errors="replace") as handle:
+        return any(pattern.search(line) for line in handle)
+
+
+def candidates(since):
+    """Every Claude and Codex transcript modified since `since`, oldest first."""
     claude = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "projects"
-    mangled = re.sub(r"[^A-Za-z0-9]", "-", str(root))
     found = [("claude", path) for folder in (claude.iterdir() if claude.is_dir() else [])
-             if folder.name == mangled or folder.name.startswith(mangled + "-")
              for path in folder.glob("*.jsonl")]
     codex = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "sessions"
     found += [("codex", path) for path in codex.glob("**/rollout-*.jsonl")]
-    for agent, path in sorted(found, key=lambda item: item[1].stat().st_mtime):
-        if path.stat().st_mtime < since:
-            continue
+    return sorted((item for item in found if item[1].stat().st_mtime >= since),
+                  key=lambda item: item[1].stat().st_mtime)
+
+
+def transcripts(root, since, names):
+    """Yield (agent, path, "") for worktree sessions, then (agent, path, " (other directory:
+    <cwd>)") for sessions run elsewhere whose text names the worktree path or a branch name."""
+    mangled = re.sub(r"[^A-Za-z0-9]", "-", str(root))
+    other = []
+    for agent, path in candidates(since):
         cwd = session_cwd(path)
-        if cwd and (cwd == str(root) or cwd.startswith(f"{root}/")):
-            yield agent, path
+        if not (cwd and (cwd == str(root) or cwd.startswith(f"{root}/"))):
+            other.append((agent, path, cwd))
+        elif agent == "codex" or path.parent.name == mangled or path.parent.name.startswith(mangled + "-"):
+            yield agent, path, ""
+    # Whole names only: not <root>-other, nor feature/x/y for feature/x. Raw JSON escapes a
+    # newline or tab as \n or \t, so a name right after one follows a letter.
+    target = re.escape(str(root)) + r"(?![\w.-])"
+    if names:
+        target += r"|(?:%s)(?![\w./-])" % "|".join(map(re.escape, names))
+    pattern = re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
+    for agent, path, cwd in other:
+        if mentions(path, pattern):
+            yield agent, path, f" (other directory: {cwd or '?'})"
 
 
 def main():
@@ -118,13 +155,14 @@ def main():
         return 1
     root = Path(root).resolve()
     since = branch_start(root) if args.since is None else args.since
-    count = 0
-    for agent, path in transcripts(root, since):
+    counts = [0, 0]  # in-worktree, other-directory
+    for agent, path, where in transcripts(root, since, branch_names(root)):
         lines = [f"{tag}: {text}" for record in records(path) for tag, text in signal(record) if text]
         if any(line.startswith("U: ") for line in lines):
-            count += 1
-            print(f"=== {agent} session {path}\n" + "\n".join(lines) + "\n")
-    print(f"sessions.py: {count} session(s) in {root} since {since}", file=sys.stderr)
+            counts[bool(where)] += 1
+            print(f"=== {agent} session {path}{where}\n" + "\n".join(lines) + "\n")
+    print(f"sessions.py: {counts[0]} in-worktree, {counts[1]} other-directory session(s) "
+          f"for {root} since {since}", file=sys.stderr)
     return 0
 
 
