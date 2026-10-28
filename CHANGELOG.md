@@ -6,6 +6,7 @@
   `bento-learn` asks whether its learnings are overkill and drops or shrinks them. After
   assessing findings, the adversarial review asks the same of each finding and its fix:
   a case nothing reaches is dismissed, an oversized fix is cut to the smallest one that holds.
+  Security, trust-boundary validation and data-loss findings are never overkill.
 
 - **`bento-hotspots` diff mode shows what a branch improved.** After its findings, `--base`
   lists the functions over a limit at the base that dropped on it or are gone (deleted files

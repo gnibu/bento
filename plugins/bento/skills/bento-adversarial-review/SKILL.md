@@ -196,7 +196,7 @@ P1. Challenging a wrong finding is worth more than politely fixing it.
 Then ask yourself: "Are these findings on changes proposed overkill?" A finding about a case
 no caller or input reaches is DISAGREE (overkill). A fix bigger than its defect (a new
 abstraction, option or defensive layer for a one-line problem) is PARTLY, with the smallest
-fix that holds.
+fix that holds. Never overkill: security, validation at trust boundaries, data loss.
 
 Mark an AGREE, PARTLY or NEEDS INFO finding **NEEDS HUMAN** when the fix needs a product
 decision, changes a public contract (API/response shape, config schema, migration, access
