@@ -6,7 +6,7 @@ Usage: check_entries.py CURRENT PROPOSED [NEW_DOC...]
 CURRENT is the instruction file as it is now (AGENTS.md or CLAUDE.md, at any depth; it may
 not exist yet), PROPOSED the full text bento-learn wants to write there. Only entries that
 are new or changed in PROPOSED are checked, so an old file never blocks a new learning.
-An entry (a bullet, a paragraph or a code block) must fit on one line, or on two when it
+An entry (a bullet, a table row, a paragraph or a code block) must fit on one line, or on two when it
 carries a pointer (a path or a link) to where the detail lives. An AGENTS.md is also the
 menu of the docs/**/*.md beside it, tracked or untracked but not ignored, or proposed in the
 same change (NEW_DOC, relative to the AGENTS.md's directory): its `## Docs` section must name
@@ -49,7 +49,7 @@ def entries(text):
         elif not stripped or stripped.startswith(("#", "<!--")):
             flush()
         else:
-            if BULLET.match(line):
+            if BULLET.match(line) or stripped.startswith("|"):  # a table row is its own entry
                 flush()
             current.append(stripped)
     flush()

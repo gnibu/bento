@@ -34,6 +34,13 @@ class CheckEntriesTests(unittest.TestCase):
         block = "```sh\n" + "\n".join(f"step-{i} --with-a-flag --and-another" for i in range(6)) + "\n```\n"
         self.assertEqual(len(check("", block)), 1)
 
+    def test_table_rows_are_separate_entries(self):
+        rows = "".join(f"| Task {i} | docs/procedures/task-{i}.md |\n" for i in range(8))
+        table = "| When | Read |\n|---|---|\n" + rows
+        self.assertEqual(len(entries(table)), 10)
+        self.assertEqual(check(table, table + "| Migrating | docs/procedures/migrate.md |\n"), [])
+        self.assertEqual(len(check(table, table + f"| {LONG} {LONG} |\n")), 1)
+
     def test_only_new_or_changed_entries_are_checked(self):
         old = f"- {LONG} {LONG}\n"
         self.assertEqual(check(old, old + "- Base branch: `main`.\n"), [])
