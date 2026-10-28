@@ -67,6 +67,29 @@ class SessionsTests(unittest.TestCase):
         for absent in ("noise", "meta", "assistant-only", "sibling worktree", "rules"):
             self.assertNotIn(absent, out)
         self.assertEqual(out.count("=== "), 3)
+        self.assertNotIn("other directory", out)
+
+    def elsewhere(self, name, text, age=0):
+        return self.write(self.root / "claude/projects/-elsewhere" / name, [
+            {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": text}}], age=age)
+
+    def test_other_directory_session_that_mentions_the_worktree_is_listed(self):
+        self.elsewhere("hit.jsonl", f"edit {self.top}/src/x.py")
+        self.elsewhere("miss.jsonl", "edit some/other/x.py")
+        out = self.run_script(since=0)
+        self.assertIn(f"(other directory: {self.root / 'elsewhere'})\nU: edit {self.top}/src/x.py", out)
+        self.assertNotIn("some/other", out)
+
+    def test_renamed_branch_old_name_matches_after_branch_start(self):
+        git = ["git", "-C", str(self.repo), "-c", "user.name=t", "-c", "user.email=t@t"]
+        subprocess.run([*git, "checkout", "-q", "-b", "feature-old"], check=True)
+        subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+        subprocess.run([*git, "branch", "-m", "feature-new"], check=True)
+        self.elsewhere("renamed.jsonl", "work on feature-old please")
+        self.elsewhere("stale.jsonl", "earlier feature-old work", age=3600)
+        out = self.run_script()
+        self.assertIn("U: work on feature-old please", out)
+        self.assertNotIn("earlier", out)
 
     def test_sessions_before_since_are_skipped(self):
         self.write(self.claude_dir / "old.jsonl",
