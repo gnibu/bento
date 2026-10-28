@@ -73,7 +73,7 @@ class CheckEntriesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             subprocess.run(["git", "init", "-q", tmp], check=True)
-            for name in ("docs/DEPLOY.md", "docs/.venv/pkg/LICENSE.md"):
+            for name in ("docs/DEPLOY.md", "docs/résumé.md", "docs/.venv/pkg/LICENSE.md"):
                 Path(root, name).parent.mkdir(parents=True, exist_ok=True)
                 Path(root, name).write_text("x")
             Path(root, ".gitignore").write_text(".venv/\n")
@@ -83,7 +83,7 @@ class CheckEntriesTests(unittest.TestCase):
             self.assertEqual(menu_gaps(root, table, ["docs/procedures/release.md"]),
                              ["docs/procedures/release.md"])
             # With a menu, every doc on disk counts, but never an ignored one.
-            self.assertEqual(menu_gaps(root, "## Docs\n\n- x\n"), ["docs/DEPLOY.md"])
+            self.assertEqual(menu_gaps(root, "## Docs\n\n- x\n"), ["docs/DEPLOY.md", "docs/résumé.md"])
 
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:

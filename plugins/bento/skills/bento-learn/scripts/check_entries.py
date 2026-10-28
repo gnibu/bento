@@ -80,11 +80,12 @@ def menu_section(text):
 
 def disk_docs(root):
     """docs/**/*.md under root that git doesn't ignore; every one outside a git repository."""
-    listed = subprocess.run(["git", "-C", str(root), "ls-files", "--cached", "--others",
+    # -z: without it git quotes non-ASCII names (docs/résumé.md) and is_file() drops them.
+    listed = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others",
                              "--exclude-standard", "--", "docs/*.md"], capture_output=True, text=True)
     if listed.returncode:
         return {doc.relative_to(root).as_posix() for doc in (root / "docs").rglob("*.md")}
-    return {doc for doc in listed.stdout.splitlines() if (root / doc).is_file()}
+    return {doc for doc in listed.stdout.split("\0") if doc and (root / doc).is_file()}
 
 
 def menu_gaps(root, proposed, new_docs=()):
