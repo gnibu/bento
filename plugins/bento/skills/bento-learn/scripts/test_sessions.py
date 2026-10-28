@@ -87,9 +87,13 @@ class SessionsTests(unittest.TestCase):
         subprocess.run([*git, "branch", "-m", "feature-new"], check=True)
         self.elsewhere("renamed.jsonl", "work on feature-old please")
         self.elsewhere("stale.jsonl", "earlier feature-old work", age=3600)
+        self.elsewhere("newline.jsonl", "branch:\nfeature-new")
+        self.elsewhere("longer.jsonl", "see feature-new/other")
         out = self.run_script()
         self.assertIn("U: work on feature-old please", out)
+        self.assertIn("U: branch:\nfeature-new", out)
         self.assertNotIn("earlier", out)
+        self.assertNotIn("feature-new/other", out)
 
     def test_sessions_before_since_are_skipped(self):
         self.write(self.claude_dir / "old.jsonl",

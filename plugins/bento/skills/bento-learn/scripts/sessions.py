@@ -133,8 +133,12 @@ def transcripts(root, since, names):
             other.append((agent, path, cwd))
         elif agent == "codex" or path.parent.name == mangled or path.parent.name.startswith(mangled + "-"):
             yield agent, path, ""
-    # Bounded so a sibling like <root>-other or a longer branch name does not match.
-    pattern = re.compile(r"(?<![\w.-])(?:%s)(?![\w.-])" % "|".join(map(re.escape, [str(root), *names])))
+    # Whole names only: not <root>-other, nor feature/x/y for feature/x. Raw JSON escapes a
+    # newline or tab as \n or \t, so a name right after one follows a letter.
+    target = re.escape(str(root)) + r"(?![\w.-])"
+    if names:
+        target += r"|(?:%s)(?![\w./-])" % "|".join(map(re.escape, names))
+    pattern = re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
     for agent, path, cwd in other:
         if mentions(path, pattern):
             yield agent, path, f" (other directory: {cwd or '?'})"
