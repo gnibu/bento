@@ -83,7 +83,7 @@ preferences.
   and run `python3 "<skill>/scripts/check_entries.py" <file> <proposed> [<new doc>...]`, naming
   each doc the proposal creates (`docs/procedures/run-tests.md`). It rejects any new entry over
   one line without a pointer, or over two lines, and an `AGENTS.md` whose `## Docs` menu
-  misses a doc. Re-route a rejected entry (step 2), add missing docs to the
+  misses a doc git doesn't ignore (no menu: a new doc the file doesn't name). Re-route a rejected entry (step 2), add missing docs to the
   menu; never propose a failing file.
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
   Head each with the file, the text it adds, and why: what went wrong, in plain words a

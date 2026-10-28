@@ -8,12 +8,14 @@ not exist yet), PROPOSED the full text bento-learn wants to write there. Only en
 are new or changed in PROPOSED are checked, so an old file never blocks a new learning.
 An entry (a bullet, a paragraph or a code block) must fit on one line, or on two when it
 carries a pointer (a path or a link) to where the detail lives. An AGENTS.md is also the
-menu of the docs/**/*.md beside it, on disk or proposed in the same change (NEW_DOC, relative
-to the AGENTS.md's directory): its `## Docs` section must name each one, by its path or a
-folder below docs/ that holds it ("Design briefs → docs/briefs/"). Exits 1 and names each
-rejected entry and each doc missing from the menu.
+menu of the docs/**/*.md beside it, tracked or untracked but not ignored, or proposed in the
+same change (NEW_DOC, relative to the AGENTS.md's directory): its `## Docs` section must name
+each one, by its path or a folder below docs/ that holds it ("Design briefs → docs/briefs/").
+An AGENTS.md without a `## Docs` section routes docs its own way: only the NEW_DOCs are checked,
+and anywhere in the file. Exits 1 and names each rejected entry and each doc missing from the menu.
 """
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -71,16 +73,30 @@ def check(current, proposed):
 
 
 def menu_section(text):
-    """The body of the `## Docs` section, up to the next heading of level 1 or 2."""
+    """The body of the `## Docs` section, up to the next heading of level 1 or 2; None without one."""
     match = re.search(r"^## Docs[ \t]*\n(.*?)(?=^#{1,2} |\Z)", text, re.M | re.S)
-    return match.group(1) if match else ""
+    return match.group(1) if match else None
+
+
+def disk_docs(root):
+    """docs/**/*.md under root that git doesn't ignore; every one outside a git repository."""
+    listed = subprocess.run(["git", "-C", str(root), "ls-files", "--cached", "--others",
+                             "--exclude-standard", "--", "docs/*.md"], capture_output=True, text=True)
+    if listed.returncode:
+        return {doc.relative_to(root).as_posix() for doc in (root / "docs").rglob("*.md")}
+    return {doc for doc in listed.stdout.splitlines() if (root / doc).is_file()}
 
 
 def menu_gaps(root, proposed, new_docs=()):
-    """Docs under root/docs, plus new_docs, that the proposed `## Docs` menu doesn't name."""
-    docs = {doc.relative_to(root).as_posix() for doc in (root / "docs").rglob("*.md")}
-    docs |= {Path(doc).as_posix() for doc in new_docs}
+    """Docs under root/docs, plus new_docs, that the proposed `## Docs` menu doesn't name.
+
+    Without a `## Docs` section, only new_docs count, named anywhere in proposed."""
+    docs = {Path(doc).as_posix() for doc in new_docs}
     menu = menu_section(proposed)
+    if menu is None:
+        menu = proposed
+    else:
+        docs |= disk_docs(root)
     gaps = []
     for doc in sorted(docs):
         folders = [f"{folder.as_posix()}/" for folder in Path(doc).parents if len(folder.parts) > 1]
@@ -102,7 +118,8 @@ def main():
     gaps = (menu_gaps(current_path.parent, proposed, sys.argv[3:])
             if current_path.name == "AGENTS.md" else [])
     for doc in gaps:
-        print(f"{current_path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs")
+        print(f"{current_path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
+              " or where this file routes its docs")
     sys.exit(1 if rejected or gaps else 0)
 
 

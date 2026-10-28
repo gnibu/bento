@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **`bento-learn`'s docs-menu check fits repos without a `## Docs` menu.** Such a repo no
+  longer gets every doc reported as missing: only the docs a proposal creates must be named
+  somewhere in its `AGENTS.md`. Files git ignores (`docs/.venv/**`) never count.
+
 - **`npx skills update` now brings new bento skills.** `bento-setup`, which agents run after
   every update, installs any bento skill missing from the install, such as `/wup`. Re-adding
   the whole package is no longer needed.
