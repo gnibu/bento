@@ -36,7 +36,8 @@ Everything ships as skills (`bento-*`, plus `wup`) under `plugins/bento/skills/`
     upkeep, documentation upkeep, dependency security, or a monitoring-driven fix. Reads repo
     overlays; factory mode returns edits and a report, leaving delivery to the caller.
   - `bento-hotspots` — rank Python/JS/TS refactoring targets by complexity x churn, with import
-    cycles and fan-in/out; its diff mode flags what a branch made worse. `bento-ship` runs it.
+    cycles and fan-in/out; its diff mode flags what a branch made worse and lists what it
+    improved. `bento-ship` runs it.
   - `bento-prototype` — throwaway spike to make a design decision cheaply; decide by observation.
   - `bento-multi-phase-plan` — plan a large change as verifiable units before implementing.
     Plan-only requests stop at the plan; preparation inside a build request continues the work.

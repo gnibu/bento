@@ -199,6 +199,26 @@ class HotspotsTest(unittest.TestCase):
         out = self.run_script("--base", "main")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         self.assertIn("No new hotspots in 1 changed", out.stdout)
+        self.assertNotIn("improved", out.stdout)
+
+    def test_diff_reports_what_the_branch_improved(self):
+        partial = TANGLED.replace("tangled", "partial")
+        self.commit({"core.py": TANGLED, "part.py": partial,
+                     "old.py": TANGLED.replace("tangled", "doomed") + "\n\n" + SIMPLE})
+        self.git("checkout", "-q", "-b", "feature")
+        self.commit({"core.py": "def tangled(a, b, c, d, e, f):\n    return a\n",
+                     "part.py": "\n".join(partial.splitlines()[:5] + ["                    d -= 1", "    return a\n"]),
+                     "old.py": SIMPLE})
+        out = self.run_script("--base", "main")
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)  # an improvement is not a finding
+        self.assertIn("No new hotspots in 3 changed", out.stdout)
+        self.assertIn("\n# Hotspots this branch improved (vs main)\n", out.stdout)
+        # params stays at 6: unchanged, so neither section names it
+        self.assertIn("- core.py:1 tangled  cognitive 23->0, nesting 6->0 (within cognitive<=15, nesting<=3)",
+                      out.stdout)
+        self.assertIn("- part.py:1 partial  cognitive 23->11, nesting 6->4 (within cognitive<=15; still over nesting<=3)",
+                      out.stdout)
+        self.assertIn("- old.py doomed  removed or renamed (was cognitive 23, nesting 6, params 6)", out.stdout)
 
 
 if __name__ == "__main__":

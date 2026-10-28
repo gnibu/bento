@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **`bento-hotspots` diff mode shows what a branch improved.** After its findings, `--base`
+  lists the functions and files that were over a limit at the base and dropped on it or are
+  gone, with before and after numbers (`ccn 23->6 (within ccn<=10)`). The exit code is
+  unchanged: 1 only on new findings.
+
+- **`bento-refactor` checks the metrics after each step.** Step 4 runs `bento-hotspots` in diff
+  mode after each reshape, which catches extracted helpers that take too many parameters.
+  Step 6 shows how to compare outputs against the base version through a `git worktree`.
+
 - **`bento-learn` finds sessions that built the branch from another directory.** `sessions.py`
   also lists transcripts started elsewhere (another Conductor workspace, say) that name the
   worktree's path or the branch, including its names before a `git branch -m`, under

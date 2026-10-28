@@ -3,7 +3,8 @@
 # requires-python = ">=3.10"
 # dependencies = ["lizard==1.24.1"]
 # ///
-"""Rank refactoring candidates in Python, JavaScript and TypeScript, or flag what a branch made worse.
+"""Rank refactoring candidates in Python, JavaScript and TypeScript, or flag what a branch made worse
+and what it improved.
 
   uv run hotspots.py [PATH ...] [--top N] [--since "12 months ago"]   repo scan
   uv run hotspots.py --base origin/master [PATH ...]                 diff mode, exit 1 on findings
@@ -279,28 +280,74 @@ def scan(root: str, files: set[str], top: int, since: str) -> None:
             print(f"- {f}  fan_out={len(graph[f])}")
 
 
-def worse_functions(path: str, old: str, code: str) -> list[str]:
-    """Functions past a limit that are new or grew on a metric past its limit."""
+Pair = tuple[Function | None, Function]  # a function now, and its base version if any
+
+
+def by_key(funcs: list[Function]) -> dict[tuple[str, int], Function]:
+    """Key by name and occurrence: same-named methods keep their order."""
+    seen: Counter[str] = Counter()
+    keyed = {}
+    for fn in funcs:
+        keyed[(fn.name, seen[fn.name])] = fn
+        seen[fn.name] += 1
+    return keyed
+
+
+def changes(before: Function | None, fn: Function, keys: list[str]) -> str:
+    return ", ".join(f"{k} {getattr(before, k) if before else 'new'}->{getattr(fn, k)}" for k in keys)
+
+
+def limits(keys: list[str]) -> str:
+    return ", ".join(f"{k}<={LIMITS[k]}" for k in keys)
+
+
+def compare_functions(path: str, old: str, code: str) -> tuple[list[str], list[str]]:
+    """(worse, improved) for one file, each function paired with its base version."""
     old_size, old_funcs = analyze(path, old) if old else (0, [])
     size, funcs = analyze(path, code)
-    seen: Counter[str] = Counter()
-    before_by_key = {}
-    for fn in old_funcs:  # match by name and occurrence: same-named methods keep their order
-        before_by_key[(fn.name, seen[fn.name])] = fn
-        seen[fn.name] += 1
-    seen.clear()
+    gone = by_key(old_funcs)
+    pairs = [(gone.pop(key, None), fn) for key, fn in by_key(funcs).items()]
+    return (worse_functions(path, pairs, old_size, size),
+            improved_functions(path, pairs, list(gone.values()), old_size, size))
+
+
+def worse_functions(path: str, pairs: list[Pair], old_size: int, size: int) -> list[str]:
+    """Functions past a limit that are new or grew on a metric past its limit."""
     findings = []
-    for fn in funcs:
-        before = before_by_key.get((fn.name, seen[fn.name]))
-        seen[fn.name] += 1
-        worse = [k for k in fn.over() if before is None or getattr(fn, k) > getattr(before, k)]
-        if worse:
-            change = ", ".join(f"{k} {getattr(before, k) if before else 'new'}->{getattr(fn, k)}" for k in worse)
-            limits = ", ".join(f"{k}<={LIMITS[k]}" for k in worse)
-            findings.append(f"- {path}:{fn.line} {fn.name}  {change} (limits: {limits})")
+    for before, fn in pairs:
+        grew = [k for k in fn.over() if before is None or getattr(fn, k) > getattr(before, k)]
+        if grew:
+            findings.append(f"- {path}:{fn.line} {fn.name}  {changes(before, fn, grew)} (limits: {limits(grew)})")
     if size > FILE_LIMIT and size > old_size:
         findings.append(f"- {path}  file nloc {old_size}->{size} (limit {FILE_LIMIT})")
     return findings
+
+
+def improvement(before: Function, fn: Function) -> str:
+    """The metrics over a limit at the base that dropped, e.g. 'ccn 23->6 (within ccn<=10)'; '' if none."""
+    dropped = [k for k in before.over() if getattr(fn, k) < getattr(before, k)]
+    within = [k for k in dropped if k not in fn.over()]
+    still = [k for k in dropped if k in fn.over()]
+    parts = (("within", within), ("still over", still))
+    status = "; ".join(f"{label} {limits(keys)}" for label, keys in parts if keys)
+    return f"{changes(before, fn, dropped)} ({status})" if dropped else ""
+
+
+def improved_functions(path: str, pairs: list[Pair], gone: list[Function], old_size: int, size: int) -> list[str]:
+    """Functions over a limit at the base that dropped on it, or are gone."""
+    improved = []
+    for before, fn in pairs:
+        change = improvement(before, fn) if before else ""
+        if change:
+            improved.append(f"- {path}:{fn.line} {fn.name}  {change}")
+    for fn in gone:
+        if fn.over():
+            was = ", ".join(f"{k} {getattr(fn, k)}" for k in fn.over())
+            improved.append(f"- {path} {fn.name}  removed or renamed (was {was})")
+    if old_size > FILE_LIMIT and size < old_size:
+        status = "still over" if size > FILE_LIMIT else "within"
+        improved.append(f"- {path}  file nloc {old_size}->{size} ({status} limit {FILE_LIMIT})")
+    return improved
 
 
 def closed_cycles(root: str, files: set[str], new_edges: set[tuple[str, str]]) -> list[str]:
@@ -321,6 +368,7 @@ def diff(root: str, files: set[str], base: str) -> int:
         if parts[-1] in files:
             changed.append((parts[1], parts[-1]))
     findings: list[str] = []
+    improved: list[str] = []
     new_edges: set[tuple[str, str]] = set()
     for was, f in changed:
         code = read(root, f)
@@ -328,24 +376,29 @@ def diff(root: str, files: set[str], base: str) -> int:
             old = git("show", f"{mb}:{was}", cwd=root)
         except subprocess.CalledProcessError:
             old = ""  # added on this branch
-        findings += worse_functions(f, old, code)
+        worse, better = compare_functions(f, old, code)
+        findings += worse
+        improved += better
         old_deps = imports(f, old, files) if old else set()
         new_edges |= {(f, dep) for dep in imports(f, code, files) - old_deps}
 
     findings += closed_cycles(root, files, new_edges)
 
-    if not findings:
+    if findings:
+        print(f"# Hotspots this branch made worse (vs {base})\n")
+        print("\n".join(findings))
+    else:
         print(f"No new hotspots in {len(changed)} changed source files since {base}.")
-        return 0
-    print(f"# Hotspots this branch made worse (vs {base})\n")
-    print("\n".join(findings))
-    return 1
+    if improved:
+        print(f"\n# Hotspots this branch improved (vs {base})\n")
+        print("\n".join(improved))
+    return 1 if findings else 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("paths", nargs="*", help="limit to these paths (default: the whole repo)")
-    ap.add_argument("--base", help="diff mode: report what HEAD and the working tree made worse vs this ref")
+    ap.add_argument("--base", help="diff mode: what HEAD and the working tree made worse or improved vs this ref")
     ap.add_argument("--top", type=int, default=10)
     ap.add_argument("--since", default="12 months ago", help="churn window for the repo scan")
     args = ap.parse_args()
