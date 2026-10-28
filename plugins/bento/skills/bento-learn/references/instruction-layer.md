@@ -123,6 +123,10 @@ line for a folder of similar docs). Keep the steps in the doc, only the trigger 
 the menu. `bento-learn`'s `scripts/check_entries.py` rejects a root `AGENTS.md` whose menu
 misses a doc.
 
+A root `AGENTS.md` that already routes docs another way (a procedures table) and has no
+`## Docs` section keeps its format: add a new doc there, and don't add a menu beside it. The
+check then only asks that each new doc be named in the file.
+
 ## Skill routing needs an explicit fallback
 
 A routing table that only lists known tasks silently drops everything else. End it with:

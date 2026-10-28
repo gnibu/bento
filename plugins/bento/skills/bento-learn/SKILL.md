@@ -56,7 +56,8 @@ Pick the cheapest correct home. Price the sink first (see [instruction-layer.md]
 - Code bug / wrong logic → fix the **source** + a test. The fix is the learning.
 - Procedure (how to run, test, release, migrate…) → **a doc**: the existing doc that covers
   the task, else a new `docs/procedures/<verb>-<object>.md` (`run-tests.md`). Add it to the
-  root `AGENTS.md` `## Docs` menu ("Before running tests → docs/procedures/run-tests.md").
+  root `AGENTS.md` `## Docs` menu ("Before running tests → docs/procedures/run-tests.md"),
+  or, when it has no menu and routes docs its own way (a procedures table), there.
   See [procedures](references/instruction-layer.md#procedures-how-to-do-what).
 - Agent orchestration / tool choice / review behavior → a **skill** (amend the owner; create
   one only if none fits — see `bento-authoring-a-playbook`).
@@ -83,8 +84,8 @@ preferences.
   and run `python3 "<skill>/scripts/check_entries.py" <file> <proposed> [<new doc>...]`, naming
   each doc the proposal creates (`docs/procedures/run-tests.md`). It rejects any new entry over
   one line without a pointer, or over two lines, and an `AGENTS.md` whose `## Docs` menu
-  misses a doc. Re-route a rejected entry (step 2), add missing docs to the
-  menu; never propose a failing file.
+  misses a doc git doesn't ignore (no menu: a new doc the file doesn't name). Re-route a
+  rejected entry (step 2), add missing docs to the menu; never propose a failing file.
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
   Head each with the file, the text it adds, and why: what went wrong, in plain words a
   reader who did not watch the session understands (no turn ids or jargon alone).

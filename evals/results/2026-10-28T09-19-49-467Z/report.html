@@ -1,0 +1,1576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eval report — bento v0.3.0</title>
+</head>
+<body>
+<style>
+:root{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}}
+:root[data-theme="dark"]{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}
+:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header h1{margin:2px 0 0;font-size:24px;font-weight:600;line-height:1.25;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta .num{font-variant-numeric:tabular-nums lining-nums}
+.banner{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  border:1px solid var(--hairline);background:var(--surface);font-size:13px}
+.banner .chip-warn{color:var(--warning);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;line-height:1.1}
+.tile.hero .value{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px}
+.tile .sub{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .value.delta-pos{color:var(--delta-good)}
+.tile .value.delta-neg{color:var(--critical)}
+.toolbar{display:flex;gap:8px;justify-content:flex-end}
+.toolbar button{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover{color:var(--ink)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:10px}
+.case-regressed{border-left:3px solid var(--critical)}
+.verdict{margin:6px 0 0;font-size:15px}
+.verdict .delta{font-size:15px}
+.flag{font-size:11px;font-weight:600;color:var(--warning);white-space:nowrap}
+.star{color:var(--warning);font-size:.45em;vertical-align:super;line-height:0;cursor:help}
+.legend summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.legend-list{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2)}
+.case-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case-head h2{margin:0;font-size:16px;font-weight:600}
+.case-head .spacer{flex:1}
+.case-score{font-size:15px;font-weight:600}
+.mono{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.muted{color:var(--ink-3);font-size:12px}
+.meter{display:inline-block;position:relative;width:120px;height:6px;border-radius:4px;background:var(--grid);
+  vertical-align:middle}
+.meter>span{display:block;height:100%;border-radius:4px;max-width:100%}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-3);border-radius:1px}
+.m-accent>span{background:var(--accent)}
+.m-base>span{background:var(--base-fill)}
+.delta{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--delta-good)}
+.delta-neg{color:var(--critical)}
+.delta-zero{color:var(--ink-3)}
+details.section{border-top:1px solid var(--grid);padding-top:10px}
+details.section>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-2);list-style-position:outside;margin-left:2px}
+details.section>summary:hover{color:var(--ink)}
+details.section[open]>summary{margin-bottom:8px}
+.md{display:flex;flex-direction:column;gap:8px;background:var(--inset);border-radius:8px;
+  padding:12px 14px;overflow-wrap:break-word}
+.md>:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:4px 0 0;font-size:1em;font-weight:600;line-height:1.3}
+.md p,.md ul,.md ol,.md blockquote,.md table,.md pre,.md hr{margin:0}
+.md ul,.md ol{display:flex;flex-direction:column;gap:4px;padding-left:20px}
+.md blockquote{border-left:2px solid var(--hairline);padding-left:10px;color:var(--ink-2)}
+.md :not(pre)>code{background:var(--inset);padding:1px 4px;border-radius:4px;
+  font:.92em "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre{background:var(--inset);border:1px solid var(--hairline);padding:10px 12px;border-radius:6px;
+  overflow-x:auto;font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre code{background:none;padding:0;font:inherit}
+.md table{width:100%;border-collapse:collapse}
+.md th,.md td{padding:5px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--grid)}
+.md th{font-weight:600;color:var(--ink-2)}
+.md a{color:var(--accent);text-decoration:none}
+.md a:hover{text-decoration:underline}
+.grader-def{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.grader-def+.grader-def{border-top:1px solid var(--grid)}
+.grader-def-head{display:flex;align-items:baseline;gap:8px}
+.grader-name{font:13px "SF Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600}
+.badge{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  border:1px solid var(--hairline);border-radius:999px;padding:1px 8px}
+.config{display:flex;flex-direction:column;gap:2px;background:var(--inset);border-radius:8px;padding:10px 14px}
+.config code{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.arm{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.arm+.arm{border-top:1px dashed var(--grid);margin-top:4px;padding-top:12px}
+.arm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.arm-label{font-size:13px;font-weight:600}
+.run{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.run-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.run-title{font-size:12px;font-weight:600;color:var(--ink-2)}
+.run-error .explanation{color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2)}
+.graders{display:flex;flex-direction:column;gap:4px}
+details.grader{border-radius:6px}
+details.grader>summary{cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:3px 4px;
+  border-radius:6px;list-style:none}
+details.grader>summary::-webkit-details-marker{display:none}
+details.grader>summary::before{content:'▸';font-size:10px;color:var(--ink-3);flex:none;
+  transition:transform .12s ease}
+details.grader[open]>summary::before{transform:rotate(90deg)}
+details.grader>summary:hover{background:var(--inset)}
+details.grader>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grader-body{padding:6px 8px 8px 24px;display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chip-pass{color:var(--good);border:1px solid currentColor}
+.chip-fail{color:var(--critical);border:1px solid currentColor}
+.chip.chip-warn{color:var(--warning);border:1px solid currentColor}
+.explanation{margin:0;font-size:13px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:break-word}
+.kv{display:flex;gap:8px;font-size:12px;color:var(--ink-3)}
+.votes{font-variant-numeric:tabular-nums;letter-spacing:.1em}
+pre.evidence{margin:0;background:var(--inset);border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 10px;overflow-x:auto;max-height:320px;
+  font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){
+  details.grader>summary,.toolbar button{transition:background .12s ease,color .12s ease}
+}
+@media (prefers-reduced-motion:reduce){
+  details.grader>summary::before{transition:none}
+}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+  body{background:#fff}
+  .toolbar{display:none}
+  .case,.run,.grader-def{break-inside:avoid}
+  pre.evidence{max-height:none}
+}
+</style>
+<div class="wrap">
+<header>
+<div class="eyebrow">Plugin eval report</div>
+<h1>bento v0.3.0</h1>
+<p class="verdict">Plugin effect: <span class="delta delta-pos">↑ +33.3 pts</span> vs baseline — improved 1 · flat 0 · regressed 0 of 1 case.</p>
+<div class="meta">
+<span class="mono">plugins/bento</span>
+<span>Claude Code v2.1.310</span>
+<span class="num">2026-10-28 09:19 UTC</span>
+<span class="num">4m 48s</span>
+<span class="num">$0.84</span>
+<span class="num">6 runs</span>
+
+
+
+<span>judge default</span>
+<span class="num">threshold 100%</span>
+<span>filtered: --case learn-route-docs*</span>
+</div>
+</header>
+
+<section class="tiles">
+<div class="tile hero"><span class="label">Suite score · with plugin</span><span class="value">66.7%</span><span class="sub">mean of per-case scores</span></div>
+<div class="tile"><span class="label">Ablation Δ</span><span class="value num delta-pos">↑ +33.3</span><span class="sub">score points vs baseline, 1 of 1 case</span></div>
+<div class="tile"><span class="label">Baseline score</span><span class="value num">33.3%</span><span class="sub">without the plugin</span></div>
+<div class="tile"><span class="label">Cases</span><span class="value num">1</span><span class="sub">0 of 1 ≥ 100% threshold</span></div>
+<div class="tile"><span class="label">Perfect runs</span><span class="value num">0%</span><span class="sub">runs where every grader passed</span></div>
+</section>
+<details class="section legend">
+<summary>How to read this report</summary>
+<ul class="legend-list">
+<li>A run's score is the weighted fraction of its graders that passed; a "perfect" run passed every grader.</li>
+<li>A case's score is the mean of its runs; a case passes when its score is at or above the 100% threshold (the tick on each case bar).</li>
+<li>The suite score is the mean of the per-case scores.</li>
+<li>Judge votes are independent samples of the LLM judge; the majority decides pass or fail.</li>
+<li>"With plugin" and "Baseline" runs are identical except for the plugin being loaded; Δ is the with-plugin score minus the baseline score.</li>
+
+</ul>
+</details>
+<div class="toolbar"><button type="button" data-act="expand">Expand all</button><button type="button" data-act="collapse">Collapse all</button></div>
+<article class="case" id="case-1">
+<div class="case-head">
+<h2>learn-route-docs</h2>
+<span class="muted mono">plugins/bento/evals/learn-route-docs</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +33.3 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span><i class="tick" style="left:100.0%"></i></span>
+<span class="num case-score">66.7%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">7 turns · $0.17 · 09:19:49 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">procedure-to-docs</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I ran bento-learn in propose-only mode. Nothing was written. Before the diffs, there are some gaps you should know about.
+
+**What I couldn&apos;t check**
+- **The checkout is empty.** The repo root is `/private/tmp/e-juZSSt/home`, and it holds only `.gitconfig` and `.git/`. There&apos;s no `AGENTS.md`, `CLAUDE.md`, `billing/`, `Makefile`, compose file, tests, overlay or `.bento-state/baseline.json`. I couldn&apos;t confirm any of the three findings against real code, or check that they aren&apos;t already documented somewhere.
+- **I couldn&apos;t run the skill&apos;s scripts.** This session has no shell, so `sessions.py` (which finds other sessions that worked on this branch) and `check_entries.py` (which validates the proposed `AGENTS.md` text) didn&apos;t run. The proposals below follow the checker&apos;s rules by hand: each entry is one line, or two lines with a pointer, and every new doc is listed in the `## Docs` menu. They still need a real run of `check_entries.py` before you apply them.
+- **The skill expects an existing layer.** bento-learn changes an existing instruction layer. With none here, `bento-init` would normally create it. The diffs below are the smallest new files that hold these two learnings. If the real repo already has `AGENTS.md` or `docs/`, these become small additions to those files instead.
+
+## Destination 1: procedure doc plus root menu (L2, from finding 1)
+
+**Why:** the tests failed three times before they passed. They depend on four setup steps in a fixed order (start the database, point `DATABASE_URL` at port 5433, seed the data, then run), and the integration tests also need `STRIPE_KEY=test`. None of this is written down, so the next agent will retry the same way. How to run tests is a procedure, so it goes in a procedure doc listed in the root menu.
+
+`docs/procedures/run-tests.md` (new)
+```diff
++# Run tests
++
++Run these in order from the repo root. Each step depends on the one before it.
++
++```sh
++docker compose up -d db                                  # Postgres for the test suite
++export DATABASE_URL=postgres://localhost:5433/app        # note: port 5433, not 5432
++make seed                                                # tests assume seeded data
++export STRIPE_KEY=test                                   # required by the integration tests
++python3 -m unittest
++```
++
++If tests fail on connection or missing rows, check that a step above was skipped
++before debugging the tests themselves.
+```
+
+`AGENTS.md` (new, at the repo root)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md (needs db, DATABASE_URL, seed, STRIPE_KEY)
+```
+
+`CLAUDE.md` (new, at the repo root, so Claude loads `AGENTS.md`)
+```diff
++@AGENTS.md
+```
+
+## Destination 2: `billing/` gotcha (L2, from finding 2)
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`. Nothing in the code or docs says so, and an amount was divided by 100 twice before anyone noticed. This rule only matters for that code, so it goes in an `AGENTS.md` next to it.
+
+`billing/AGENTS.md` (new)
+```diff
++# billing/
++
++- Every amount here is an integer number of cents (`invoice.total` included). Convert to dollars once, only at display.
+```
+
+`billing/CLAUDE.md` (new)
+```diff
++@AGENTS.md
+```
+
+A possible code change, offered but not drafted: the stronger fix is to make the unit visible in the code itself, for example a `total_cents` name or a `Money` type, with a test. That&apos;s a refactor beyond what this session found, so I haven&apos;t written it. Say if you want it, and it would replace or back up the `AGENTS.md` line.
+
+## Dropped
+- **Finding 3 (the terminal froze once and you restarted it):** dropped. It happened once, its cause is unknown, and nothing makes it likely to recur, so it fails the &quot;will this come up again?&quot; filter. It&apos;s also not a repo or bento learning.
+- **No L1 (bento-wide) proposals:** both learnings only apply to this repo.
+- **No private memory:** both learnings are useful to the whole team.
+
+If you want these applied, point me at the real repo checkout. I&apos;ll first check for existing docs that already cover this, then run `check_entries.py` on the proposals.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">gotcha-nested</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I ran bento-learn in propose-only mode. Nothing was written. Before the diffs, there are some gaps you should know about.
+
+**What I couldn&apos;t check**
+- **The checkout is empty.** The repo root is `/private/tmp/e-juZSSt/home`, and it holds only `.gitconfig` and `.git/`. There&apos;s no `AGENTS.md`, `CLAUDE.md`, `billing/`, `Makefile`, compose file, tests, overlay or `.bento-state/baseline.json`. I couldn&apos;t confirm any of the three findings against real code, or check that they aren&apos;t already documented somewhere.
+- **I couldn&apos;t run the skill&apos;s scripts.** This session has no shell, so `sessions.py` (which finds other sessions that worked on this branch) and `check_entries.py` (which validates the proposed `AGENTS.md` text) didn&apos;t run. The proposals below follow the checker&apos;s rules by hand: each entry is one line, or two lines with a pointer, and every new doc is listed in the `## Docs` menu. They still need a real run of `check_entries.py` before you apply them.
+- **The skill expects an existing layer.** bento-learn changes an existing instruction layer. With none here, `bento-init` would normally create it. The diffs below are the smallest new files that hold these two learnings. If the real repo already has `AGENTS.md` or `docs/`, these become small additions to those files instead.
+
+## Destination 1: procedure doc plus root menu (L2, from finding 1)
+
+**Why:** the tests failed three times before they passed. They depend on four setup steps in a fixed order (start the database, point `DATABASE_URL` at port 5433, seed the data, then run), and the integration tests also need `STRIPE_KEY=test`. None of this is written down, so the next agent will retry the same way. How to run tests is a procedure, so it goes in a procedure doc listed in the root menu.
+
+`docs/procedures/run-tests.md` (new)
+```diff
++# Run tests
++
++Run these in order from the repo root. Each step depends on the one before it.
++
++```sh
++docker compose up -d db                                  # Postgres for the test suite
++export DATABASE_URL=postgres://localhost:5433/app        # note: port 5433, not 5432
++make seed                                                # tests assume seeded data
++export STRIPE_KEY=test                                   # required by the integration tests
++python3 -m unittest
++```
++
++If tests fail on connection or missing rows, check that a step above was skipped
++before debugging the tests themselves.
+```
+
+`AGENTS.md` (new, at the repo root)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md (needs db, DATABASE_URL, seed, STRIPE_KEY)
+```
+
+`CLAUDE.md` (new, at the repo root, so Claude loads `AGENTS.md`)
+```diff
++@AGENTS.md
+```
+
+## Destination 2: `billing/` gotcha (L2, from finding 2)
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`. Nothing in the code or docs says so, and an amount was divided by 100 twice before anyone noticed. This rule only matters for that code, so it goes in an `AGENTS.md` next to it.
+
+`billing/AGENTS.md` (new)
+```diff
++# billing/
++
++- Every amount here is an integer number of cents (`invoice.total` included). Convert to dollars once, only at display.
+```
+
+`billing/CLAUDE.md` (new)
+```diff
++@AGENTS.md
+```
+
+A possible code change, offered but not drafted: the stronger fix is to make the unit visible in the code itself, for example a `total_cents` name or a `Money` type, with a test. That&apos;s a refactor beyond what this session found, so I haven&apos;t written it. Say if you want it, and it would replace or back up the `AGENTS.md` line.
+
+## Dropped
+- **Finding 3 (the terminal froze once and you restarted it):** dropped. It happened once, its cause is unknown, and nothing makes it likely to recur, so it fails the &quot;will this come up again?&quot; filter. It&apos;s also not a repo or bento learning.
+- **No L1 (bento-wide) proposals:** both learnings only apply to this repo.
+- **No private memory:** both learnings are useful to the whole team.
+
+If you want these applied, point me at the real repo checkout. I&apos;ll first check for existing docs that already cover this, then run `check_entries.py` on the proposals.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">drops-one-off</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I ran bento-learn in propose-only mode. Nothing was written. Before the diffs, there are some gaps you should know about.
+
+**What I couldn&apos;t check**
+- **The checkout is empty.** The repo root is `/private/tmp/e-juZSSt/home`, and it holds only `.gitconfig` and `.git/`. There&apos;s no `AGENTS.md`, `CLAUDE.md`, `billing/`, `Makefile`, compose file, tests, overlay or `.bento-state/baseline.json`. I couldn&apos;t confirm any of the three findings against real code, or check that they aren&apos;t already documented somewhere.
+- **I couldn&apos;t run the skill&apos;s scripts.** This session has no shell, so `sessions.py` (which finds other sessions that worked on this branch) and `check_entries.py` (which validates the proposed `AGENTS.md` text) didn&apos;t run. The proposals below follow the checker&apos;s rules by hand: each entry is one line, or two lines with a pointer, and every new doc is listed in the `## Docs` menu. They still need a real run of `check_entries.py` before you apply them.
+- **The skill expects an existing layer.** bento-learn changes an existing instruction layer. With none here, `bento-init` would normally create it. The diffs below are the smallest new files that hold these two learnings. If the real repo already has `AGENTS.md` or `docs/`, these become small additions to those files instead.
+
+## Destination 1: procedure doc plus root menu (L2, from finding 1)
+
+**Why:** the tests failed three times before they passed. They depend on four setup steps in a fixed order (start the database, point `DATABASE_URL` at port 5433, seed the data, then run), and the integration tests also need `STRIPE_KEY=test`. None of this is written down, so the next agent will retry the same way. How to run tests is a procedure, so it goes in a procedure doc listed in the root menu.
+
+`docs/procedures/run-tests.md` (new)
+```diff
++# Run tests
++
++Run these in order from the repo root. Each step depends on the one before it.
++
++```sh
++docker compose up -d db                                  # Postgres for the test suite
++export DATABASE_URL=postgres://localhost:5433/app        # note: port 5433, not 5432
++make seed                                                # tests assume seeded data
++export STRIPE_KEY=test                                   # required by the integration tests
++python3 -m unittest
++```
++
++If tests fail on connection or missing rows, check that a step above was skipped
++before debugging the tests themselves.
+```
+
+`AGENTS.md` (new, at the repo root)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md (needs db, DATABASE_URL, seed, STRIPE_KEY)
+```
+
+`CLAUDE.md` (new, at the repo root, so Claude loads `AGENTS.md`)
+```diff
++@AGENTS.md
+```
+
+## Destination 2: `billing/` gotcha (L2, from finding 2)
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`. Nothing in the code or docs says so, and an amount was divided by 100 twice before anyone noticed. This rule only matters for that code, so it goes in an `AGENTS.md` next to it.
+
+`billing/AGENTS.md` (new)
+```diff
++# billing/
++
++- Every amount here is an integer number of cents (`invoice.total` included). Convert to dollars once, only at display.
+```
+
+`billing/CLAUDE.md` (new)
+```diff
++@AGENTS.md
+```
+
+A possible code change, offered but not drafted: the stronger fix is to make the unit visible in the code itself, for example a `total_cents` name or a `Money` type, with a test. That&apos;s a refactor beyond what this session found, so I haven&apos;t written it. Say if you want it, and it would replace or back up the `AGENTS.md` line.
+
+## Dropped
+- **Finding 3 (the terminal froze once and you restarted it):** dropped. It happened once, its cause is unknown, and nothing makes it likely to recur, so it fails the &quot;will this come up again?&quot; filter. It&apos;s also not a repo or bento learning.
+- **No L1 (bento-wide) proposals:** both learnings only apply to this repo.
+- **No private memory:** both learnings are useful to the whole team.
+
+If you want these applied, point me at the real repo checkout. I&apos;ll first check for existing docs that already cover this, then run `check_entries.py` on the proposals.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">fired</span>  <span class="badge">plugin-fired indicator</span></summary>
+<div class="grader-body">
+<p class="explanation">Skill called 1x (expected 1..∞)</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.20 · 09:20:37 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">procedure-to-docs</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve drafted the diffs below and applied nothing. Before you use them, two problems:
+
+- **This checkout doesn&apos;t contain the code from your session.** The repo here (`/private/tmp/e-oQGiQH/home`) only has `.gitconfig` and `.git`. There is no `billing/`, Makefile, compose file, `AGENTS.md` or `docs/`. So I couldn&apos;t confirm the paths, check for existing instruction files or open `invoice.total`. If the real repo is elsewhere, point me at it and I&apos;ll redo this against its actual files.
+- **I didn&apos;t run either of the skill&apos;s scripts.** I have no shell here, so I couldn&apos;t run `sessions.py` (which collects the other sessions on this branch) or `check_entries.py` (which validates proposed entries). This is based only on what you listed. I checked the drafts by hand against the entry rules: one-line entries, and every doc is listed in the root `## Docs` section.
+
+## Destination 1: a new test procedure plus root `AGENTS.md` (repo layer)
+
+**Why:** the tests fail unless four steps run in a fixed order, and the integration tests also need a Stripe key. That order isn&apos;t written down anywhere, so it took three failed runs to find. It will happen to the next person or agent who runs the tests.
+
+**`docs/procedures/run-tests.md`** (new)
+```diff
++# Run the tests
++
++**When:** before handing off any code change.
++
++1. `docker compose up -d db`
++2. `export DATABASE_URL=postgres://localhost:5433/app` (port 5433, not the default 5432)
++3. `make seed`
++4. `python3 -m unittest`
++
++Integration tests also need `STRIPE_KEY=test` set.
++
++**Check:** the last line reads `OK`.
+```
+
+**`AGENTS.md`** at the repo root (new, since none exists)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md
+```
+
+**`CLAUDE.md`** at the repo root (new, so Claude loads the same file)
+```diff
++@AGENTS.md
+```
+
+Because this repo has no instruction files at all yet, `bento-init` is the intended tool for creating them from scratch. The three small files above are the minimum this one learning needs.
+
+Optional, and better if your Makefile allows it: add a `make test` target that runs all four steps. Then the steps can&apos;t be run out of order, and the procedure shrinks to one line. I couldn&apos;t see the Makefile, so this isn&apos;t drafted.
+
+## Destination 2: `billing/AGENTS.md` (repo layer, closest to the code)
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`, but nothing says so. That&apos;s why dollar amounts got divided by 100 twice. Putting it in a `billing/` instruction file means any agent working in that folder sees it.
+
+**`billing/AGENTS.md`** (new)
+```diff
++# AGENTS.md
++
++- All amounts in `billing/` are cents, `invoice.total` included; convert to dollars exactly once.
+```
+
+**`billing/CLAUDE.md`** (new)
+```diff
++@AGENTS.md
+```
+
+Optional and cheaper still: a one-line docstring on `invoice.total` saying it returns cents. I couldn&apos;t open that file, so this isn&apos;t drafted.
+
+## Dropped
+- **Terminal froze once and was restarted:** it happened once, had no clear cause and isn&apos;t about this repo. It doesn&apos;t pass the &quot;will this happen again?&quot; test.
+
+## Bento itself (L1)
+- Nothing. Both learnings are specific to this repo.
+
+Reply &quot;go&quot; to apply Destinations 1 and 2, ideally after pointing me at the real checkout. Committing them is up to you.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">gotcha-nested</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve drafted the diffs below and applied nothing. Before you use them, two problems:
+
+- **This checkout doesn&apos;t contain the code from your session.** The repo here (`/private/tmp/e-oQGiQH/home`) only has `.gitconfig` and `.git`. There is no `billing/`, Makefile, compose file, `AGENTS.md` or `docs/`. So I couldn&apos;t confirm the paths, check for existing instruction files or open `invoice.total`. If the real repo is elsewhere, point me at it and I&apos;ll redo this against its actual files.
+- **I didn&apos;t run either of the skill&apos;s scripts.** I have no shell here, so I couldn&apos;t run `sessions.py` (which collects the other sessions on this branch) or `check_entries.py` (which validates proposed entries). This is based only on what you listed. I checked the drafts by hand against the entry rules: one-line entries, and every doc is listed in the root `## Docs` section.
+
+## Destination 1: a new test procedure plus root `AGENTS.md` (repo layer)
+
+**Why:** the tests fail unless four steps run in a fixed order, and the integration tests also need a Stripe key. That order isn&apos;t written down anywhere, so it took three failed runs to find. It will happen to the next person or agent who runs the tests.
+
+**`docs/procedures/run-tests.md`** (new)
+```diff
++# Run the tests
++
++**When:** before handing off any code change.
++
++1. `docker compose up -d db`
++2. `export DATABASE_URL=postgres://localhost:5433/app` (port 5433, not the default 5432)
++3. `make seed`
++4. `python3 -m unittest`
++
++Integration tests also need `STRIPE_KEY=test` set.
++
++**Check:** the last line reads `OK`.
+```
+
+**`AGENTS.md`** at the repo root (new, since none exists)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md
+```
+
+**`CLAUDE.md`** at the repo root (new, so Claude loads the same file)
+```diff
++@AGENTS.md
+```
+
+Because this repo has no instruction files at all yet, `bento-init` is the intended tool for creating them from scratch. The three small files above are the minimum this one learning needs.
+
+Optional, and better if your Makefile allows it: add a `make test` target that runs all four steps. Then the steps can&apos;t be run out of order, and the procedure shrinks to one line. I couldn&apos;t see the Makefile, so this isn&apos;t drafted.
+
+## Destination 2: `billing/AGENTS.md` (repo layer, closest to the code)
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`, but nothing says so. That&apos;s why dollar amounts got divided by 100 twice. Putting it in a `billing/` instruction file means any agent working in that folder sees it.
+
+**`billing/AGENTS.md`** (new)
+```diff
++# AGENTS.md
++
++- All amounts in `billing/` are cents, `invoice.total` included; convert to dollars exactly once.
+```
+
+**`billing/CLAUDE.md`** (new)
+```diff
++@AGENTS.md
+```
+
+Optional and cheaper still: a one-line docstring on `invoice.total` saying it returns cents. I couldn&apos;t open that file, so this isn&apos;t drafted.
+
+## Dropped
+- **Terminal froze once and was restarted:** it happened once, had no clear cause and isn&apos;t about this repo. It doesn&apos;t pass the &quot;will this happen again?&quot; test.
+
+## Bento itself (L1)
+- Nothing. Both learnings are specific to this repo.
+
+Reply &quot;go&quot; to apply Destinations 1 and 2, ideally after pointing me at the real checkout. Committing them is up to you.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">drops-one-off</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve drafted the diffs below and applied nothing. Before you use them, two problems:
+
+- **This checkout doesn&apos;t contain the code from your session.** The repo here (`/private/tmp/e-oQGiQH/home`) only has `.gitconfig` and `.git`. There is no `billing/`, Makefile, compose file, `AGENTS.md` or `docs/`. So I couldn&apos;t confirm the paths, check for existing instruction files or open `invoice.total`. If the real repo is elsewhere, point me at it and I&apos;ll redo this against its actual files.
+- **I didn&apos;t run either of the skill&apos;s scripts.** I have no shell here, so I couldn&apos;t run `sessions.py` (which collects the other sessions on this branch) or `check_entries.py` (which validates proposed entries). This is based only on what you listed. I checked the drafts by hand against the entry rules: one-line entries, and every doc is listed in the root `## Docs` section.
+
+## Destination 1: a new test procedure plus root `AGENTS.md` (repo layer)
+
+**Why:** the tests fail unless four steps run in a fixed order, and the integration tests also need a Stripe key. That order isn&apos;t written down anywhere, so it took three failed runs to find. It will happen to the next person or agent who runs the tests.
+
+**`docs/procedures/run-tests.md`** (new)
+```diff
++# Run the tests
++
++**When:** before handing off any code change.
++
++1. `docker compose up -d db`
++2. `export DATABASE_URL=postgres://localhost:5433/app` (port 5433, not the default 5432)
++3. `make seed`
++4. `python3 -m unittest`
++
++Integration tests also need `STRIPE_KEY=test` set.
++
++**Check:** the last line reads `OK`.
+```
+
+**`AGENTS.md`** at the repo root (new, since none exists)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md
+```
+
+**`CLAUDE.md`** at the repo root (new, so Claude loads the same file)
+```diff
++@AGENTS.md
+```
+
+Because this repo has no instruction files at all yet, `bento-init` is the intended tool for creating them from scratch. The three small files above are the minimum this one learning needs.
+
+Optional, and better if your Makefile allows it: add a `make test` target that runs all four steps. Then the steps can&apos;t be run out of order, and the procedure shrinks to one line. I couldn&apos;t see the Makefile, so this isn&apos;t drafted.
+
+## Destination 2: `billing/AGENTS.md` (repo layer, closest to the code)
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`, but nothing says so. That&apos;s why dollar amounts got divided by 100 twice. Putting it in a `billing/` instruction file means any agent working in that folder sees it.
+
+**`billing/AGENTS.md`** (new)
+```diff
++# AGENTS.md
++
++- All amounts in `billing/` are cents, `invoice.total` included; convert to dollars exactly once.
+```
+
+**`billing/CLAUDE.md`** (new)
+```diff
++@AGENTS.md
+```
+
+Optional and cheaper still: a one-line docstring on `invoice.total` saying it returns cents. I couldn&apos;t open that file, so this isn&apos;t drafted.
+
+## Dropped
+- **Terminal froze once and was restarted:** it happened once, had no clear cause and isn&apos;t about this repo. It doesn&apos;t pass the &quot;will this happen again?&quot; test.
+
+## Bento itself (L1)
+- Nothing. Both learnings are specific to this repo.
+
+Reply &quot;go&quot; to apply Destinations 1 and 2, ideally after pointing me at the real checkout. Committing them is up to you.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">fired</span>  <span class="badge">plugin-fired indicator</span></summary>
+<div class="grader-body">
+<p class="explanation">Skill called 1x (expected 1..∞)</p>
+
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:66.7%"></span></span>
+<span class="num">66.7%</span>
+<span class="muted num">8 turns · $0.20 · 09:21:28 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">procedure-to-docs</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve run bento-learn in propose-only mode. Nothing has been written. Two of your three learnings are worth keeping, and they go to three new files. The third is dropped.
+
+**Limits on what I checked:**
+- I had no shell in this session, so I couldn&apos;t run `sessions.py` to read the branch&apos;s earlier sessions. This rests only on the three points you gave me.
+- For the same reason, `check_entries.py` hasn&apos;t been run on these proposals. Run it before applying (command at the end).
+- The repo is currently empty: there&apos;s no `AGENTS.md`, `CLAUDE.md`, `docs/`, `billing/`, Makefile or compose file, and no `.bento-state/baseline.json`. So every destination below is a new file, and nothing was already documented.
+
+---
+
+## 1. Test setup → new procedure doc, listed in a new root `AGENTS.md`
+
+**Why:** the tests failed three times before they passed. They only work after four steps in a set order (start the DB, set `DATABASE_URL`, seed, then run), and the integration tests also need `STRIPE_KEY=test`. Nothing in the repo says this, so the next agent will hit the same failures. The steps go in a procedure doc. `AGENTS.md` gets only a one-line pointer to it.
+
+**`docs/procedures/run-tests.md`** (new)
+```diff
++# Run the tests
++
++**When:** before handing off any code change.
++
++1. `docker compose up -d db`
++2. `export DATABASE_URL=postgres://localhost:5433/app`
++3. `make seed`
++4. `STRIPE_KEY=test python3 -m unittest` (the integration tests need `STRIPE_KEY=test`)
++
++**Check:** the last line reads `OK`.
+```
+
+**`AGENTS.md`** (new, repo root)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md
+```
+
+**`CLAUDE.md`** (new, repo root), so Claude loads the same file:
+```diff
++@AGENTS.md
+```
+
+## 2. Amounts in cents → new `billing/AGENTS.md`
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`. Nothing in the code or docs says so, and in this session the value got divided by 100 twice before anyone noticed. This applies to the whole directory, so it goes in an `AGENTS.md` next to that code rather than at the repo root. It fits in one line.
+
+**`billing/AGENTS.md`** (new)
+```diff
++- All amounts in `billing/` are integer cents, `invoice.total` included; divide by 100 once, only for display.
+```
+
+**`billing/CLAUDE.md`** (new)
+```diff
++@AGENTS.md
+```
+
+A cheaper alternative, if you&apos;d rather: rename the field to `total_cents`, or add a docstring to `invoice.total`. That puts the fact where the mistake happens. I couldn&apos;t see `billing/`, so I didn&apos;t draft that diff.
+
+**Check first:** make sure the double division didn&apos;t stay in the code. If it did, that&apos;s a bug to fix in the source with a test, not a note.
+
+## 3. Terminal froze → dropped
+
+This happened once and doesn&apos;t show anything wrong with the repo or the tools. Nothing would trigger it again, so it fails the reuse test.
+
+---
+
+**Not proposed:** nothing for bento itself (all of this is specific to this repo) and nothing for private memory (this is team knowledge).
+
+**Before applying,** write the proposed root `AGENTS.md` to a temp file and run:
+```
+python3 &lt;bento-learn&gt;/scripts/check_entries.py AGENTS.md /tmp/proposed-AGENTS.md docs/procedures/run-tests.md
+```
+Do the same for `billing/AGENTS.md`. Tell me to go ahead and I&apos;ll write the files. I won&apos;t commit them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">gotcha-nested</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve run bento-learn in propose-only mode. Nothing has been written. Two of your three learnings are worth keeping, and they go to three new files. The third is dropped.
+
+**Limits on what I checked:**
+- I had no shell in this session, so I couldn&apos;t run `sessions.py` to read the branch&apos;s earlier sessions. This rests only on the three points you gave me.
+- For the same reason, `check_entries.py` hasn&apos;t been run on these proposals. Run it before applying (command at the end).
+- The repo is currently empty: there&apos;s no `AGENTS.md`, `CLAUDE.md`, `docs/`, `billing/`, Makefile or compose file, and no `.bento-state/baseline.json`. So every destination below is a new file, and nothing was already documented.
+
+---
+
+## 1. Test setup → new procedure doc, listed in a new root `AGENTS.md`
+
+**Why:** the tests failed three times before they passed. They only work after four steps in a set order (start the DB, set `DATABASE_URL`, seed, then run), and the integration tests also need `STRIPE_KEY=test`. Nothing in the repo says this, so the next agent will hit the same failures. The steps go in a procedure doc. `AGENTS.md` gets only a one-line pointer to it.
+
+**`docs/procedures/run-tests.md`** (new)
+```diff
++# Run the tests
++
++**When:** before handing off any code change.
++
++1. `docker compose up -d db`
++2. `export DATABASE_URL=postgres://localhost:5433/app`
++3. `make seed`
++4. `STRIPE_KEY=test python3 -m unittest` (the integration tests need `STRIPE_KEY=test`)
++
++**Check:** the last line reads `OK`.
+```
+
+**`AGENTS.md`** (new, repo root)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md
+```
+
+**`CLAUDE.md`** (new, repo root), so Claude loads the same file:
+```diff
++@AGENTS.md
+```
+
+## 2. Amounts in cents → new `billing/AGENTS.md`
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`. Nothing in the code or docs says so, and in this session the value got divided by 100 twice before anyone noticed. This applies to the whole directory, so it goes in an `AGENTS.md` next to that code rather than at the repo root. It fits in one line.
+
+**`billing/AGENTS.md`** (new)
+```diff
++- All amounts in `billing/` are integer cents, `invoice.total` included; divide by 100 once, only for display.
+```
+
+**`billing/CLAUDE.md`** (new)
+```diff
++@AGENTS.md
+```
+
+A cheaper alternative, if you&apos;d rather: rename the field to `total_cents`, or add a docstring to `invoice.total`. That puts the fact where the mistake happens. I couldn&apos;t see `billing/`, so I didn&apos;t draft that diff.
+
+**Check first:** make sure the double division didn&apos;t stay in the code. If it did, that&apos;s a bug to fix in the source with a test, not a note.
+
+## 3. Terminal froze → dropped
+
+This happened once and doesn&apos;t show anything wrong with the repo or the tools. Nothing would trigger it again, so it fails the reuse test.
+
+---
+
+**Not proposed:** nothing for bento itself (all of this is specific to this repo) and nothing for private memory (this is team knowledge).
+
+**Before applying,** write the proposed root `AGENTS.md` to a temp file and run:
+```
+python3 &lt;bento-learn&gt;/scripts/check_entries.py AGENTS.md /tmp/proposed-AGENTS.md docs/procedures/run-tests.md
+```
+Do the same for `billing/AGENTS.md`. Tell me to go ahead and I&apos;ll write the files. I won&apos;t commit them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">drops-one-off</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve run bento-learn in propose-only mode. Nothing has been written. Two of your three learnings are worth keeping, and they go to three new files. The third is dropped.
+
+**Limits on what I checked:**
+- I had no shell in this session, so I couldn&apos;t run `sessions.py` to read the branch&apos;s earlier sessions. This rests only on the three points you gave me.
+- For the same reason, `check_entries.py` hasn&apos;t been run on these proposals. Run it before applying (command at the end).
+- The repo is currently empty: there&apos;s no `AGENTS.md`, `CLAUDE.md`, `docs/`, `billing/`, Makefile or compose file, and no `.bento-state/baseline.json`. So every destination below is a new file, and nothing was already documented.
+
+---
+
+## 1. Test setup → new procedure doc, listed in a new root `AGENTS.md`
+
+**Why:** the tests failed three times before they passed. They only work after four steps in a set order (start the DB, set `DATABASE_URL`, seed, then run), and the integration tests also need `STRIPE_KEY=test`. Nothing in the repo says this, so the next agent will hit the same failures. The steps go in a procedure doc. `AGENTS.md` gets only a one-line pointer to it.
+
+**`docs/procedures/run-tests.md`** (new)
+```diff
++# Run the tests
++
++**When:** before handing off any code change.
++
++1. `docker compose up -d db`
++2. `export DATABASE_URL=postgres://localhost:5433/app`
++3. `make seed`
++4. `STRIPE_KEY=test python3 -m unittest` (the integration tests need `STRIPE_KEY=test`)
++
++**Check:** the last line reads `OK`.
+```
+
+**`AGENTS.md`** (new, repo root)
+```diff
++# AGENTS.md
++
++## Docs
++
++- Before running tests → docs/procedures/run-tests.md
+```
+
+**`CLAUDE.md`** (new, repo root), so Claude loads the same file:
+```diff
++@AGENTS.md
+```
+
+## 2. Amounts in cents → new `billing/AGENTS.md`
+
+**Why:** every amount in `billing/` is in cents, including `invoice.total`. Nothing in the code or docs says so, and in this session the value got divided by 100 twice before anyone noticed. This applies to the whole directory, so it goes in an `AGENTS.md` next to that code rather than at the repo root. It fits in one line.
+
+**`billing/AGENTS.md`** (new)
+```diff
++- All amounts in `billing/` are integer cents, `invoice.total` included; divide by 100 once, only for display.
+```
+
+**`billing/CLAUDE.md`** (new)
+```diff
++@AGENTS.md
+```
+
+A cheaper alternative, if you&apos;d rather: rename the field to `total_cents`, or add a docstring to `invoice.total`. That puts the fact where the mistake happens. I couldn&apos;t see `billing/`, so I didn&apos;t draft that diff.
+
+**Check first:** make sure the double division didn&apos;t stay in the code. If it did, that&apos;s a bug to fix in the source with a test, not a note.
+
+## 3. Terminal froze → dropped
+
+This happened once and doesn&apos;t show anything wrong with the repo or the tools. Nothing would trigger it again, so it fails the reuse test.
+
+---
+
+**Not proposed:** nothing for bento itself (all of this is specific to this repo) and nothing for private memory (this is team knowledge).
+
+**Before applying,** write the proposed root `AGENTS.md` to a temp file and run:
+```
+python3 &lt;bento-learn&gt;/scripts/check_entries.py AGENTS.md /tmp/proposed-AGENTS.md docs/procedures/run-tests.md
+```
+Do the same for `billing/AGENTS.md`. Tell me to go ahead and I&apos;ll write the files. I won&apos;t commit them.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">fired</span>  <span class="badge">plugin-fired indicator</span></summary>
+<div class="grader-body">
+<p class="explanation">Skill called 1x (expected 1..∞)</p>
+
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">5 turns · $0.09 · 09:22:17 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">procedure-to-docs</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I couldn&apos;t run bento-learn because it isn&apos;t one of the skills available in this session. So I sorted your three findings by hand. Some things I found while checking where they could go:
+
+- **The working directory is empty.** There&apos;s no `CLAUDE.md`, no `billing/`, no Makefile or compose file. So I couldn&apos;t check the steps against real files, and every diff below creates a new file.
+- **I wasn&apos;t allowed to read the memory directory**, so I couldn&apos;t check it for duplicates. That doesn&apos;t change anything, though: neither finding should go there (see below).
+
+## 1. Test setup → project `CLAUDE.md` (repo root)
+
+This belongs in the repo, not in personal memory. Anyone running the tests needs it, and it&apos;s the kind of thing that takes three failures to figure out.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,16 @@
++# Project notes
++
++## Running tests
++
++Tests need a seeded Postgres. Run these in order, or they will fail:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app   # port 5433, not the default 5432
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test`:
++
++```sh
++STRIPE_KEY=test python3 -m unittest
++```
+```
+
+## 2. Amounts in cents → `billing/CLAUDE.md`
+
+A file in `billing/` only gets loaded when someone is working in that directory, which is exactly where this mistake happens.
+
+```diff
+--- /dev/null
++++ b/billing/CLAUDE.md
+@@ -0,0 +1,5 @@
++# billing/
++
++- Every amount in this package is an integer number of **cents**. `invoice.total` returns cents.
++- Divide by 100 exactly once, and only when formatting for display. Check whether a value
++  has already been converted before dividing again.
+```
+
+If you&apos;d rather have just one file, put this under a `## Billing` heading in the root `CLAUDE.md` instead. A docstring on `invoice.total` itself would also help, but I can&apos;t write that diff without the source.
+
+## 3. Terminal froze once → no destination
+
+It happened once, there&apos;s no known cause, and nothing about it changes how anyone should work. It doesn&apos;t go in `CLAUDE.md` or memory.
+
+## Personal memory → nothing
+
+Findings 1 and 2 are facts about the project and belong in the repo. Saving them to memory as well would just duplicate the repo files.
+
+I haven&apos;t applied any of this. Before you do, check that `make seed` and `docker compose up -d db` really exist under those names in your actual repo.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">gotcha-nested</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I couldn&apos;t run bento-learn because it isn&apos;t one of the skills available in this session. So I sorted your three findings by hand. Some things I found while checking where they could go:
+
+- **The working directory is empty.** There&apos;s no `CLAUDE.md`, no `billing/`, no Makefile or compose file. So I couldn&apos;t check the steps against real files, and every diff below creates a new file.
+- **I wasn&apos;t allowed to read the memory directory**, so I couldn&apos;t check it for duplicates. That doesn&apos;t change anything, though: neither finding should go there (see below).
+
+## 1. Test setup → project `CLAUDE.md` (repo root)
+
+This belongs in the repo, not in personal memory. Anyone running the tests needs it, and it&apos;s the kind of thing that takes three failures to figure out.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,16 @@
++# Project notes
++
++## Running tests
++
++Tests need a seeded Postgres. Run these in order, or they will fail:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app   # port 5433, not the default 5432
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test`:
++
++```sh
++STRIPE_KEY=test python3 -m unittest
++```
+```
+
+## 2. Amounts in cents → `billing/CLAUDE.md`
+
+A file in `billing/` only gets loaded when someone is working in that directory, which is exactly where this mistake happens.
+
+```diff
+--- /dev/null
++++ b/billing/CLAUDE.md
+@@ -0,0 +1,5 @@
++# billing/
++
++- Every amount in this package is an integer number of **cents**. `invoice.total` returns cents.
++- Divide by 100 exactly once, and only when formatting for display. Check whether a value
++  has already been converted before dividing again.
+```
+
+If you&apos;d rather have just one file, put this under a `## Billing` heading in the root `CLAUDE.md` instead. A docstring on `invoice.total` itself would also help, but I can&apos;t write that diff without the source.
+
+## 3. Terminal froze once → no destination
+
+It happened once, there&apos;s no known cause, and nothing about it changes how anyone should work. It doesn&apos;t go in `CLAUDE.md` or memory.
+
+## Personal memory → nothing
+
+Findings 1 and 2 are facts about the project and belong in the repo. Saving them to memory as well would just duplicate the repo files.
+
+I haven&apos;t applied any of this. Before you do, check that `make seed` and `docker compose up -d db` really exist under those names in your actual repo.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">drops-one-off</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I couldn&apos;t run bento-learn because it isn&apos;t one of the skills available in this session. So I sorted your three findings by hand. Some things I found while checking where they could go:
+
+- **The working directory is empty.** There&apos;s no `CLAUDE.md`, no `billing/`, no Makefile or compose file. So I couldn&apos;t check the steps against real files, and every diff below creates a new file.
+- **I wasn&apos;t allowed to read the memory directory**, so I couldn&apos;t check it for duplicates. That doesn&apos;t change anything, though: neither finding should go there (see below).
+
+## 1. Test setup → project `CLAUDE.md` (repo root)
+
+This belongs in the repo, not in personal memory. Anyone running the tests needs it, and it&apos;s the kind of thing that takes three failures to figure out.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,16 @@
++# Project notes
++
++## Running tests
++
++Tests need a seeded Postgres. Run these in order, or they will fail:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app   # port 5433, not the default 5432
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test`:
++
++```sh
++STRIPE_KEY=test python3 -m unittest
++```
+```
+
+## 2. Amounts in cents → `billing/CLAUDE.md`
+
+A file in `billing/` only gets loaded when someone is working in that directory, which is exactly where this mistake happens.
+
+```diff
+--- /dev/null
++++ b/billing/CLAUDE.md
+@@ -0,0 +1,5 @@
++# billing/
++
++- Every amount in this package is an integer number of **cents**. `invoice.total` returns cents.
++- Divide by 100 exactly once, and only when formatting for display. Check whether a value
++  has already been converted before dividing again.
+```
+
+If you&apos;d rather have just one file, put this under a `## Billing` heading in the root `CLAUDE.md` instead. A docstring on `invoice.total` itself would also help, but I can&apos;t write that diff without the source.
+
+## 3. Terminal froze once → no destination
+
+It happened once, there&apos;s no known cause, and nothing about it changes how anyone should work. It doesn&apos;t go in `CLAUDE.md` or memory.
+
+## Personal memory → nothing
+
+Findings 1 and 2 are facts about the project and belong in the repo. Saving them to memory as well would just duplicate the repo files.
+
+I haven&apos;t applied any of this. Before you do, check that `make seed` and `docker compose up -d db` really exist under those names in your actual repo.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">4 turns · $0.09 · 09:22:52 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">procedure-to-docs</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Nothing has been applied. Here&apos;s how I&apos;d route the three findings, with the exact diffs.
+
+**What I found while checking:**
+- `bento-learn` isn&apos;t an available skill in this session, so I sorted the findings by hand.
+- The working directory (`/private/tmp/e-OJbkTm/home/cwd`) has no `CLAUDE.md`, `Makefile`, compose file or `billing/` directory. The diffs below would create a new file. If your real repo is somewhere else, the content stays the same and only the path changes.
+- I was denied read access to the memory directory, so I couldn&apos;t check it for an existing entry. That doesn&apos;t affect this proposal, because I&apos;m not proposing any memory writes (see below).
+
+---
+
+### Destination 1: project `CLAUDE.md` (findings 1 and 2)
+
+Both are facts about the project that anyone working in the repo needs, not personal preferences. They belong in the shared project file rather than private memory.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,19 @@
++# Project notes
++
++## Running tests
++
++Tests fail unless the database is up and seeded. Run these in order:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test` in the environment.
++
++## billing/
++
++Every amount in `billing/` is an integer number of **cents**. For example, `invoice.total` returns cents.
++Divide by 100 exactly once, and only at the display/formatting boundary. Never divide inside `billing/` code paths.
+```
+
+Notes:
+- Port `5433` isn&apos;t Postgres&apos;s default (5432). I kept it as you reported it. It&apos;s exactly the kind of detail that&apos;s worth writing down.
+- Optional, better long-term fix for finding 2: put the cents rule in the code too, e.g. a docstring on `invoice.total` like `&quot;&quot;&quot;Total in cents (int).&quot;&quot;&quot;`. I can&apos;t write that diff because `billing/` isn&apos;t in this checkout.
+
+### Destination 2: memory: no changes
+
+- Findings 1 and 2 go in `CLAUDE.md`. Saving them to memory as well would duplicate them, and memory is the wrong place for facts the repo already records.
+- Nothing in this session was guidance about how you want me to work, so there&apos;s no feedback memory to write.
+
+### Dropped: finding 3 (terminal froze, restarted)
+
+This was a one-off with no known cause and nothing anyone could act on next time, so I&apos;d leave it out. If it keeps happening and you find a trigger (for example, a specific command that hangs), that trigger would be worth recording.
+
+---
+
+Say the word and I&apos;ll apply the `CLAUDE.md` diff. Tell me first if it should go somewhere other than `cwd/CLAUDE.md`, such as the git root at `/private/tmp/e-OJbkTm/home/`.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">gotcha-nested</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Nothing has been applied. Here&apos;s how I&apos;d route the three findings, with the exact diffs.
+
+**What I found while checking:**
+- `bento-learn` isn&apos;t an available skill in this session, so I sorted the findings by hand.
+- The working directory (`/private/tmp/e-OJbkTm/home/cwd`) has no `CLAUDE.md`, `Makefile`, compose file or `billing/` directory. The diffs below would create a new file. If your real repo is somewhere else, the content stays the same and only the path changes.
+- I was denied read access to the memory directory, so I couldn&apos;t check it for an existing entry. That doesn&apos;t affect this proposal, because I&apos;m not proposing any memory writes (see below).
+
+---
+
+### Destination 1: project `CLAUDE.md` (findings 1 and 2)
+
+Both are facts about the project that anyone working in the repo needs, not personal preferences. They belong in the shared project file rather than private memory.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,19 @@
++# Project notes
++
++## Running tests
++
++Tests fail unless the database is up and seeded. Run these in order:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test` in the environment.
++
++## billing/
++
++Every amount in `billing/` is an integer number of **cents**. For example, `invoice.total` returns cents.
++Divide by 100 exactly once, and only at the display/formatting boundary. Never divide inside `billing/` code paths.
+```
+
+Notes:
+- Port `5433` isn&apos;t Postgres&apos;s default (5432). I kept it as you reported it. It&apos;s exactly the kind of detail that&apos;s worth writing down.
+- Optional, better long-term fix for finding 2: put the cents rule in the code too, e.g. a docstring on `invoice.total` like `&quot;&quot;&quot;Total in cents (int).&quot;&quot;&quot;`. I can&apos;t write that diff because `billing/` isn&apos;t in this checkout.
+
+### Destination 2: memory: no changes
+
+- Findings 1 and 2 go in `CLAUDE.md`. Saving them to memory as well would duplicate them, and memory is the wrong place for facts the repo already records.
+- Nothing in this session was guidance about how you want me to work, so there&apos;s no feedback memory to write.
+
+### Dropped: finding 3 (terminal froze, restarted)
+
+This was a one-off with no known cause and nothing anyone could act on next time, so I&apos;d leave it out. If it keeps happening and you find a trigger (for example, a specific command that hangs), that trigger would be worth recording.
+
+---
+
+Say the word and I&apos;ll apply the `CLAUDE.md` diff. Tell me first if it should go somewhere other than `cwd/CLAUDE.md`, such as the git root at `/private/tmp/e-OJbkTm/home/`.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">drops-one-off</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Nothing has been applied. Here&apos;s how I&apos;d route the three findings, with the exact diffs.
+
+**What I found while checking:**
+- `bento-learn` isn&apos;t an available skill in this session, so I sorted the findings by hand.
+- The working directory (`/private/tmp/e-OJbkTm/home/cwd`) has no `CLAUDE.md`, `Makefile`, compose file or `billing/` directory. The diffs below would create a new file. If your real repo is somewhere else, the content stays the same and only the path changes.
+- I was denied read access to the memory directory, so I couldn&apos;t check it for an existing entry. That doesn&apos;t affect this proposal, because I&apos;m not proposing any memory writes (see below).
+
+---
+
+### Destination 1: project `CLAUDE.md` (findings 1 and 2)
+
+Both are facts about the project that anyone working in the repo needs, not personal preferences. They belong in the shared project file rather than private memory.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,19 @@
++# Project notes
++
++## Running tests
++
++Tests fail unless the database is up and seeded. Run these in order:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test` in the environment.
++
++## billing/
++
++Every amount in `billing/` is an integer number of **cents**. For example, `invoice.total` returns cents.
++Divide by 100 exactly once, and only at the display/formatting boundary. Never divide inside `billing/` code paths.
+```
+
+Notes:
+- Port `5433` isn&apos;t Postgres&apos;s default (5432). I kept it as you reported it. It&apos;s exactly the kind of detail that&apos;s worth writing down.
+- Optional, better long-term fix for finding 2: put the cents rule in the code too, e.g. a docstring on `invoice.total` like `&quot;&quot;&quot;Total in cents (int).&quot;&quot;&quot;`. I can&apos;t write that diff because `billing/` isn&apos;t in this checkout.
+
+### Destination 2: memory: no changes
+
+- Findings 1 and 2 go in `CLAUDE.md`. Saving them to memory as well would duplicate them, and memory is the wrong place for facts the repo already records.
+- Nothing in this session was guidance about how you want me to work, so there&apos;s no feedback memory to write.
+
+### Dropped: finding 3 (terminal froze, restarted)
+
+This was a one-off with no known cause and nothing anyone could act on next time, so I&apos;d leave it out. If it keeps happening and you find a trigger (for example, a specific command that hangs), that trigger would be worth recording.
+
+---
+
+Say the word and I&apos;ll apply the `CLAUDE.md` diff. Tell me first if it should go somewhere other than `cwd/CLAUDE.md`, such as the git root at `/private/tmp/e-OJbkTm/home/`.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 3</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:33.3%"></span></span>
+<span class="num">33.3%</span>
+<span class="muted num">4 turns · $0.09 · 09:24:01 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">procedure-to-docs</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I couldn&apos;t run `bento-learn` because it isn&apos;t an installed skill in this session. So I worked from the three findings you listed. The working directory is empty: there&apos;s no `CLAUDE.md`, `Makefile`, compose file or `billing/` yet. Both diffs below would create new files. I couldn&apos;t read the memory directory (permission denied), so I couldn&apos;t check it for existing entries. Nothing has been applied.
+
+## Destination 1: `CLAUDE.md` (project root, new file) for finding 1
+
+This setup belongs to the repo and applies to anyone working on it, so it goes in the shared project file rather than personal memory.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,14 @@
++# CLAUDE.md
++
++## Running tests
++
++Tests need a seeded Postgres. Run these in order; skipping a step makes the tests fail:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app   # note: port 5433, not 5432
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test` in the environment.
+```
+
+## Destination 2: `billing/CLAUDE.md` (scoped, new file) for finding 2
+
+This only matters when working in `billing/`. A file there gets loaded only for work in that directory, instead of adding to the root file for every task.
+
+```diff
+--- /dev/null
++++ b/billing/CLAUDE.md
+@@ -0,0 +1,5 @@
++# billing/
++
++All amounts in this package are integer **cents**, including `invoice.total`.
++Convert to dollars only once, at the display/formatting boundary. Before dividing
++by 100, check that the value hasn&apos;t already been converted.
+```
+
+## Not saved: finding 3 (the terminal freeze)
+
+I&apos;d drop this. It happened once, there&apos;s no known cause, and it says nothing about the project or how you like to work. Saving it would only add noise.
+
+## Memory: no changes
+
+Both lasting findings are about the repo, so they belong in the checked-in files above, not in personal memory. Saving them in both places would create two copies that can drift apart.
+
+**Open question:** how do you run only the integration tests (a separate directory, a `make` target, or a test name pattern)? If you tell me, I&apos;ll make the `STRIPE_KEY=test` line an exact command.</pre>
+</div>
+</details>
+<details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">gotcha-nested</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I couldn&apos;t run `bento-learn` because it isn&apos;t an installed skill in this session. So I worked from the three findings you listed. The working directory is empty: there&apos;s no `CLAUDE.md`, `Makefile`, compose file or `billing/` yet. Both diffs below would create new files. I couldn&apos;t read the memory directory (permission denied), so I couldn&apos;t check it for existing entries. Nothing has been applied.
+
+## Destination 1: `CLAUDE.md` (project root, new file) for finding 1
+
+This setup belongs to the repo and applies to anyone working on it, so it goes in the shared project file rather than personal memory.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,14 @@
++# CLAUDE.md
++
++## Running tests
++
++Tests need a seeded Postgres. Run these in order; skipping a step makes the tests fail:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app   # note: port 5433, not 5432
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test` in the environment.
+```
+
+## Destination 2: `billing/CLAUDE.md` (scoped, new file) for finding 2
+
+This only matters when working in `billing/`. A file there gets loaded only for work in that directory, instead of adding to the root file for every task.
+
+```diff
+--- /dev/null
++++ b/billing/CLAUDE.md
+@@ -0,0 +1,5 @@
++# billing/
++
++All amounts in this package are integer **cents**, including `invoice.total`.
++Convert to dollars only once, at the display/formatting boundary. Before dividing
++by 100, check that the value hasn&apos;t already been converted.
+```
+
+## Not saved: finding 3 (the terminal freeze)
+
+I&apos;d drop this. It happened once, there&apos;s no known cause, and it says nothing about the project or how you like to work. Saving it would only add noise.
+
+## Memory: no changes
+
+Both lasting findings are about the repo, so they belong in the checked-in files above, not in personal memory. Saving them in both places would create two copies that can drift apart.
+
+**Open question:** how do you run only the integration tests (a separate directory, a `make` target, or a test name pattern)? If you tell me, I&apos;ll make the `STRIPE_KEY=test` line an exact command.</pre>
+</div>
+</details>
+<details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">drops-one-off</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I couldn&apos;t run `bento-learn` because it isn&apos;t an installed skill in this session. So I worked from the three findings you listed. The working directory is empty: there&apos;s no `CLAUDE.md`, `Makefile`, compose file or `billing/` yet. Both diffs below would create new files. I couldn&apos;t read the memory directory (permission denied), so I couldn&apos;t check it for existing entries. Nothing has been applied.
+
+## Destination 1: `CLAUDE.md` (project root, new file) for finding 1
+
+This setup belongs to the repo and applies to anyone working on it, so it goes in the shared project file rather than personal memory.
+
+```diff
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,14 @@
++# CLAUDE.md
++
++## Running tests
++
++Tests need a seeded Postgres. Run these in order; skipping a step makes the tests fail:
++
++```sh
++docker compose up -d db
++export DATABASE_URL=postgres://localhost:5433/app   # note: port 5433, not 5432
++make seed
++python3 -m unittest
++```
++
++Integration tests also need `STRIPE_KEY=test` in the environment.
+```
+
+## Destination 2: `billing/CLAUDE.md` (scoped, new file) for finding 2
+
+This only matters when working in `billing/`. A file there gets loaded only for work in that directory, instead of adding to the root file for every task.
+
+```diff
+--- /dev/null
++++ b/billing/CLAUDE.md
+@@ -0,0 +1,5 @@
++# billing/
++
++All amounts in this package are integer **cents**, including `invoice.total`.
++Convert to dollars only once, at the display/formatting boundary. Before dividing
++by 100, check that the value hasn&apos;t already been converted.
+```
+
+## Not saved: finding 3 (the terminal freeze)
+
+I&apos;d drop this. It happened once, there&apos;s no known cause, and it says nothing about the project or how you like to work. Saving it would only add noise.
+
+## Memory: no changes
+
+Both lasting findings are about the repo, so they belong in the checked-in files above, not in personal memory. Saving them in both places would create two copies that can drift apart.
+
+**Open question:** how do you run only the integration tests (a separate directory, a `make` target, or a test name pattern)? If you tell me, I&apos;ll make the `STRIPE_KEY=test` line an exact command.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Run bento-learn on this session. What it surfaced:</p>
+<ol>
+<li>The tests failed three times before they passed: they need <code>docker compose up -d db</code>,
+then <code>export DATABASE_URL=postgres://localhost:5433/app</code>, then <code>make seed</code>, and only
+then <code>python3 -m unittest</code>; the integration tests also need <code>STRIPE_KEY=test</code>.</li>
+<li>In <code>billing/</code>, every amount is in cents: <code>invoice.total</code> returns cents, and I divided
+by 100 twice before noticing.</li>
+<li>My terminal froze once and I restarted it.
+Propose the exact diffs per destination. Do not apply anything.</li>
+</ol>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">procedure-to-docs</span><span class="badge">llm</span></div>
+<div class="md"><p>The response proposes diffs for a repo whose docs/ holds only DEPLOY.md.
+PASS if all hold: (a) the test steps (docker compose, DATABASE_URL, make seed) are
+proposed in a new file under docs/procedures/ named for the task (e.g. run-tests.md);
+(b) the root AGENTS.md diff adds no shell commands; (c) the proposed root AGENTS.md has a
+docs menu (a <code>## Docs</code> section) listing both that new procedure and docs/DEPLOY.md.
+FAIL if the steps themselves are added to the root AGENTS.md.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">gotcha-nested</span><span class="badge">llm</span></div>
+<div class="md"><p>PASS if all hold: (a) the cents rule is proposed in a new file billing/AGENTS.md, not in
+the root AGENTS.md; (b) a new file billing/CLAUDE.md is proposed whose content is
+<code>@AGENTS.md</code>; (c) the rule in billing/AGENTS.md is a single bullet of at most two lines.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">drops-one-off</span><span class="badge">llm</span></div>
+<div class="md"><p>PASS if the frozen terminal is dropped: no proposed diff mentions it.</p>
+</div>
+</div>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">fired</span><span class="badge">tool_used</span></div>
+<div class="config"><div class="kv"><span>tool</span><code>&quot;Skill&quot;</code></div><div class="kv"><span>input_match</span><code>&quot;\&quot;skill\&quot;\\s*:\\s*\&quot;(?:[^\&quot;]*:)?bento-learn\&quot;&quot;</code></div><div class="kv"><span>arm</span><code>&quot;with-only&quot;</code></div></div>
+</div>
+</details>
+</article>
+<footer>Generated by <code>claude plugin eval</code> · schema v1 · scores are not comparable across different suites</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.querySelector('.toolbar');
+  if(!bar)return;
+  bar.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest('button');
+    if(!b)return;
+    var open=b.dataset.act==='expand';
+    document.querySelectorAll('details.section, details.grader').forEach(function(d){d.open=open});
+  });
+});
+// Collapsed details vanish from print/PDF; these pages are share artifacts.
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){
+    if(!d.open){d.dataset.printOpened='1';d.open=true}
+  });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details[data-print-opened]').forEach(function(d){
+    d.open=false;delete d.dataset.printOpened;
+  });
+});
+</script>
+</body>
+</html>

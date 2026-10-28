@@ -34,6 +34,13 @@ class CheckEntriesTests(unittest.TestCase):
         block = "```sh\n" + "\n".join(f"step-{i} --with-a-flag --and-another" for i in range(6)) + "\n```\n"
         self.assertEqual(len(check("", block)), 1)
 
+    def test_table_rows_are_separate_entries(self):
+        rows = "".join(f"| Task {i} | docs/procedures/task-{i}.md |\n" for i in range(8))
+        table = "| When | Read |\n|---|---|\n" + rows
+        self.assertEqual(len(entries(table)), 10)
+        self.assertEqual(check(table, table + "| Migrating | docs/procedures/migrate.md |\n"), [])
+        self.assertEqual(len(check(table, table + f"| {LONG} {LONG} |\n")), 1)
+
     def test_only_new_or_changed_entries_are_checked(self):
         old = f"- {LONG} {LONG}\n"
         self.assertEqual(check(old, old + "- Base branch: `main`.\n"), [])
@@ -48,7 +55,7 @@ class CheckEntriesTests(unittest.TestCase):
                 Path(root, name).write_text("x")
             menu = "## Docs\n\n- Running tests → docs/procedures/run-tests.md\n- Briefs → docs/briefs/\n"
             self.assertEqual(menu_gaps(root, menu), ["docs/DEPLOY.md"])
-            self.assertEqual(menu_gaps(root, "See docs/ for everything."), [
+            self.assertEqual(menu_gaps(root, "## Docs\n\nSee docs/ for everything."), [
                 "docs/DEPLOY.md", "docs/briefs/a.md", "docs/briefs/b.md", "docs/procedures/run-tests.md"])
             # A file link doesn't name its folder, and a proposed doc must be listed too.
             self.assertEqual(menu_gaps(root, menu + "- Deploying → docs/DEPLOY.md\n",
@@ -58,7 +65,6 @@ class CheckEntriesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             Path(tmp, "docs").mkdir()
             Path(tmp, "docs", "DEPLOY.md").write_text("x")
-            self.assertEqual(menu_gaps(Path(tmp), "- Deploy per docs/DEPLOY.md.\n"), ["docs/DEPLOY.md"])
             menu = "## Docs\n\n- Deploying → docs/DEPLOY.md.\n\n## Other\n"
             self.assertEqual(menu_gaps(Path(tmp), menu), [])
             self.assertEqual(menu_gaps(Path(tmp), "## Docs\n\n## Other\n- docs/DEPLOY.md\n"),
@@ -69,6 +75,22 @@ class CheckEntriesTests(unittest.TestCase):
             self.assertEqual(menu_gaps(Path(tmp), "- x\n"), [])
             self.assertEqual(menu_gaps(Path(tmp), "- x\n", ["docs/procedures/run-tests.md"]),
                              ["docs/procedures/run-tests.md"])
+
+    def test_without_a_menu_only_new_docs_count_and_ignored_docs_never(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init", "-q", tmp], check=True)
+            for name in ("docs/DEPLOY.md", "docs/résumé.md", "docs/.venv/pkg/LICENSE.md"):
+                Path(root, name).parent.mkdir(parents=True, exist_ok=True)
+                Path(root, name).write_text("x")
+            Path(root, ".gitignore").write_text(".venv/\n")
+            table = "| When | Read |\n|---|---|\n| Deploying | docs/procedures/deploy.md |\n"
+            self.assertEqual(menu_gaps(root, table), [])
+            self.assertEqual(menu_gaps(root, table, ["docs/procedures/deploy.md"]), [])
+            self.assertEqual(menu_gaps(root, table, ["docs/procedures/release.md"]),
+                             ["docs/procedures/release.md"])
+            # With a menu, every doc on disk counts, but never an ignored one.
+            self.assertEqual(menu_gaps(root, "## Docs\n\n- x\n"), ["docs/DEPLOY.md", "docs/résumé.md"])
 
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -85,7 +107,7 @@ class CheckEntriesTests(unittest.TestCase):
             Path(tmp, "docs").mkdir()
             Path(tmp, "docs", "DEPLOY.md").write_text("x")
             agents = Path(tmp, "AGENTS.md")
-            proposed.write_text("- Base branch: `main`.\n")
+            proposed.write_text("- Base branch: `main`.\n\n## Docs\n\n- Read the code.\n")
             result = subprocess.run([sys.executable, SCRIPT, agents, proposed], capture_output=True, text=True)
             self.assertEqual(result.returncode, 1)
             self.assertIn("menu misses docs/DEPLOY.md", result.stdout)

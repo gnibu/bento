@@ -10,6 +10,13 @@ description: |
 
 Tell the user where the work stands in a few lines they read at a glance.
 
+**Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists,
+`.agents/bento/wup.md`, under the
+[overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
+The format in step 3 is a default: the overlay, or the repo's own reporting rules (verdict
+first, fixed headings, a line cap), replace its headings and length. Steps 1–2 and the
+guardrails still apply.
+
 ## Steps
 
 1. **Check the real state.** Re-read this conversation, then the branch: `git status`,
@@ -17,8 +24,8 @@ Tell the user where the work stands in a few lines they read at a glance.
    what these show over what you remember.
 2. **Name the task.** Find the high-level goal the thread works toward, not the step you are
    on: the ticket or PR title if there is one, else the user's first request in a few words.
-3. **Answer with the task as a title, then exactly three headings**, one to three bullets
-   each, a few words per bullet:
+3. *(default)* **Answer with the task as a title, then exactly three headings**, one to
+   three bullets each, a few words per bullet:
 
    ```
    🎯 **<the high-level task>**
@@ -42,4 +49,4 @@ Tell the user where the work stands in a few lines they read at a glance.
 
 - Read only: run no edits, commits, pushes or tests to produce the report.
 - Say done only for what was checked; list unverified work under **Next**.
-- No preamble, recap or closing line around the title and three headings.
+- No preamble, recap or closing line around the report.
