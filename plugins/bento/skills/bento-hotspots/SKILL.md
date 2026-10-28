@@ -58,7 +58,10 @@ files are skipped.
 1. **Run** `hotspots.py --base origin/<base>`. It compares `HEAD` and the working tree with the
    merge base and reports only functions this branch made worse that are past a limit, files
    that grew past 500 NLOC, and import cycles a new import closed. Exit 1 means findings;
-   2 means git failed (a bad `--base`, no repo), with git's message.
+   2 means git failed (a bad `--base`, no repo), with git's message. An "improved" section
+   follows: functions over a limit at the base that dropped on it or are gone (a deleted file's
+   too), and files over 500 NLOC that shrank, with before and after numbers. It is not a finding and never changes
+   the exit code.
 2. **For each finding,** read the function and either:
    - **simplify it in this change:** early returns over nested `if`s, a lookup over a branch
      ladder, or extracting a piece that has a name and a reason of its own; or
@@ -80,8 +83,9 @@ request for at most one draft PR per run. Nobody is there to answer, and nothing
 4. **No target** → open nothing. Report the top entries and the new `## Leave` lines.
 5. **Refactor** it with `bento-refactor` on branch `hotspots/<file>-<function>`. It can't be
    pinned with a test → stop, discard the branch and report.
-6. **Prove:** the pin green, a rerun of the scan showing the metrics dropped, and diff mode
-   against `origin/<base>` exiting 0.
+6. **Prove:** the pin green, the target's metrics dropped (diff mode's improved section, or a
+   rerun of the scan for a target that was within the limits), and diff mode against
+   `origin/<base>` exiting 0.
 7. **Ship** with `bento-ship`: the new `## Leave` lines in their own commit, a draft PR
    labelled `hotspots` (create the label if missing) with before/after metrics in the body.
    Its single stop gets no reply: decisions keep their defaults and unapplied learnings go

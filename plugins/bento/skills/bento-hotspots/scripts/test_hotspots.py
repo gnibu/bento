@@ -199,6 +199,46 @@ class HotspotsTest(unittest.TestCase):
         out = self.run_script("--base", "main")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         self.assertIn("No new hotspots in 1 changed", out.stdout)
+        self.assertNotIn("improved", out.stdout)
+
+    def test_diff_reports_what_the_branch_improved(self):
+        partial = TANGLED.replace("tangled", "partial")
+        self.commit({"core.py": TANGLED, "part.py": partial,
+                     "old.py": TANGLED.replace("tangled", "doomed") + "\n\n" + SIMPLE})
+        self.git("checkout", "-q", "-b", "feature")
+        self.commit({"core.py": "def tangled(a, b, c, d, e, f):\n    return a\n",
+                     "part.py": "\n".join(partial.splitlines()[:5] + ["                    d -= 1", "    return a\n"]),
+                     "old.py": SIMPLE})
+        out = self.run_script("--base", "main")
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)  # an improvement is not a finding
+        self.assertIn("No new hotspots in 3 changed", out.stdout)
+        self.assertIn("\n# Hotspots this branch improved (vs main)\n", out.stdout)
+        # params stays at 6: unchanged, so neither section names it
+        self.assertIn("- core.py:1 tangled  cognitive 23->0, nesting 6->0 (within cognitive<=15, nesting<=3)",
+                      out.stdout)
+        self.assertIn("- part.py:1 partial  cognitive 23->11, nesting 6->4 (within cognitive<=15; still over nesting<=3)",
+                      out.stdout)
+        self.assertIn("- old.py doomed  removed or renamed (was cognitive 23, nesting 6, params 6)", out.stdout)
+
+    def test_diff_reports_a_deleted_files_hotspots_within_the_paths(self):
+        self.commit({"src/core.py": TANGLED, "other/gone.py": TANGLED, "src/keep.py": SIMPLE})
+        self.git("checkout", "-q", "-b", "feature")
+        self.git("rm", "-q", "src/core.py", "other/gone.py")
+        self.commit({})
+        out = self.run_script("--base", "main", "src")
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn("- src/core.py tangled  removed or renamed (was cognitive 23, nesting 6, params 6)", out.stdout)
+        self.assertNotIn("other/gone.py", out.stdout)  # outside the paths asked for
+
+    def test_diff_reports_a_shrunk_file_beside_its_findings(self):
+        self.commit({"big.py": "".join(f"def f{i}(a):\n    return a\n" for i in range(260))})
+        self.git("checkout", "-q", "-b", "feature")
+        self.commit({"big.py": "".join(f"def f{i}(a):\n    return a\n" for i in range(255)) + TANGLED})
+        out = self.run_script("--base", "main")
+        self.assertEqual(out.returncode, 1, out.stdout + out.stderr)  # the new finding still fails it
+        self.assertIn("- big.py:511 tangled  cognitive new->23", out.stdout)
+        self.assertIn("\n# Hotspots this branch improved (vs main)\n\n- big.py  file nloc 520->519 (still over limit 500)",
+                      out.stdout)
 
 
 if __name__ == "__main__":
