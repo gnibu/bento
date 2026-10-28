@@ -43,10 +43,11 @@ overlay `.agents/bento/bento-refactor.md` at the repo root; follow it under the
    back-references. Spot-check against the actual files.
 6. **Prove behavior unchanged on the real artifact** — the pin green, or an equivalence
    check (diff old-vs-new outputs / replay a recorded baseline). Not "it compiles." To get the
-   old outputs, `git worktree add /tmp/base origin/<base>` and run the same harness against
-   both trees in separate processes. A single file with no package imports can instead be
-   loaded with `git show origin/<base>:<file>` and `importlib`, registered in `sys.modules`
-   before it runs (dataclasses need that).
+   old outputs, `git worktree add /tmp/before <pre>`, where `<pre>` is the commit before the
+   first reshape (not the base, which may lack this branch's behavior or have moved on), and
+   run the same harness against both trees in separate processes. A single file with no
+   package imports can instead be loaded with `git show <pre>:<file>` and `importlib`,
+   registered in `sys.modules` before it runs (dataclasses need that).
 7. **Keep only if it lowers reader load.** If the diff doesn't make the code easier to read
    somewhere, revert it.
 8. **Commit in small ordered slices** — subtraction, then reshape, then follow-on cleanup;

@@ -3,13 +3,13 @@
 ## Unreleased
 
 - **`bento-hotspots` diff mode shows what a branch improved.** After its findings, `--base`
-  lists the functions over a limit at the base that dropped on it or are gone, and the files
-  over 500 NLOC that shrank, with before and after numbers (`ccn 23->6 (within ccn<=10)`).
+  lists the functions over a limit at the base that dropped on it or are gone (deleted files
+  included), and the files over 500 NLOC that shrank, with before and after numbers (`ccn 23->6 (within ccn<=10)`).
   The exit code is unchanged: 1 only on new findings.
 
 - **`bento-refactor` checks the metrics after each step.** Step 4 runs `bento-hotspots` in diff
   mode after each reshape, which catches extracted helpers that take too many parameters.
-  Step 6 shows how to compare outputs against the base version through a `git worktree`.
+  Step 6 shows how to compare outputs against the pre-refactor commit through a `git worktree`.
 
 - **`bento-learn` finds sessions that built the branch from another directory.** `sessions.py`
   also lists transcripts started elsewhere (another Conductor workspace, say) that name the

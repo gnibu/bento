@@ -360,18 +360,27 @@ def closed_cycles(root: str, files: set[str], new_edges: set[tuple[str, str]]) -
     return findings
 
 
-def diff(root: str, files: set[str], base: str) -> int:
+def changed_files(root: str, files: set[str], mb: str, paths: list[str]) -> list[tuple[str, str]]:
+    """(path at the merge base, path now) per changed source file; a rename keeps its history.
+    A deleted file is in `paths` at the merge base and gone now."""
+    was_listed = set(git("ls-tree", "-r", "--name-only", "--full-name", mb, "--", *paths,
+                         cwd=os.getcwd()).splitlines())
+    changed = []
+    for line in git("diff", "--name-status", "-M", "--diff-filter=AMRD", mb, cwd=root).splitlines():
+        status, *names = line.split("\t")
+        if names[-1] in files or (status == "D" and names[0] in was_listed and is_source(names[0])):
+            changed.append((names[0], names[-1]))
+    return changed
+
+
+def diff(root: str, files: set[str], base: str, paths: list[str]) -> int:
     mb = git("merge-base", base, "HEAD", cwd=root).strip()
-    changed: list[tuple[str, str]] = []  # (path at the merge base, path now); a rename keeps its history
-    for line in git("diff", "--name-status", "-M", "--diff-filter=AMR", mb, cwd=root).splitlines():
-        parts = line.split("\t")
-        if parts[-1] in files:
-            changed.append((parts[1], parts[-1]))
+    changed = changed_files(root, files, mb, paths)
     findings: list[str] = []
     improved: list[str] = []
     new_edges: set[tuple[str, str]] = set()
     for was, f in changed:
-        code = read(root, f)
+        code = read(root, f) if f in files else ""  # deleted on this branch
         try:
             old = git("show", f"{mb}:{was}", cwd=root)
         except subprocess.CalledProcessError:
@@ -407,7 +416,7 @@ def main() -> int:
     listed = git("ls-files", "--full-name", "--", *args.paths, cwd=os.getcwd()).splitlines()
     files = {f for f in listed if is_source(f) and os.path.isfile(os.path.join(root, f))}
     if args.base:
-        return diff(root, files, args.base)
+        return diff(root, files, args.base, args.paths)
     scan(root, files, args.top, args.since)
     return 0
 

@@ -220,6 +220,16 @@ class HotspotsTest(unittest.TestCase):
                       out.stdout)
         self.assertIn("- old.py doomed  removed or renamed (was cognitive 23, nesting 6, params 6)", out.stdout)
 
+    def test_diff_reports_a_deleted_files_hotspots_within_the_paths(self):
+        self.commit({"src/core.py": TANGLED, "other/gone.py": TANGLED, "src/keep.py": SIMPLE})
+        self.git("checkout", "-q", "-b", "feature")
+        self.git("rm", "-q", "src/core.py", "other/gone.py")
+        self.commit({})
+        out = self.run_script("--base", "main", "src")
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn("- src/core.py tangled  removed or renamed (was cognitive 23, nesting 6, params 6)", out.stdout)
+        self.assertNotIn("other/gone.py", out.stdout)  # outside the paths asked for
+
     def test_diff_reports_a_shrunk_file_beside_its_findings(self):
         self.commit({"big.py": "".join(f"def f{i}(a):\n    return a\n" for i in range(260))})
         self.git("checkout", "-q", "-b", "feature")
