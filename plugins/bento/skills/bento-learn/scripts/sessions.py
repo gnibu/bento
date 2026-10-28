@@ -111,31 +111,33 @@ def mentions(path, pattern):
         return any(pattern.search(line) for line in handle)
 
 
-def transcripts(root, since, names):
-    """Yield (agent, path, None) for worktree sessions, then (agent, path, cwd) for sessions
-    run elsewhere whose text names the worktree path or one of the branch's names."""
+def candidates(since):
+    """Every Claude and Codex transcript modified since `since`, oldest first."""
     claude = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "projects"
-    mangled = re.sub(r"[^A-Za-z0-9]", "-", str(root))
     found = [("claude", path) for folder in (claude.iterdir() if claude.is_dir() else [])
              for path in folder.glob("*.jsonl")]
     codex = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "sessions"
     found += [("codex", path) for path in codex.glob("**/rollout-*.jsonl")]
-    found = sorted((item for item in found if item[1].stat().st_mtime >= since),
-                   key=lambda item: item[1].stat().st_mtime)
+    return sorted((item for item in found if item[1].stat().st_mtime >= since),
+                  key=lambda item: item[1].stat().st_mtime)
+
+
+def transcripts(root, since, names):
+    """Yield (agent, path, "") for worktree sessions, then (agent, path, " (other directory:
+    <cwd>)") for sessions run elsewhere whose text names the worktree path or a branch name."""
+    mangled = re.sub(r"[^A-Za-z0-9]", "-", str(root))
     other = []
-    for agent, path in found:
+    for agent, path in candidates(since):
         cwd = session_cwd(path)
-        in_worktree = cwd and (cwd == str(root) or cwd.startswith(f"{root}/"))
-        own_folder = agent == "codex" or path.parent.name == mangled or path.parent.name.startswith(mangled + "-")
-        if in_worktree and own_folder:
-            yield agent, path, None
-        elif not in_worktree:
+        if not (cwd and (cwd == str(root) or cwd.startswith(f"{root}/"))):
             other.append((agent, path, cwd))
+        elif agent == "codex" or path.parent.name == mangled or path.parent.name.startswith(mangled + "-"):
+            yield agent, path, ""
     # Bounded so a sibling like <root>-other or a longer branch name does not match.
     pattern = re.compile(r"(?<![\w.-])(?:%s)(?![\w.-])" % "|".join(map(re.escape, [str(root), *names])))
     for agent, path, cwd in other:
         if mentions(path, pattern):
-            yield agent, path, cwd or "?"
+            yield agent, path, f" (other directory: {cwd or '?'})"
 
 
 def main():
@@ -149,14 +151,13 @@ def main():
         return 1
     root = Path(root).resolve()
     since = branch_start(root) if args.since is None else args.since
-    counts = {"in-worktree": 0, "other-directory": 0}
-    for agent, path, cwd in transcripts(root, since, branch_names(root)):
+    counts = [0, 0]  # in-worktree, other-directory
+    for agent, path, where in transcripts(root, since, branch_names(root)):
         lines = [f"{tag}: {text}" for record in records(path) for tag, text in signal(record) if text]
         if any(line.startswith("U: ") for line in lines):
-            counts["other-directory" if cwd else "in-worktree"] += 1
-            where = f" (other directory: {cwd})" if cwd else ""
+            counts[bool(where)] += 1
             print(f"=== {agent} session {path}{where}\n" + "\n".join(lines) + "\n")
-    print(f"sessions.py: {counts['in-worktree']} in-worktree, {counts['other-directory']} other-directory session(s) "
+    print(f"sessions.py: {counts[0]} in-worktree, {counts[1]} other-directory session(s) "
           f"for {root} since {since}", file=sys.stderr)
     return 0
 
