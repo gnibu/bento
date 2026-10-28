@@ -16,8 +16,9 @@ execution:
 graders:
 - type: llm
   name: three-headings
-  criteria: PASS only if the final reply is three headings, ✅ Done, ⏭️ Next and 👉 You, each with
-    at most three short bullets and no preamble or closing question. It must not present the prefix
+  criteria: PASS only if the final reply opens with a 🎯 title naming the greeting prefix task, then
+    three headings, ✅ Done, 🤖 Next and 👉 You, each with at most three short bullets and no
+    preamble or closing question. It must not present the prefix
     feature as finished or committed; listing the formatter.py change under Done is fine only when it
     says the change is uncommitted or partial. Next names forwarding the prefix in app.py/cli.py.
     You names choosing the default prefix; other actions only the user can take are allowed.
