@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **`bento-learn` and `bento-adversarial-review` check for overkill.** Before proposing,
+  `bento-learn` asks whether its learnings are overkill and drops or shrinks them. After
+  assessing findings, the adversarial review asks the same of each finding and its fix:
+  a case nothing reaches is dismissed, an oversized fix is cut to the smallest one that holds.
+
 - **`bento-hotspots` diff mode shows what a branch improved.** After its findings, `--base`
   lists the functions over a limit at the base that dropped on it or are gone (deleted files
   included), and the files over 500 NLOC that shrank, with before and after numbers (`ccn 23->6 (within ccn<=10)`).

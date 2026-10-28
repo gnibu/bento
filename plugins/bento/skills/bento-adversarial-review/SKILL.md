@@ -193,6 +193,11 @@ benefit of the doubt for having come from you. For **every** finding:
 Downgrade the priority when the code disagrees with it: a `[P1]` you can't reproduce is not a
 P1. Challenging a wrong finding is worth more than politely fixing it.
 
+Then ask yourself: "Are these findings on changes proposed overkill?" A finding about a case
+no caller or input reaches is DISAGREE (overkill). A fix bigger than its defect (a new
+abstraction, option or defensive layer for a one-line problem) is PARTLY, with the smallest
+fix that holds.
+
 Mark an AGREE, PARTLY or NEEDS INFO finding **NEEDS HUMAN** when the fix needs a product
 decision, changes a public contract (API/response shape, config schema, migration, access
 rules), or is a redesign rather than a local fix. These are the operator's call in every mode.

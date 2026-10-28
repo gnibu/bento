@@ -81,6 +81,9 @@ preferences.
 
 ## 3. Propose, then apply
 
+- **Overkill check first.** Ask yourself: "Are those learnings not overkill?" Drop one a
+  capable agent would get right anyway; shrink one whose text outweighs the mistake it
+  prevents (a line, not a section; an existing doc, not a new one).
 - For each `AGENTS.md`/`CLAUDE.md` you would change, write the proposed text to a temp file
   and run `python3 "<skill>/scripts/check_entries.py" <file> <proposed> [<new doc>...]`, naming
   each doc the proposal creates (`docs/procedures/run-tests.md`). It rejects any new entry over
