@@ -10,8 +10,9 @@
   description and the pre-PR review gate's reminder now say a rebase is done directly: rebase,
   rerun the checks and ask before the force-push.
 
-- **New `/wup` skill.** Reports where the work stands under three short headings: ✅ Done,
-  ⏭️ Next and 👉 You (what only you can do). It reads state and changes nothing.
+- **New `/wup` skill.** Names the high-level task as a 🎯 title, then reports where the work
+  stands under three short headings: ✅ Done, 🤖 Next (what the agent does next) and 👉 You (what
+  only you can do). It reads state and changes nothing.
 
 - **Hotspot scans pin Lizard to 1.24.1.** Scan and diff modes avoid the TypeScript
   binding-parser crash in 1.24.2 and 1.24.3 and retain cognitive complexity support,

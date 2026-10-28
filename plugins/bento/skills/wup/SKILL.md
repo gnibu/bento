@@ -15,20 +15,26 @@ Tell the user where the work stands in a few lines they read at a glance.
 1. **Check the real state.** Re-read this conversation, then the branch: `git status`,
    `git log --oneline <base>..HEAD`, and the open PR and its checks if there is one. Trust
    what these show over what you remember.
-2. **Answer in exactly three headings**, one to three bullets each, a few words per bullet:
+2. **Name the task.** Find the high-level goal the thread works toward, not the step you are
+   on: the ticket or PR title if there is one, else the user's first request in a few words.
+3. **Answer with the task as a title, then exactly three headings**, one to three bullets
+   each, a few words per bullet:
 
    ```
+   🎯 **<the high-level task>**
+
    ✅ **Done**
    - <finished and proven, with a pointer: commit, PR, file>
 
-   ⏭️ **Next**
-   - <what you will do next, in order>
+   🤖 **Next**
+   - <what you, the agent, will do next, in order>
 
    👉 **You**
    - <what only the user can do: a decision, an approval, a login, a review>
    ```
 
-   Keep the three emojis on the headings only; none in the bullets.
+   Keep the emojis on the title and headings only; none in the bullets. 🤖 marks the
+   agent's work, 👉 the user's.
 
    Write `- nothing` under a heading with nothing to say.
 
@@ -36,4 +42,4 @@ Tell the user where the work stands in a few lines they read at a glance.
 
 - Read only: run no edits, commits, pushes or tests to produce the report.
 - Say done only for what was checked; list unverified work under **Next**.
-- No preamble, recap or closing line around the three headings.
+- No preamble, recap or closing line around the title and three headings.
