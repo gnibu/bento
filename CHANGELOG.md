@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **`bento-multi-phase-plan` plans one PR per repository.** A change spanning several
+  repositories gets one PR per repository, ordered by deploy dependency; one repository's work
+  is split only when a deploy must land between its parts, never by layer.
+
 - **`bento-learn` and `bento-adversarial-review` check for overkill.** Before proposing,
   `bento-learn` asks whether its learnings are overkill and drops or shrinks them. After
   assessing findings, the adversarial review asks the same of each finding and its fix:
