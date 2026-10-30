@@ -40,6 +40,9 @@ overlay `.agents/bento/bento-multi-phase-plan.md` at the repo root; follow it un
 5. **Write the plan as a checklist.** One section per PR; **one PR = one change with its own
    evidence.** Order sections by dependency (independent work first; dependent work after its
    parent).
+   A change spanning several repositories is one PR per repository, ordered by deploy
+   dependency (the repository the others need ships first). Split one repository's work
+   only when a deploy must land between its parts, never by layer.
    For a repeated cleanup/migration, first inventory the affected sites against the actual
    owning rule, group them into batches (for example one screen or module), and state the
    measurable end condition. Record approval and completed batches in the caller's existing
