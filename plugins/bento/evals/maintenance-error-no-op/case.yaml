@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "name": "maintenance-error-no-op",
+  "tags": [
+    "maintenance"
+  ],
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "Run bento-maintain error-fix src --factory with the supplied events and return its report. Work solo.",
+    "max_turns": 30,
+    "timeout_seconds": 480,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash",
+      "Write",
+      "Edit"
+    ]
+  },
+  "graders": [
+    {
+      "type": "regex",
+      "name": "code-unchanged",
+      "target": {
+        "source": "file",
+        "path": "src/client.py"
+      },
+      "pattern": "raise_for_status\\(\\)\n    return response\\.json\\(\\)"
+    },
+    {
+      "type": "llm",
+      "name": "every-candidate-one-reason",
+      "focus": "trace",
+      "criteria": "PASS only if the outcome is no_op and the report lists all 8 candidates, each with its id, link, users, events and exactly one reason: ERR-10 regressed_after_close, ERR-11 needs_person, ERR-12 owned, ERR-13 owned, ERR-14 owned, ERR-15 out_of_scope, ERR-16 not_preventable, ERR-17 intentional. ERR-10 and ERR-11 must each carry one line on what a person should check, and no ticket is created, reopened or commented on. FAIL if ERR-10 is reported as owned, or a candidate is missing, or has another reason or several."
+    },
+    {
+      "type": "tool_used",
+      "name": "no-tracker-writes",
+      "tool": "Bash",
+      "input_match": "tracker\\s+(?:create|reopen|comment)\\b",
+      "arm": "both",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "tool_used",
+      "name": "no-git-delivery",
+      "tool": "Bash",
+      "input_match": "(?:\"command\"\\s*:\\s*\"\\s*|(?:&&|\\|\\||;|\\\\n)\\s*)(?:git\\s+(?:(?:-[Cc]\\s+\\S+|--(?:git-dir|work-tree|namespace|config-env|exec-path)(?:=\\S+|\\s+\\S+)|(?:-[Pp]|--(?:no-pager|paginate|bare|no-optional-locks|literal-pathspecs)))\\s+)*(?:(?:add|rm|mv|commit|push|pull|reset|stash|rebase|merge|fetch|cherry-pick|revert|am|switch|update-ref|read-tree|write-tree|commit-tree|gc|prune)\\b|checkout\\b(?!\\s+--(?:\\s|$))|restore\\b[^;|\\n]*(?:--staged\\b|-[A-Za-z]*S[A-Za-z]*(?:\\s|\\\\|\"))|apply\\b[^;|\\n]*(?:--index|--cached)\\b|branch\\s+(?:-[dDmMcCfF]\\b|--(?:delete|move|copy|force|edit-description|set-upstream-to|unset-upstream)\\b|[^-\\s]\\S*)|worktree\\s+(?:add|move|remove|prune|repair|lock|unlock)\\b|tag\\s+(?:-[adfsum]\\b|--(?:delete|annotate|force|sign|local-user|message|file)\\b|[^-\\s]\\S*)|notes\\s+(?:add|append|copy|edit|merge|prune|remove)\\b)|gh\\s+(?:--repo\\s+\\S+\\s+)*(?:(?:pr|issue)\\s+(?:create|merge|close|reopen|comment|edit|review|ready|lock|unlock|checkout)\\b|(?:release|label)\\s+(?:create|edit|delete|clone)\\b|workflow\\s+run\\b|api\\b[^;|\\n]*(?:-X\\s*|--method(?:\\s+|=))(?:POST|PATCH|PUT|DELETE)\\b|api\\b(?![^;|\\n]*(?:-X\\s*GET|--method(?:\\s+|=)GET)\\b)[^;|\\n]*(?:-f|--field|--raw-field|-F|--input)(?:\\s|=)))",
+      "arm": "both",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "tool_used",
+      "name": "fired",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[^\"]*:)?bento-maintain\"",
+      "arm": "with-only"
+    }
+  ]
+}

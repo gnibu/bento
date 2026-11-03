@@ -4,6 +4,12 @@
 
 - **New Bento icon.** The README features a pixel-art bento box with a robot emblem.
 
+- **`bento-maintain error-fix` stops closed tickets hiding live errors.** A closed ticket owns
+  an issue only until the issue fires again; after that the issue is a candidate and the ticket
+  a possible regression. A ticket a person canceled or declined stays owned. Each skipped
+  candidate is now reported with its id and link, users and events, one fixed reason and, when
+  a person must act, what to check. The worker still writes nothing to the tracker.
+
 - **`bento-multi-phase-plan` plans one PR per repository.** A change spanning several
   repositories gets one PR per repository, ordered by deploy dependency; one repository's work
   is split only when a deploy must land between its parts, never by layer.
