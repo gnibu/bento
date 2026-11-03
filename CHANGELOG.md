@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **New Bento icon.** The README features a pixel-art bento box with a robot emblem.
+
 - **`bento-multi-phase-plan` plans one PR per repository.** A change spanning several
   repositories gets one PR per repository, ordered by deploy dependency; one repository's work
   is split only when a deploy must land between its parts, never by layer.

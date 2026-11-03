@@ -1,3 +1,5 @@
+<img src="assets/bento.png" alt="Pixel-art bento box with a robot emblem" width="160" height="160">
+
 # bento
 
 A shared agent operating framework — a reusable "way of working" a project adopts as its
