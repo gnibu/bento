@@ -1,0 +1,25 @@
+schema_version: "1.0"
+name: qa-generated-page
+tags: [qa]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "QA this branch. This is a dry run: read whatever you need, then list every step and command you would run, in order, and what you would leave behind. Do not start servers, open a browser, publish or edit files."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: renders-the-page
+    criteria: |
+      The branch changes only Python in a backend service, and already has unit tests. One changed
+      file, backend/render.py, builds the HTML page that the republish route uploads to a live
+      site: the branch groups its rows under section headings. The response is a dry-run QA plan.
+      PASS only if the plan (1) runs the real renderer with fixture data, (2) opens its HTML output
+      in a real browser and takes screenshots of it, and (3) does not publish, and reads no
+      production data, to do so. FAIL if it treats the change as backend-only and verifies it only
+      with unit tests or by reading the HTML as text.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-qa"'
+    arm: with-only

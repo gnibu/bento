@@ -51,7 +51,9 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    the app itself. One command runs everything; record it as the checks line in `AGENTS.md`.
    Commit the bootstrap on its own (`test: add <runner> harness`).
 2. **List the behaviors the scope changes** — each user-visible path plus its edge cases
-   (empty, error, boundary, unauthorized). Map each to the test that covers it, or "none".
+   (empty, error, boundary, unauthorized). Map each to the test that covers it, or "none". A
+   changed renderer's output (static HTML, a template, a generated page, an email) is a
+   user-visible path, even when the whole diff is backend code.
 3. **Exercise each path on the real surface, end to end.** Name the driver. Capture evidence:
    screenshot, console/network log, exit code, response body.
    - **Web UI → a real browser, always.** Start the app and click through every critical
@@ -59,6 +61,8 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
      (`mcp__claude-in-chrome__*`) when connected; otherwise a browser CLI in the environment
      (`agent-browser`, Playwright). Screenshot each key state, and read console and network
      errors on every page. Unit tests alone never verify a UI change.
+   - **A page backend code renders → web UI.** Run the real renderer with fixture data, never
+     production data or a publish, and open its output in the browser the same way.
    - CLI/TUI → run the binary. API → curl/HTTP against the running service. Library → call it
      from a scratch script.
    Save screenshots outside tracked files (a gitignored dir or tmp).
@@ -69,7 +73,8 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    artifact. No repro/artifact → not a confirmed defect.
 5. **Pin each behavior with a test** in the repo's layout and style, at the cheapest level
    that catches it (unit before integration before end-to-end). Web UI: each critical journey
-   also gets one end-to-end browser test in the runner from step 1. The Chrome MCP explores;
+   also gets one end-to-end browser test in the runner from step 1; a rendered page with no
+   interaction needs only a test of its output. The Chrome MCP explores;
    only a runner test reruns on the next change. See it fail: write it against the defect
    before the fix, or break the code under it once. A test never seen red proves nothing. **Hard to test → the code needs a seam** (inject the clock, randomness or network;
    split logic from I/O). A small, behavior-preserving seam follows the mode table; anything
