@@ -5,7 +5,7 @@ changed behavior and include its location and result in the caller's report, tic
 
 | Change | Evidence |
 |---|---|
-| UI/layout | Comparable before/after screenshots of the actual flow; mobile and desktop for layout |
+| UI/layout, including a page backend code renders | Comparable before/after screenshots of the actual flow, or of the real renderer's output with fixture data; mobile and desktop for layout |
 | Logic/refactor/dead code | Behavior pin or regression test, plus exact test/type-check/build commands and results |
 | Agent/prompt behavior | The same input before/after; a representative dataset score delta beats one sample |
 | Performance | Before/after measurements from the same command/environment over several runs |

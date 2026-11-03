@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **`bento-qa` treats a page backend code renders as web UI.** A backend-only diff that changes
+  static HTML, a template, a generated page or an email now gets a browser check with
+  screenshots: the real renderer runs with fixture data, never production data or a publish.
+  A rendered page with no interaction needs only a test of its output, not a browser test.
+
 - **New Bento icon.** The README features a pixel-art bento box with a robot emblem.
 
 - **`bento-maintain error-fix` stops closed tickets hiding live errors.** A closed ticket owns
