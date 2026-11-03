@@ -86,6 +86,10 @@ Return report Markdown, `outcome` (`completed`, `no_op`, `failed`) and a one-lin
 `summary`. Respect a caller's required report prefix and output package names. Include:
 
 - **Target:** what and why, with source references and the candidates skipped.
+- **Skipped candidates** (`error-fix`): each with id and link, users and events, and one
+  `reason` (`owned`, `regressed_after_close`, `out_of_scope`, `not_preventable`, `needs_person`,
+  `intentional`); for `regressed_after_close` and `needs_person`, one line on what a person
+  should check. The caller decides what to do with this list.
 - **Changes:** each changed file and the evidence justifying it; none for a no-op.
 - **Proof / Checks:** exact commands and results or linked artifacts; clearly distinguish
   source inspection from an executed build, and list any required check that could not run.
