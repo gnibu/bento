@@ -10,6 +10,14 @@ permissions and any narrower file rules. The worker returns edits, proof and an 
 the adapter performs authorized tracker writes and adds the required report prefix/packages.
 Keep output names and job ids stable when replacing a copied procedure.
 
+An error-fix run can leave work for a person whatever its outcome, `no_op` included: its
+skipped candidates with `regressed_after_close` or `needs_person` stay in a report nobody acts
+on unless the adapter files them. When tracker writes are authorized, file one ticket per issue
+with the worker's link, users, events and what to check, unless the issue has an open ticket or
+one a person canceled or declined. A report that comes with a PR cites them by monitoring id
+only, since a tracker can take a named ticket as the PR's. Keep any ownership rule in the adapter
+or overlay to error-fix's definition: a rule that skips on any ticket hides those regressions.
+
 Put shared repository facts in `AGENTS.md`, and task-specific facts in
 `.agents/bento/bento-maintain.md`. For example:
 

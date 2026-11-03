@@ -10,6 +10,10 @@
   candidate is now reported with its id and link, users and events, one fixed reason and, when
   a person must act, what to check. The worker still writes nothing to the tracker.
 
+- **`bento-maintain` factory adoption covers error-fix follow-ups.** Adapters are told to file
+  skipped `regressed_after_close` and `needs_person` candidates when tracker writes are
+  authorized, on any outcome, and to keep their ownership rules to error-fix's definition.
+
 - **`bento-multi-phase-plan` plans one PR per repository.** A change spanning several
   repositories gets one PR per repository, ordered by deploy dependency; one repository's work
   is split only when a deploy must land between its parts, never by layer.
