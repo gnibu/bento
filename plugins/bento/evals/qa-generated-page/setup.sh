@@ -45,13 +45,14 @@ git add -A && git commit -q -m "chore: init service"
 git switch -q -c group-sections
 cat > backend/models.py <<'PY'
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class Row:
     question: str
     answer: str
-    section: str | None = None
+    section: Optional[str] = None
 PY
 cat > backend/render.py <<'PY'
 from itertools import groupby
