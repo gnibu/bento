@@ -28,6 +28,8 @@ Everything ships as skills (`bento-*`, plus `wup`) under `plugins/bento/skills/`
   artifact:
   - `bento-eval-blind` — compare models/prompts without bias leaking into the verdict.
   - `bento-hillclimb` — tune a metric one variable at a time, keep-or-revert, logged.
+  - `bento-until-done` — drive one task or ticket to a pass/fail check: change approach when one
+    fails, never relax the goal, stop only when it passes or at a dead end written up.
   - `bento-figure-it-out` — fallback for unmatched multi-step work; frame it, then maybe capture it.
   - `bento-authoring-a-playbook` — how to write a new bento playbook (gate, checklist, prove, eval).
   - `bento-investigate` — evidence-first root-cause debugging; fix at the shared source.

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **New skill: `bento-until-done`.** It drives one task or ticket to a pass/fail check: one change
+  at a time, a different approach when one fails, no relaxing the goal. It stops only when the
+  check passes or at a dead end it writes up. A ticket ends in `bento-ship`. Unattended work
+  belongs to the repo's factory.
+
 - **`bento-qa` treats a page backend code renders as web UI.** A backend-only diff that changes
   static HTML, a template, a generated page or an email now gets a browser check with
   screenshots: the real renderer runs with fixture data, never production data or a publish.
