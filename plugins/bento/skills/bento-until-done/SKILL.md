@@ -25,10 +25,10 @@ overlay `.agents/bento/bento-until-done.md` at the repo root; follow it under th
    fails, such as a test, a command's output, or a page's real state. The user's `--until
    "<condition>"` or the ticket's acceptance criteria come first. "Spend an hour on it" is not
    a condition. None you can derive → ask once, then wait.
-2. **Run it now and record the result.** Already passing → say so and stop.
+2. **Run it now and record the result.** Already passing → skip to step 8.
 3. **One change per iteration.** Make the smallest change the evidence supports, run the check,
-   commit if it moved, discard if it didn't. Log one row each time: what changed, what the check
-   showed, kept or discarded.
+   commit if it passes or fails further along, discard if nothing moved. Log one row each time:
+   what changed, what the check showed, kept or discarded.
 4. **A failure means find out why, then do something different.** Never run the same approach
    twice. A cause you can't explain → `bento-investigate`. Something blocking the goal that you
    can fix (a flaky check, broken tooling, a related bug) is yours to fix; keep unrelated work
@@ -41,9 +41,9 @@ overlay `.agents/bento/bento-until-done.md` at the repo root; follow it under th
    or a blocker you can't remove (missing access, an outage, a contradiction in the ask), stop:
    the condition, not met, each approach and what it showed, the blocker, what you recommend and
    the options.
-8. **Finish on the real check.** It passes on the final commit, run now, not remembered. A ticket
-   or a request for a PR → `bento-ship`: naming the ticket is the request for its PR. Otherwise
-   report and stop.
+8. **Finish on the real check.** It passes on the final commit, run now, not remembered. A request
+   for a PR, or a direct `/bento-until-done <ticket>` → `bento-ship`: that command is the request
+   for its PR. Otherwise report and stop.
 
 **Report:** the condition and its final result, iterations run, what landed, what was discarded
 and why.
