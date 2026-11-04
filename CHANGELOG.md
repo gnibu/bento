@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **A claim about another repository comes from its `origin`.** The "Prove it on a real
+  artifact" principle now says to fetch and read `origin`, since a local checkout may be far
+  behind.
+
 - **`bento-qa` treats a page backend code renders as web UI.** A backend-only diff that changes
   static HTML, a template, a generated page or an email now gets a browser check with
   screenshots: the real renderer runs with fixture data, never production data or a publish.

@@ -52,6 +52,9 @@ When unsure whether an action is reversible, treat it as irreversible and ask.
 A task is done when the real thing works, not when I say it works. If you can't show the
 artifact, the task isn't finished.
 
+A claim about another repository comes from its `origin`, fetched now: a local checkout may be
+far behind.
+
 ### Subtract before you add
 
 **Smallest change that holds: reuse before writing, delete over add, no speculative work.**
