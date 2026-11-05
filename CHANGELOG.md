@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Repository icon.** A simplified bento box with a robot head at `favicon.png` gives Conductor and
+  other apps a recognizable project icon at small sizes. The README keeps the full artwork.
+
 - **New skill: `bento-until-done`.** It drives one task or ticket to a pass/fail check: one change
   at a time, a different approach when one fails, no relaxing the goal. It stops only when the
   check passes or at a dead end it writes up. A ticket ends in `bento-ship`. Unattended work
