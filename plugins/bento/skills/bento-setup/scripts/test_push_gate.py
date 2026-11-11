@@ -63,6 +63,8 @@ class ReviewedTest(unittest.TestCase):
         self.assertFalse(reviewed(str(self.repo)))
         self.record()
         self.assertTrue(reviewed(str(self.repo)))
+        (self.repo / git(self.repo, "rev-parse", "--git-path", "adversarial-review.head")).write_text("")
+        self.assertFalse(reviewed(str(self.repo)))  # an emptied marker is no record
 
     def test_only_the_reviews_fix_commits_may_follow(self):
         self.record()

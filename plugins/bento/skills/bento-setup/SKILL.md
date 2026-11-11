@@ -175,9 +175,10 @@ Detect each legacy piece; remove only what is present. Report each removal.
 
 1. **Submodule** (`.bento` in `.gitmodules`):
    `git submodule deinit -f .bento && git rm -f .bento`, then
-   `rm -rf "$(git rev-parse --git-dir)/modules/.bento"`. Use `--git-dir`, never
-   `--git-common-dir`: from a linked worktree the latter is the main checkout's submodule
-   repository, still used by its checkout. Remove
+   `git rev-parse --absolute-git-dir` and `rm -rf <the path it printed>/modules/.bento`, the
+   path written out literally: Claude Code asks before an `rm` of a computed path, even in
+   bypass mode. Use `--absolute-git-dir`, never `--git-common-dir`: from a linked worktree the
+   latter is the main checkout's submodule repository, still used by its checkout. Remove
    `git submodule update --init .bento` from any setup script (e.g. Conductor's).
 2. **Claude plugin and marketplace** (`claude plugin list` shows `bento@bento`,
    `bento-core@bento` or `bento-forge@bento`): `claude plugin uninstall <id>` for each, then

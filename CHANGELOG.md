@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **`bento-adversarial-review` no longer stops for approval in bypass mode.** Claude Code asks
+  before an `rm` of a path computed from `git rev-parse`, even under `bypassPermissions`. The
+  review block now empties its `.exit` and `.md` files instead of deleting them, and polls until
+  `.exit` is non-empty; open findings empty the `.head` marker, which a read treats as missing.
+  `bento-setup`'s submodule migration removes `modules/.bento` by its literal path.
+
 - **Repository icon.** A simplified bento box with a robot head at `favicon.png` gives Conductor and
   other apps a recognizable project icon at small sizes. The README keeps the full artwork.
 
