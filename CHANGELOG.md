@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **`bento-adversarial-review` no longer asks for permission in Bypass mode.** The reviewer now
+  runs through `scripts/review.py`, one plain command, instead of a shell block whose `rm` on a
+  variable made Claude Code ask first in every permission mode. Same files under the git dir,
+  same `EXIT=` values, same `codex exec` and `claude -p` calls; the reviewer prompt lives in
+  `scripts/prompt.md`.
+
 - **Repository icon.** A simplified bento box with a robot head at `favicon.png` gives Conductor and
   other apps a recognizable project icon at small sizes. The README keeps the full artwork.
 
