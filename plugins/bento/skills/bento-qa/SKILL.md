@@ -43,7 +43,7 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
 
 1. **Find the test system.** Read the checks `AGENTS.md` names, the manifests (`package.json`
    scripts, `pyproject.toml`, `Makefile`, `go.mod`, `Cargo.toml`) and CI config. Run the suite
-   once for a baseline; tests already red are pre-existing, report them as such.
+   once for a baseline (end-to-end tests: step 7's selection); tests already red are pre-existing, report them as such.
    A command that runs zero tests is no test system. **None → bootstrap the smallest one**
    native to the stack: the stdlib runner first (`python3 -m unittest`, `node --test`,
    `go test`, `cargo test`, a `tests/run.sh` of asserting commands for shell); for a web UI,
@@ -81,13 +81,18 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    larger is a finding: `untestable: <behavior> — needs <seam>`.
 6. **Fix defects per the mode.** Root cause (see `bento-investigate`), the pinning test turns
    green, re-run the path on the surface.
-7. **Run the full suite.** Green, with the new tests in it. Commit the tests (ship mode, or when
-   asked) in conventional style, one logical change per commit.
+7. **Run the full suite.** Green, with the new tests in it. Full means every unit and
+   integration suite; end-to-end (browser) tests only for what the scope touches: the repo's own
+   selective runner if it has one (print its choice first when it has a dry mode), else the spec
+   files or tests (by title) that open the changed pages or components. The whole end-to-end
+   suite only when code every page uses changed (layout, routing, auth, the e2e harness) or no
+   test matches the change. Commit the tests (ship mode, or when asked) in conventional style,
+   one logical change per commit.
 8. **Report**, blockers first. Ship mode returns every line below: the ship flow builds the
    PR's test plan from it. Interactive mode's message keeps the `QA:` line with counts and
    where the proof lives (`pass — 3 paths exercised, 2 tests added; evidence: <screenshot dir>,
-   <test command>`), `Harness:` only when bootstrapped, and the `Defects`, `Untested` and
-   `Questions` lines; the passing `Exercised` and `Tests added` lines stay out. When
+   <test command>`), `Harness:` only when bootstrapped, and the `E2E`, `Defects`, `Untested`
+   and `Questions` lines; the passing `Exercised` and `Tests added` lines stay out. When
    the principles block says `Terse reports: off.`, interactive mode reports every line too.
 
    ```
@@ -95,6 +100,7 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    Harness: <existing `<cmd>` | bootstrapped `<cmd>` in <sha>>
    Exercised: <path> — <driver> — <evidence: screenshot paths for web UI>
    Tests added: <file::test> — <behavior>
+   E2E: <`<cmd>` it ran | whole suite> — <why chosen; what did not run>
    Defects: <severity> <path>: expected / actual — <artifact> — <fixed in <sha> | open>
    Untested: <behavior> — <reason>
    Questions (ship mode): <one-line question> (default: <answer>)
