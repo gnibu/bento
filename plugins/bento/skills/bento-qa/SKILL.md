@@ -83,8 +83,9 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    green, re-run the path on the surface.
 7. **Run the full suite.** Green, with the new tests in it. Full means every unit and
    integration suite; end-to-end (browser) tests only for what the scope touches: the repo's own
-   selective runner if it has one (print its choice first when it has a dry mode), else the spec
-   files or tests (by title) that open the changed pages or components. The whole end-to-end
+   selective runner if it has one (print its choice first when it has a dry mode, and add what
+   it misses of the scope: uncommitted changes, the tests just added), else the spec files or
+   tests (by title) that open the changed pages or components, new ones included. The whole end-to-end
    suite only when code every page uses changed (layout, routing, auth, the e2e harness) or no
    test matches the change. Commit the tests (ship mode, or when asked) in conventional style,
    one logical change per commit.
