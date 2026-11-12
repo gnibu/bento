@@ -103,51 +103,33 @@ cannot point at a specific line for is not a finding.* Require the CLI output sh
 
 ### Paths B and C — the other model family's CLI
 
-The block writes the diff to a file first, so a failed diff command or an empty scope can't
-pass as "no findings". Substitute `<SCOPE_CMD>`, `<CUSTOM FOCUS>` (what the user asked to focus on, or
-nothing), and `<REVIEWER>` from your path below. Run it in the **background**: a review takes
-2–5 minutes and will blow a foreground timeout on a large diff.
+`scripts/review.py` writes the scope's diff to a file first, so a failed diff command or an
+empty scope can't pass as "no findings", then runs the reviewer on it. Run it as this one plain
+command, unchanged: an `rm` on a variable in the shell call makes Claude Code ask first in
+every permission mode, Bypass included. Run it in the **background**: a review takes 2–5
+minutes and will blow a foreground timeout on a large diff.
 
 ```bash
-d="$(git rev-parse --git-path adversarial-review.diff)"
-x="$(git rev-parse --git-path adversarial-review.exit)"
-o="$(git rev-parse --git-path adversarial-review.md)"
-l="$(git rev-parse --git-path adversarial-review.log)"
-rm -f "$x" "$o"
-p="$(cat <<'PROMPT'
-You are an adversarial code reviewer. Assume the diff is broken and find where. Report
-correctness bugs first, then code that duplicates an existing helper or could be simpler, then
-departures from the conventions in the root AGENTS.md/CLAUDE.md and the nearest one to each
-changed file. Read the full text of every changed file and the callers of changed signatures,
-not just the hunks. Files on disk may be ahead of the diff; where they disagree, the diff is
-what is under review. A finding you cannot point at a specific line for is not a finding.
-Output only findings, each as '- [P1|P2|P3] Title — path/file:start-end' plus one paragraph of
-rationale, or 'no findings'. <CUSTOM FOCUS>
-PROMPT
-)"
-if ! <SCOPE_CMD> > "$d" 2> "$l"; then echo "EXIT=diff-failed" > "$x"
-elif [ ! -s "$d" ]; then echo "EXIT=empty-diff" > "$x"; else
-<REVIEWER>
-echo "EXIT=$?" > "$x"; fi
+python3 "<skill>/scripts/review.py" <REVIEWER> [--focus "<CUSTOM FOCUS>"] <SCOPE>
 ```
 
-`<REVIEWER>` for **Path B — you are Claude**. Plain `codex exec`, not `codex exec review`:
-review mode keeps a bug-only rubric that drops reuse and convention findings.
+- `<SCOPE>`: the scope command's arguments after `git` (`diff origin/<base>...HEAD`,
+  `show <sha>`, `diff <sha>..HEAD`; after `--` if one starts with `-`), or `--uncommitted` for
+  the uncommitted command above.
+- `<CUSTOM FOCUS>`: what the user asked to focus on; leave `--focus` out otherwise. The rest
+  of the reviewer's prompt is `scripts/prompt.md`.
+- `--model` overrides the reviewer's model; `--effort` Codex's `model_reasoning_effort`
+  (default `high`).
 
-```bash
-codex exec -s read-only -m gpt-6-astra -c model_reasoning_effort='high' \
-  -o "$o" "The diff under review is in the file $d. $p" < /dev/null > "$l" 2>&1
-```
+`<REVIEWER>` for **Path B — you are Claude**: `codex`. It runs `codex exec -s read-only -m
+gpt-6-astra -c model_reasoning_effort=high -o <.md>` with stdin closed (or codex waits on it
+forever). Plain `codex exec`, not `codex exec review`: review mode keeps a bug-only rubric that
+drops reuse and convention findings. `-s read-only` keeps Codex from touching the tree. Never
+relax it.
 
-- `< /dev/null` is required or codex waits on stdin forever.
-- `-s read-only` keeps Codex from touching the tree. Never relax it.
-
-`<REVIEWER>` for **Path C — you are Codex**:
-
-```bash
-claude -p --model opus --setting-sources "" --tools Read,Grep,Glob --strict-mcp-config \
-  --no-session-persistence "The diff under review is on stdin. $p" < "$d" > "$o" 2> "$l"
-```
+`<REVIEWER>` for **Path C — you are Codex**: `claude`. It runs `claude -p --model opus
+--setting-sources "" --tools Read,Grep,Glob --strict-mcp-config --no-session-persistence`,
+the diff on stdin.
 
 - `--setting-sources ""` loads no hooks, plugins, output style or permission allow-list. It
   still reads the operator's auto-memory, so treat it as a second opinion, not a clean room.
@@ -155,7 +137,8 @@ claude -p --model opus --setting-sources "" --tools Read,Grep,Glob --strict-mcp-
 - From a sandboxed host, request escalation: it needs network and writes to the git dir and
   `~/.claude`.
 
-Poll until the `.exit` file exists, then read the findings — and **only** the findings:
+When it ends it prints the `.exit` line, then the findings. If you lost its output, or polled
+instead, wait until the `.exit` file exists, then read the findings, and **only** the findings:
 
 ```bash
 cat "$(git rev-parse --git-path adversarial-review.exit)" "$(git rev-parse --git-path adversarial-review.md)"
@@ -252,7 +235,8 @@ echo <reviewed> > "$(git rev-parse --git-path adversarial-review.head)"
 
 Record `<reviewed>`, never the current `HEAD`: fix commits made in phase 3 haven't been
 reviewed, and the next review must see them. With open findings, delete the marker instead
-(`rm -f` the same path), so an earlier review's sha can't mark these commits reviewed; a later run
+(`rm -f "$(git rev-parse --git-path adversarial-review.head)"`: the path inline, never in a
+variable, which makes Claude Code ask first), so an earlier review's sha can't mark these commits reviewed; a later run
 re-reviews and surfaces them again rather than skipping past a pending decision. Never record
 a `diff-failed` or `empty-diff` run, a failed reviewer, a working-tree or single-commit review,
 or a since-`<sha>` review starting from an unreviewed commit: earlier commits would be skipped
