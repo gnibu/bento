@@ -92,7 +92,11 @@ def main(argv: List[str]) -> int:
     parser.add_argument("--focus", default="", help="what to focus on, appended to the prompt")
     parser.add_argument("--uncommitted", action="store_true", help="git diff HEAD plus untracked files")
     parser.add_argument("scope", nargs="*", help="the scope command's git arguments (after `--` if one starts with -)")
-    args = parser.parse_intermixed_args(argv)
+    # Everything after the first `--` is the scope, verbatim: argparse would drop a later `--`
+    # (Python 3.9), turning `diff HEAD -- path` into a comparison with a revision named `path`.
+    split = argv.index("--") if "--" in argv else len(argv)
+    args = parser.parse_intermixed_args(argv[:split])
+    args.scope += argv[split + 1:]
     if args.uncommitted == bool(args.scope):
         parser.error("give either --uncommitted or the scope command's git arguments")
     args.model = args.model or MODELS[args.reviewer]

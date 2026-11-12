@@ -91,6 +91,14 @@ class ReviewTests(unittest.TestCase):
         self.assertIn("print('b')", call["stdin"])
         self.assertEqual(self.path("log").read_text(), "trace\n")
 
+    def test_git_arguments_after_the_separator_are_kept_verbatim(self):
+        self.commit("other.py", "y = 1\n")
+        self.commit("app.py", "print('b')\n")
+        self.run_review("codex", "--", "diff", "HEAD~2..HEAD", "--", "other.py")
+        diff = self.path("diff").read_text()
+        self.assertIn("y = 1", diff)
+        self.assertNotIn("print('b')", diff)
+
     def test_uncommitted_includes_untracked_files(self):
         (self.repo / "app.py").write_text("print('c')\n")
         (self.repo / "new file.py").write_text("x = 1\n")
