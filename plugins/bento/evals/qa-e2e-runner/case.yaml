@@ -1,0 +1,27 @@
+schema_version: "1.0"
+name: qa-e2e-runner
+tags: [qa]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "QA this branch before merge. This is a dry run: read whatever you need (you may run read-only git commands and `npm run e2e -- --dry`), then list every step and command you would run, in order, and what you would report. Do not start servers, open a browser, run the test suites or edit files."
+  max_turns: 15
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: targeted-e2e
+    criteria: |
+      A web app: unit tests run with `npm test`; `make test-e2e` runs the whole Playwright suite
+      (slow, one spec per page); the repo's own selective runner `npm run e2e` runs only the specs
+      the branch affects (`-- --dry` prints them: here `e2e/settings.spec.js`). The branch changes
+      only src/pages/settings.js. The response is a dry-run QA plan for before merge.
+      PASS only if the plan's final suite run (1) runs the unit tests in full, (2) runs end-to-end
+      tests through the selective runner `npm run e2e` (or exactly the spec it picks), not
+      `make test-e2e` or an unfiltered `npx playwright test`, and (3) says in its report which
+      end-to-end tests it ran and why, or which it left out. FAIL if it runs the whole
+      end-to-end suite anywhere in the plan.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-qa"'
+    arm: with-only

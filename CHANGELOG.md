@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **`bento-qa` and `bento-ship` run only the end-to-end tests a branch touches.** The full suite
+  before a merge now means every unit and integration suite, plus the end-to-end tests for the
+  changed pages: the repo's own selective runner when it has one, else the specs or test titles
+  that open those pages. The whole end-to-end suite runs only when code every page uses changed
+  or no test matches. A new `E2E:` line in the QA report, carried into the PR's test plan, names
+  what ran and what did not.
+
 - **`bento-adversarial-review` no longer asks for permission in Bypass mode.** The reviewer now
   runs through `scripts/review.py`, one plain command, instead of a shell block whose `rm` on a
   variable made Claude Code ask first in every permission mode. Same files under the git dir,

@@ -102,7 +102,8 @@ default (listed first). No preference relaxes a guardrail.
    No separate approval gate to run either specialist. Keep the audit
    scope and unresolved findings for the PR; a missing skill is an explicit verification gap.
    Recheck affected docs after QA/security fixes. Run whatever checks exist: tests, lint,
-   type-check, build — discover from the repo, don't assume. Fix failures. Green is the gate;
+   type-check, build — discover from the repo, don't assume. End-to-end tests: only those the
+   branch touches, chosen as in `bento-qa` step 7 (its `E2E:` line when QA ran). Fix failures. Green is the gate;
    "it compiles" is not, and neither is a suite that runs zero tests. The diff changes behavior
    and no test covers it → back to step 6; QA was skipped → stop and ask.
 8. **Review your own diff.** Read `git diff origin/<base>...HEAD` and the staged and unstaged
@@ -183,8 +184,8 @@ default (listed first). No preference relaxes a guardrail.
     characters; a conventional prefix only if every change fits one scope. Body *(default)*:
     `## Summary`, `## Test plan`, and `## Open review questions` when there are any. Follow the
     [shared evidence contract](../bento-qa/references/proof.md) when presenting artifacts. The test
-    plan comes from the QA report: tests added, paths exercised with their evidence, and every
-    untested behavior with its reason. Include docs/security outcomes and verification gaps;
+    plan comes from the QA report: tests added, paths exercised with their evidence, the
+    end-to-end tests run and what did not run, and every untested behavior with its reason. Include docs/security outcomes and verification gaps;
     unresolved security decisions join `## Open review questions`. Web UI: say what each
     screenshot shows and that it is on
     the ticket (step 14); if step 14 skips the ticket, embed them when the forge CLI can upload
