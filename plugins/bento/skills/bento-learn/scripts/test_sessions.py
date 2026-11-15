@@ -69,6 +69,20 @@ class SessionsTests(unittest.TestCase):
         self.assertEqual(out.count("=== "), 3)
         self.assertNotIn("other directory", out)
 
+    def test_reads_an_operator_turn_sent_as_text_blocks(self):
+        # claude -p with stream-json input (Control Room's chat threads) stores the turn as a list of blocks
+        self.write(self.claude_dir / "a.jsonl", [
+            {"type": "user", "cwd": self.top, "message": {"content": [
+                {"type": "text", "text": "why are the buttons missing?"},
+                {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AAAA"}}]}},
+            {"type": "user", "isMeta": True, "message": {"content": [{"type": "text", "text": "meta"}]}},
+        ])
+        out = self.run_script(since=0)
+        self.assertIn("U: why are the buttons missing?", out)
+        self.assertNotIn("meta", out)
+        self.assertNotIn("AAAA", out)
+        self.assertEqual(out.count("=== "), 1)
+
     def elsewhere(self, name, text, age=0):
         return self.write(self.root / "claude/projects/-elsewhere" / name, [
             {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": text}}], age=age)

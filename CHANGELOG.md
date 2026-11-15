@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **`bento-learn` reads Control Room chat sessions.** `claude -p` with stream-json input stores the
+  operator's turn as a list of text blocks, which `sessions.py` skipped, so it found no session
+  for such a thread. It now reads those turns too.
 - **`bento-qa` and `bento-ship` run only the end-to-end tests a branch touches.** The full suite
   before a merge now means every unit and integration suite, plus the end-to-end tests for the
   changed pages: the repo's own selective runner when it has one, else the specs or test titles
