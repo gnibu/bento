@@ -76,6 +76,10 @@ def signal(record):
     if kind == "user" and not record.get("isMeta") and isinstance(content, str):
         yield "U", clean(content)[:2000]
     elif kind == "user" and isinstance(content, list):
+        # `claude -p --input-format stream-json` (e.g. Control Room) sends the operator's turn as text blocks
+        text = "\n".join(i.get("text", "") for i in content if isinstance(i, dict) and i.get("type") == "text")
+        if text and not record.get("isMeta"):
+            yield "U", clean(text)[:2000]
         for item in content:
             if isinstance(item, dict) and item.get("type") == "tool_result" and item.get("is_error"):
                 yield "ERR", str(item.get("content"))[:600]
