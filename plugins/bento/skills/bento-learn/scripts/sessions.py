@@ -3,6 +3,7 @@
 
 Usage: sessions.py [--repo PATH] [--since EPOCH_SECONDS]
 
+Claude transcripts are read from $CLAUDE_CONFIG_DIR and every ~/.claude*/projects.
 Selects transcripts whose cwd is inside the worktree and that were active since the
 current branch was created (its oldest reflog entry; else its merge-base with
 origin/HEAD). Conductor-style workspaces reuse directories across branches, so the
@@ -25,7 +26,7 @@ import sys
 
 INJECTED = [re.compile(p, re.S) for p in (
     r"<(system_instruction|system-reminder|user-preferences|local-command-stdout|"
-    r"environment_context|recommended_plugins|user_instructions)>.*?</\1>",
+    r"environment_context|recommended_plugins|user_instructions|task-notification)>.*?</\1>",
     r"# AGENTS\.md instructions for [^\n]*\s*<INSTRUCTIONS>.*?</INSTRUCTIONS>",
 )]
 
@@ -76,9 +77,14 @@ def signal(record):
     if kind == "user" and not record.get("isMeta") and isinstance(content, str):
         yield "U", clean(content)[:2000]
     elif kind == "user" and isinstance(content, list):
-        for item in content:
-            if isinstance(item, dict) and item.get("type") == "tool_result" and item.get("is_error"):
+        items = [item for item in content if isinstance(item, dict)]
+        for item in items:
+            if item.get("type") == "tool_result" and item.get("is_error"):
                 yield "ERR", str(item.get("content"))[:600]
+        # A prompt sent as text blocks (Control Room's first message, some Claude Code prompts).
+        if not record.get("isMeta") and not any(item.get("type") == "tool_result" for item in items):
+            text = "\n".join(item.get("text", "") for item in items if item.get("type") == "text")
+            yield "U", clean(text)[:2000]
     elif kind == "attachment" and (record.get("attachment") or {}).get("type") == "hook_blocking_error":
         yield "HOOK", str(record["attachment"])[:600]
     elif kind == "response_item" and payload.get("type") == "message" and payload.get("role") == "user":
@@ -113,8 +119,10 @@ def mentions(path, pattern):
 
 def candidates(since):
     """Every Claude and Codex transcript modified since `since`, oldest first."""
-    claude = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "projects"
-    found = [("claude", path) for folder in (claude.iterdir() if claude.is_dir() else [])
+    # One operator may run Claude Code under several config dirs (~/.claude, ~/.claude-rose).
+    configs = {Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")), *Path.home().glob(".claude*")}
+    claudes = {(config / "projects").resolve() for config in configs if (config / "projects").is_dir()}
+    found = [("claude", path) for claude in claudes for folder in claude.iterdir()
              for path in folder.glob("*.jsonl")]
     codex = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "sessions"
     found += [("codex", path) for path in codex.glob("**/rollout-*.jsonl")]
