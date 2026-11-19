@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **`bento-adversarial-review` defaults to `gpt-6.2-astra` under Claude.** The Codex reviewer
+  was `gpt-6-astra`; `--model` still picks another.
+
 - **New skill: `bento-design`.** Rules for UI work. Its first: as little text as possible.
   Think twice before adding a word; cut what is left to the shortest wording.
 
