@@ -2,12 +2,14 @@
 
 ## Unreleased
 
-- **`bento-learn` no longer drops sessions that built a branch.** Its session finder now counts a
-  prompt sent as text blocks (how Control Room sends a thread's first message) as an operator
-  turn, so those sessions are no longer skipped. It also reads every `~/.claude*/projects`
-  directory alongside `$CLAUDE_CONFIG_DIR`, so a worktree's sessions are found whichever Claude
-  config dir ran them. Task notifications are left out of operator turns.
+- **`bento-learn` finds a worktree's sessions in every Claude config dir.** `sessions.py` read
+  only `$CLAUDE_CONFIG_DIR/projects`, so sessions run under another config dir (`~/.claude` and
+  `~/.claude-rose` on one Mac) were missed. It now also reads every `~/.claude*/projects`. Task
+  notifications are left out of operator turns.
 
+- **`bento-learn` reads Control Room chat sessions.** `claude -p` with stream-json input stores the
+  operator's turn as a list of text blocks, which `sessions.py` skipped, so it found no session
+  for such a thread. It now reads those turns too.
 - **`bento-qa` and `bento-ship` run only the end-to-end tests a branch touches.** The full suite
   before a merge now means every unit and integration suite, plus the end-to-end tests for the
   changed pages: the repo's own selective runner when it has one, else the specs or test titles

@@ -77,14 +77,13 @@ def signal(record):
     if kind == "user" and not record.get("isMeta") and isinstance(content, str):
         yield "U", clean(content)[:2000]
     elif kind == "user" and isinstance(content, list):
-        items = [item for item in content if isinstance(item, dict)]
-        for item in items:
-            if item.get("type") == "tool_result" and item.get("is_error"):
-                yield "ERR", str(item.get("content"))[:600]
-        # A prompt sent as text blocks (Control Room's first message, some Claude Code prompts).
-        if not record.get("isMeta") and not any(item.get("type") == "tool_result" for item in items):
-            text = "\n".join(item.get("text", "") for item in items if item.get("type") == "text")
+        # `claude -p --input-format stream-json` (e.g. Control Room) sends the operator's turn as text blocks
+        text = "\n".join(i.get("text", "") for i in content if isinstance(i, dict) and i.get("type") == "text")
+        if text and not record.get("isMeta"):
             yield "U", clean(text)[:2000]
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "tool_result" and item.get("is_error"):
+                yield "ERR", str(item.get("content"))[:600]
     elif kind == "attachment" and (record.get("attachment") or {}).get("type") == "hook_blocking_error":
         yield "HOOK", str(record["attachment"])[:600]
     elif kind == "response_item" and payload.get("type") == "message" and payload.get("role") == "user":
