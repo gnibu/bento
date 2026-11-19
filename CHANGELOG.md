@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **`bento-learn` finds a worktree's sessions in every Claude config dir.** `sessions.py` read
+  only `$CLAUDE_CONFIG_DIR/projects`, so sessions run under another config dir (`~/.claude` and
+  `~/.claude-rose` on one Mac) were missed. It now also reads every `~/.claude*/projects`. Task
+  notifications are left out of operator turns.
+
 - **`bento-learn` reads Control Room chat sessions.** `claude -p` with stream-json input stores the
   operator's turn as a list of text blocks, which `sessions.py` skipped, so it found no session
   for such a thread. It now reads those turns too.

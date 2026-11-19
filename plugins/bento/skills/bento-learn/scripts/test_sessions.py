@@ -21,7 +21,8 @@ class SessionsTests(unittest.TestCase):
         subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
         self.top = subprocess.check_output(["git", "-C", str(self.repo), "rev-parse", "--show-toplevel"],
                                            text=True).strip()
-        self.env = {**os.environ, "CLAUDE_CONFIG_DIR": str(self.root / "claude"),
+        # HOME too: sessions.py also reads every ~/.claude*/projects.
+        self.env = {**os.environ, "HOME": str(self.root), "CLAUDE_CONFIG_DIR": str(self.root / "claude"),
                     "CODEX_HOME": str(self.root / "codex")}
         self.claude_dir = self.root / "claude/projects" / "".join(
             c if c.isalnum() else "-" for c in self.top)
@@ -108,6 +109,29 @@ class SessionsTests(unittest.TestCase):
         self.assertIn("U: branch:\nfeature-new", out)
         self.assertNotIn("earlier", out)
         self.assertNotIn("feature-new/other", out)
+
+    def test_injected_text_blocks_are_dropped_from_operator_turns(self):
+        self.write(self.claude_dir / "blocks.jsonl", [
+            {"type": "user", "cwd": self.top, "message": {"content": [
+                {"type": "text", "text": "Work on Linear issue IX-1"},
+                {"type": "text", "text": "<system-reminder>noise</system-reminder>"}]}},
+            {"type": "user", "message": {"content": [
+                {"type": "text", "text": "<task-notification>done</task-notification>"}]}},
+            {"type": "user", "isMeta": True, "message": {"content": [{"type": "text", "text": "meta"}]}},
+        ])
+        out = self.run_script(since=0)
+        self.assertIn("U: Work on Linear issue IX-1\n\n", out)
+        for absent in ("noise", "done", "meta"):
+            self.assertNotIn(absent, out)
+
+    def test_sessions_under_every_claude_config_dir_are_read(self):
+        for config in ("claude", ".claude", ".claude-rose"):
+            self.write(self.root / config / "projects" / self.claude_dir.name / f"{config}.jsonl",
+                       [{"type": "user", "cwd": self.top, "message": {"content": f"from {config}/"}}])
+        out = self.run_script(since=0)
+        for config in ("claude", ".claude", ".claude-rose"):
+            self.assertIn(f"U: from {config}/", out)
+        self.assertEqual(out.count("=== "), 3)
 
     def test_sessions_before_since_are_skipped(self):
         self.write(self.claude_dir / "old.jsonl",
