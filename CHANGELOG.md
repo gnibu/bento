@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **New skill: `bento-design`.** Rules for UI work. Its first: as little text as possible.
+  Think twice before adding a word; cut what is left to the shortest wording.
+
 - **`bento-learn` finds a worktree's sessions in every Claude config dir.** `sessions.py` read
   only `$CLAUDE_CONFIG_DIR/projects`, so sessions run under another config dir (`~/.claude` and
   `~/.claude-rose` on one Mac) were missed. It now also reads every `~/.claude*/projects`. Task
