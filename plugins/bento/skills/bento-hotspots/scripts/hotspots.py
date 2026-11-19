@@ -31,7 +31,6 @@ SKIP_DIRS = {"node_modules", "dist", "build", "vendor", "third_party", "__pycach
              "fixtures", "__fixtures__", "testdata"}  # generated, vendored or deliberate test data
 LIMITS = {"nloc": 50, "ccn": 10, "cognitive": 15, "nesting": 3, "params": 5}
 FILE_LIMIT = 500  # NLOC
-ANALYZER = lizard.FileAnalyzer(lizard.get_extensions(["ns", "cognitive"]))  # ns: JS/TS nesting only
 NESTS = (ast.If, ast.For, ast.AsyncFor, ast.While, ast.Try, ast.With, ast.AsyncWith, ast.Match,
          *([ast.TryStar] if hasattr(ast, "TryStar") else []))
 SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)
@@ -100,8 +99,15 @@ def py_functions(code: str) -> dict[int, tuple[str, int]]:
     return found
 
 
+def lizard_functions(path: str, code: str) -> "lizard.FileInformation":
+    # a fresh analyzer each time: lizard's ns extension keeps its scope stack between files, and
+    # a TSX file it misparses leaves scopes open, so a reused one inflates every later file's nesting
+    return lizard.FileAnalyzer(lizard.get_extensions(["ns", "cognitive"])).analyze_source_code(
+        reader_path(path), code)  # ns: JS/TS nesting only
+
+
 def analyze(path: str, code: str) -> tuple[int, list[Function]]:
-    info = ANALYZER.analyze_source_code(reader_path(path), code)
+    info = lizard_functions(path, code)
     py = py_functions(code) if path.endswith(".py") else {}
     functions = []
     for f in info.function_list:
@@ -176,7 +182,7 @@ def js_imports(path: str, code: str, files: set[str]) -> set[str]:
     words = [tok for tok, _ in tokens]
     # lizard has no columns: only lines strictly inside a function body count as deferred, so
     # `require('./b').map(x => x)` stays a load-time edge
-    deferred = {n for f in ANALYZER.analyze_source_code(reader_path(path), code).function_list
+    deferred = {n for f in lizard_functions(path, code).function_list
                 for n in range(f.start_line + 1, f.end_line)} if "require" in code else set()
     specs = []
     type_only = False  # `import type` / `export type`: erased at compile time

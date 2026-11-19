@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **`bento-hotspots` no longer inflates nesting in later JS/TS files.** One lizard analyzer served
+  every file, and its nesting extension kept state between them: a TSX file it misparses left
+  scopes open, so each file read after it got a higher `nesting` (diff mode reported `1->14` on
+  functions a branch never touched). Each file now gets a fresh analyzer.
+
 - **New skill: `bento-design`.** Rules for UI work. Its first: as little text as possible.
   Think twice before adding a word; cut what is left to the shortest wording.
 
