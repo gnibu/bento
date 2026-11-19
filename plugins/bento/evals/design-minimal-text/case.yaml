@@ -1,0 +1,24 @@
+schema_version: "1.0"
+name: design-minimal-text
+tags: [design]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "index.html shows nothing when there are no projects. Add an empty state for that case, with a way to create the first project. Edit the file directly; no need to run it."
+  max_turns: 10
+  allowed_tools: [Skill, Read, Glob, Grep, Write, Edit]
+graders:
+  - type: llm
+    name: minimal-text
+    criteria: |
+      Read the empty state added to index.html and count its visible words (headings, paragraphs,
+      button and link labels; not alt or aria-label attributes). PASS only if the empty state has
+      at most 8 visible words in total and no sentence of explanation or encouragement (such as
+      "Get started by creating your first project to organize your work"). FAIL if it has more
+      than 8 visible words, a descriptive paragraph, or help text that repeats the button.
+    focus: trace
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-design"'
+    arm: with-only
