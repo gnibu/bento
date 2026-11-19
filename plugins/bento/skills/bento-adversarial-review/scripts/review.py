@@ -87,7 +87,7 @@ def review(args: argparse.Namespace) -> str:
 def main(argv: List[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("reviewer", choices=sorted(MODELS))
-    parser.add_argument("--model", help="default: gpt-6.2-astra for codex, opus for claude")
+    parser.add_argument("--model", help=f"default: {MODELS['codex']} for codex, {MODELS['claude']} for claude")
     parser.add_argument("--effort", default="high", help="codex model_reasoning_effort (default: high)")
     parser.add_argument("--focus", default="", help="what to focus on, appended to the prompt")
     parser.add_argument("--uncommitted", action="store_true", help="git diff HEAD plus untracked files")
