@@ -2,7 +2,7 @@
 name: bento-adversarial-review
 description: |
   Run an adversarial code review of a diff by the other model family, then triage every
-  finding against the real code. Under Claude the reviewer is `codex exec` (gpt-6-astra);
+  finding against the real code. Under Claude the reviewer is `codex exec` (gpt-6.2-astra);
   under Codex it is headless `claude -p` (opus). Interactive mode (default) gets explicit
   human sign-off before fixing anything; ship mode (called by a ship flow) fixes verified
   findings itself and returns only the ones that need a human decision. Skips commits it
@@ -74,7 +74,7 @@ models below are *(default)*.
 
 | You are | Reviewer | Path |
 |---|---|---|
-| Claude | Codex `gpt-6-astra` | B |
+| Claude | Codex `gpt-6.2-astra` | B |
 | Codex (or any non-Claude model) | Claude `opus` | C |
 
 Fall back to Path A only if the reviewer's CLI is missing (`command -v codex` / `command -v
@@ -122,7 +122,7 @@ python3 "<skill>/scripts/review.py" <REVIEWER> [--focus "<CUSTOM FOCUS>"] <SCOPE
   (default `high`).
 
 `<REVIEWER>` for **Path B — you are Claude**: `codex`. It runs `codex exec -s read-only -m
-gpt-6-astra -c model_reasoning_effort=high -o <.md>` with stdin closed (or codex waits on it
+gpt-6.2-astra -c model_reasoning_effort=high -o <.md>` with stdin closed (or codex waits on it
 forever). Plain `codex exec`, not `codex exec review`: review mode keeps a bug-only rubric that
 drops reuse and convention findings. `-s read-only` keeps Codex from touching the tree. Never
 relax it.
@@ -153,7 +153,7 @@ The paths come from `git rev-parse --git-path`, not a shell variable or `/tmp`: 
 a different shell call, and parallel worktrees sharing one `/tmp` file would silently triage
 each other's diffs. The git dir is per-worktree and can't be committed by a stray `git add .`.
 
-If `-m gpt-6-astra` or `--model opus` fails with an unknown-model error, say so and ask. Don't
+If `-m gpt-6.2-astra` or `--model opus` fails with an unknown-model error, say so and ask. Don't
 switch model, or to Path A, silently.
 
 ## Phase 2 — Assess each finding yourself
