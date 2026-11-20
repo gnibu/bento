@@ -152,10 +152,19 @@ class SessionsTests(unittest.TestCase):
                                    (".claude-x", "path.jsonl", f"foreign edit {self.top}/x.py")):
             self.write(self.root / config / "projects/-elsewhere" / name,
                        [{"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": text}}])
+        # Moved from this account to the other one: its newest copy is the other account's.
+        for config, age in (("claude", 60), (".claude-x", 0)):
+            self.write(self.root / config / "projects/-elsewhere/moved.jsonl", [
+                {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": "moved release"}}],
+                age=age)
+        self.write(self.root / ".claude-x/projects/-copy/copy.jsonl", [
+            {"type": "user", "cwd": self.top + "+copy", "message": {"content": f"sibling {self.top}+copy/x.py"}}])
         out = self.run_script(since=0)
         self.assertIn("U: own release notes", out)
         self.assertIn(f"U: foreign edit {self.top}/x.py", out)
+        self.assertEqual(out.count("U: moved release"), 1)
         self.assertNotIn("foreign release", out)
+        self.assertNotIn("sibling", out)
 
     def test_sessions_before_since_are_skipped(self):
         self.write(self.claude_dir / "old.jsonl",

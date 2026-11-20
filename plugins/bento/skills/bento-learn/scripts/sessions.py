@@ -118,6 +118,18 @@ def mentions(path, pattern):
         return any(pattern.search(line) for line in handle)
 
 
+def newest_copies(claudes, primary):
+    """(mtime, "claude", path, primary) per session id. Moving a thread to another account copies
+    its <session-id>.jsonl: keep the newest copy, primary when any copy is in `primary`."""
+    latest = {}
+    for claude in claudes:
+        for path in claude.glob("*/*.jsonl"):
+            mtime, seen = path.stat().st_mtime, latest.get(path.stem)
+            newest = (mtime, "claude", path) if seen is None or mtime > seen[0] else seen[:3]
+            latest[path.stem] = (*newest, claude == primary or (seen is not None and seen[3]))
+    return latest.values()
+
+
 def candidates(since):
     """Every Claude and Codex transcript modified since `since`, oldest first, as (agent, path,
     primary): primary is False for a Claude config dir other than the current one."""
@@ -126,14 +138,7 @@ def candidates(since):
     primary = (home / "projects").resolve()
     configs = {home, *Path.home().glob(".claude*")}
     claudes = {(config / "projects").resolve() for config in configs if (config / "projects").is_dir()}
-    latest = {}
-    for claude in claudes:
-        for path in claude.glob("*/*.jsonl"):
-            mtime = path.stat().st_mtime
-            # Moving a thread to another account copies its <session-id>.jsonl: keep the newest copy.
-            if mtime >= since and mtime > latest.get(path.stem, (0,))[0]:
-                latest[path.stem] = (mtime, "claude", path, claude == primary)
-    found = list(latest.values())
+    found = [item for item in newest_copies(claudes, primary) if item[0] >= since]
     codex = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "sessions"
     for path in codex.glob("**/rollout-*.jsonl"):
         mtime = path.stat().st_mtime
@@ -142,10 +147,13 @@ def candidates(since):
     return [item[1:] for item in sorted(found, key=lambda item: item[0])]
 
 
-def mention_pattern(root, names):
+def mention_pattern(root, names, cwd):
     """The worktree path or one of `names` as a whole name: not <root>-other, nor feature/x/y for
-    feature/x. Raw JSON escapes a newline or tab as \\n or \\t, so a name right after one follows a letter."""
+    feature/x. Raw JSON escapes a newline or tab as \\n or \\t, so a name right after one follows
+    a letter."""
     target = re.escape(str(root)) + r"(?![\w.-])"
+    if cwd and cwd.startswith(str(root)):  # run in a sibling such as `<root> copy`: its own paths
+        target += r"(?!%s)" % re.escape(cwd[len(str(root)):])
     if names:
         target += r"|(?:%s)(?![\w./-])" % "|".join(map(re.escape, names))
     return re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
@@ -162,10 +170,9 @@ def transcripts(root, since, names):
             other.append((agent, path, cwd, primary))
         elif agent == "codex" or path.parent.name == mangled or path.parent.name.startswith(mangled + "-"):
             yield agent, path, ""
-    by_name, by_path = mention_pattern(root, names), mention_pattern(root, ())
     for agent, path, cwd, primary in other:
         # Another account's sessions may be another company's: a branch name like `release` is too weak.
-        if mentions(path, by_name if primary else by_path):
+        if mentions(path, mention_pattern(root, names if primary else (), cwd)):
             yield agent, path, f" (other directory: {cwd or '?'})"
 
 
