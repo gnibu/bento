@@ -157,6 +157,11 @@ class SessionsTests(unittest.TestCase):
             self.write(self.root / config / "projects/-elsewhere/moved.jsonl", [
                 {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": "moved release"}}],
                 age=age)
+        stamp = time.time()
+        for config in ("claude", ".claude-x"):  # copied with its mtime: a tie
+            tied = self.write(self.root / config / "projects/-elsewhere/tied.jsonl", [
+                {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": "tied release"}}])
+            os.utime(tied, (stamp, stamp))
         self.write(self.root / ".claude-x/projects/-copy/copy.jsonl", [
             {"type": "user", "cwd": self.top + '+"copy"/src', "message": {"content": f'sibling {self.top}+"copy"/x'}}])
         out = self.run_script(since=0)
@@ -164,6 +169,7 @@ class SessionsTests(unittest.TestCase):
         self.assertIn(f"U: foreign edit {self.top}/x.py", out)
         self.assertNotIn("foreign release", out)
         self.assertNotIn("moved release", out)
+        self.assertNotIn("tied release", out)
         self.assertNotIn("sibling", out)
 
     def test_sessions_before_since_are_skipped(self):

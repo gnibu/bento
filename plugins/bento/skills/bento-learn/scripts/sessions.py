@@ -120,12 +120,13 @@ def mentions(path, pattern):
 
 def newest_copies(claudes, primary):
     """(mtime, "claude", path, primary) per session id. Moving a thread to another account copies
-    its <session-id>.jsonl: keep the newest copy; its config dir decides whether it is primary."""
+    its <session-id>.jsonl: keep the newest copy; its config dir decides whether it is primary,
+    and a tie goes to the other account's copy, the stricter one."""
     latest = {}
     for claude in claudes:
         for path in claude.glob("*/*.jsonl"):
             mtime, seen = path.stat().st_mtime, latest.get(path.stem)
-            if seen is None or mtime > seen[0]:
+            if seen is None or (mtime, claude != primary) > (seen[0], not seen[3]):
                 latest[path.stem] = (mtime, "claude", path, claude == primary)
     return latest.values()
 
