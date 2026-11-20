@@ -120,13 +120,13 @@ def mentions(path, pattern):
 
 def newest_copies(claudes, primary):
     """(mtime, "claude", path, primary) per session id. Moving a thread to another account copies
-    its <session-id>.jsonl: keep the newest copy, primary when any copy is in `primary`."""
+    its <session-id>.jsonl: keep the newest copy; its config dir decides whether it is primary."""
     latest = {}
     for claude in claudes:
         for path in claude.glob("*/*.jsonl"):
             mtime, seen = path.stat().st_mtime, latest.get(path.stem)
-            newest = (mtime, "claude", path) if seen is None or mtime > seen[0] else seen[:3]
-            latest[path.stem] = (*newest, claude == primary or (seen is not None and seen[3]))
+            if seen is None or mtime > seen[0]:
+                latest[path.stem] = (mtime, "claude", path, claude == primary)
     return latest.values()
 
 
@@ -153,7 +153,8 @@ def mention_pattern(root, names, cwd):
     a letter."""
     target = re.escape(str(root)) + r"(?![\w.-])"
     if cwd and cwd.startswith(str(root)):  # run in a sibling such as `<root> copy`: its own paths
-        target += r"(?!%s)" % re.escape(cwd[len(str(root)):])
+        sibling = cwd[len(str(root)):].split("/")[0]
+        target += r"(?!%s)" % re.escape(json.dumps(sibling, ensure_ascii=False)[1:-1])
     if names:
         target += r"|(?:%s)(?![\w./-])" % "|".join(map(re.escape, names))
     return re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
