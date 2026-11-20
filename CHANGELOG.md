@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **`bento-learn` reads a session once and keeps other accounts' sessions out.** Control Room
+  moves a thread to another Claude account by copying its transcript, so `sessions.py` printed and
+  counted that session twice; it now keeps the newest copy. A session run in another directory
+  under a config dir other than `$CLAUDE_CONFIG_DIR` now needs to name the worktree path: a branch
+  name such as `release` could pull in another company's sessions.
+
 - **`bento-hotspots` no longer inflates nesting in later JS/TS files.** One lizard analyzer served
   every file, and its nesting extension kept state between them: a TSX file it misparses left
   scopes open, so each file read after it got a higher `nesting` (diff mode reported `1->14` on
