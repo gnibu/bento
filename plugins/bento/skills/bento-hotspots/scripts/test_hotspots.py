@@ -163,6 +163,15 @@ class HotspotsTest(unittest.TestCase):
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         self.assertIn("No new hotspots in 1 changed", out.stdout)
 
+    def test_a_files_nesting_does_not_depend_on_files_read_before_it(self):
+        # lizard leaves scopes open in message.tsx; a reused analyzer counted them in later files
+        source = (FIXTURES / "message.tsx").read_text()
+        self.commit({"a.tsx": source, "b.tsx": source, "c.tsx": source})
+        out = self.run_script("--top", "50")
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        for name in ("a", "b", "c"):
+            self.assertIn(f"- {name}.tsx:1 Message  nloc=25 ccn=5 cognitive=5 nesting=1 ", out.stdout)
+
     def test_import_edges_follow_load_time_rules(self):
         self.commit({
             # each name of a from-import resolves on its own: x -> z closes a cycle

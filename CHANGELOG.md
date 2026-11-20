@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **`bento-hotspots` no longer inflates nesting in later JS/TS files.** One lizard analyzer served
+  every file, and its nesting extension kept state between them: a TSX file it misparses left
+  scopes open, so each file read after it got a higher `nesting` (diff mode reported `1->14` on
+  functions a branch never touched). Each file now gets a fresh analyzer.
+
 - **`bento-adversarial-review` defaults to `gpt-6.2-astra` under Claude.** The Codex reviewer
   was `gpt-6-astra`; `--model` still picks another.
 
