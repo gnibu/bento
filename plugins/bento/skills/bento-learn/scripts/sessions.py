@@ -3,7 +3,8 @@
 
 Usage: sessions.py [--repo PATH] [--since EPOCH_SECONDS]
 
-Claude transcripts are read from $CLAUDE_CONFIG_DIR and every ~/.claude*/projects.
+Claude transcripts are read from $CLAUDE_CONFIG_DIR and every ~/.claude*/projects; a session
+copied to another config dir (Control Room moving a thread) counts once, its newest copy.
 Selects transcripts whose cwd is inside the worktree and that were active since the
 current branch was created (its oldest reflog entry; else its merge-base with
 origin/HEAD). Conductor-style workspaces reuse directories across branches, so the
@@ -14,7 +15,8 @@ the printed path when a session needs more context.
 
 A second pass adds sessions run from another directory (another workspace working here by
 absolute path) whose transcript names the worktree path or one of the branch's names, old
-names from `git branch -m` included. They print under "(other directory: <cwd>)".
+names from `git branch -m` included; from a config dir other than $CLAUDE_CONFIG_DIR (default
+~/.claude), only the worktree path counts. They print under "(other directory: <cwd>)".
 """
 import argparse
 import json
@@ -116,17 +118,47 @@ def mentions(path, pattern):
         return any(pattern.search(line) for line in handle)
 
 
+def newest_copies(claudes, primary):
+    """(mtime, "claude", path, primary) per session id. Moving a thread to another account copies
+    its <session-id>.jsonl: keep the newest copy; its config dir decides whether it is primary,
+    and a tie goes to the other account's copy, the stricter one."""
+    latest = {}
+    for claude in claudes:
+        for path in claude.glob("*/*.jsonl"):
+            mtime, seen = path.stat().st_mtime, latest.get(path.stem)
+            if seen is None or (mtime, claude != primary) > (seen[0], not seen[3]):
+                latest[path.stem] = (mtime, "claude", path, claude == primary)
+    return latest.values()
+
+
 def candidates(since):
-    """Every Claude and Codex transcript modified since `since`, oldest first."""
+    """Every Claude and Codex transcript modified since `since`, oldest first, as (agent, path,
+    primary): primary is False for a Claude config dir other than the current one."""
     # One operator may run Claude Code under several config dirs (~/.claude, ~/.claude-rose).
-    configs = {Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")), *Path.home().glob(".claude*")}
+    home = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude"))
+    primary = (home / "projects").resolve()
+    configs = {home, *Path.home().glob(".claude*")}
     claudes = {(config / "projects").resolve() for config in configs if (config / "projects").is_dir()}
-    found = [("claude", path) for claude in claudes for folder in claude.iterdir()
-             for path in folder.glob("*.jsonl")]
+    found = [item for item in newest_copies(claudes, primary) if item[0] >= since]
     codex = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "sessions"
-    found += [("codex", path) for path in codex.glob("**/rollout-*.jsonl")]
-    return sorted((item for item in found if item[1].stat().st_mtime >= since),
-                  key=lambda item: item[1].stat().st_mtime)
+    for path in codex.glob("**/rollout-*.jsonl"):
+        mtime = path.stat().st_mtime
+        if mtime >= since:
+            found.append((mtime, "codex", path, True))
+    return [item[1:] for item in sorted(found, key=lambda item: item[0])]
+
+
+def mention_pattern(root, names, cwd):
+    """The worktree path or one of `names` as a whole name: not <root>-other, nor feature/x/y for
+    feature/x. Raw JSON escapes a newline or tab as \\n or \\t, so a name right after one follows
+    a letter."""
+    target = re.escape(str(root)) + r"(?![\w.-])"
+    if cwd and cwd.startswith(str(root)):  # run in a sibling such as `<root> copy`: its own paths
+        sibling = cwd[len(str(root)):].split("/")[0]
+        target += r"(?!%s)" % re.escape(json.dumps(sibling, ensure_ascii=False)[1:-1])
+    if names:
+        target += r"|(?:%s)(?![\w./-])" % "|".join(map(re.escape, names))
+    return re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
 
 
 def transcripts(root, since, names):
@@ -134,20 +166,15 @@ def transcripts(root, since, names):
     <cwd>)") for sessions run elsewhere whose text names the worktree path or a branch name."""
     mangled = re.sub(r"[^A-Za-z0-9]", "-", str(root))
     other = []
-    for agent, path in candidates(since):
+    for agent, path, primary in candidates(since):
         cwd = session_cwd(path)
         if not (cwd and (cwd == str(root) or cwd.startswith(f"{root}/"))):
-            other.append((agent, path, cwd))
+            other.append((agent, path, cwd, primary))
         elif agent == "codex" or path.parent.name == mangled or path.parent.name.startswith(mangled + "-"):
             yield agent, path, ""
-    # Whole names only: not <root>-other, nor feature/x/y for feature/x. Raw JSON escapes a
-    # newline or tab as \n or \t, so a name right after one follows a letter.
-    target = re.escape(str(root)) + r"(?![\w.-])"
-    if names:
-        target += r"|(?:%s)(?![\w./-])" % "|".join(map(re.escape, names))
-    pattern = re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
-    for agent, path, cwd in other:
-        if mentions(path, pattern):
+    for agent, path, cwd, primary in other:
+        # Another account's sessions may be another company's: a branch name like `release` is too weak.
+        if mentions(path, mention_pattern(root, names if primary else (), cwd)):
             yield agent, path, f" (other directory: {cwd or '?'})"
 
 

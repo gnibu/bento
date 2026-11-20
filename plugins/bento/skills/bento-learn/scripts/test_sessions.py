@@ -133,6 +133,45 @@ class SessionsTests(unittest.TestCase):
             self.assertIn(f"U: from {config}/", out)
         self.assertEqual(out.count("=== "), 3)
 
+    def test_a_session_copied_to_another_config_dir_is_read_once(self):
+        # Control Room moves a thread to another account by copying its transcript; the original stays.
+        for config, text, age in (("claude", "old copy", 60), (".claude-x", "new copy", 0)):
+            self.write(self.root / config / "projects" / self.claude_dir.name / "same-id.jsonl",
+                       [{"type": "user", "cwd": self.top, "message": {"content": text}}], age=age)
+        out = self.run_script(since=0)
+        self.assertIn("U: new copy", out)
+        self.assertNotIn("old copy", out)
+        self.assertEqual(out.count("=== "), 1)
+
+    def test_another_accounts_session_needs_the_worktree_path_not_a_branch_name(self):
+        git = ["git", "-C", str(self.repo), "-c", "user.name=t", "-c", "user.email=t@t"]
+        subprocess.run([*git, "checkout", "-q", "-b", "release"], check=True)
+        subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+        for config, name, text in (("claude", "own.jsonl", "own release notes"),
+                                   (".claude-x", "foreign.jsonl", "foreign release notes"),
+                                   (".claude-x", "path.jsonl", f"foreign edit {self.top}/x.py")):
+            self.write(self.root / config / "projects/-elsewhere" / name,
+                       [{"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": text}}])
+        # Moved from this account to the other one: its newest copy is the other account's, path only.
+        for config, age in (("claude", 60), (".claude-x", 0)):
+            self.write(self.root / config / "projects/-elsewhere/moved.jsonl", [
+                {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": "moved release"}}],
+                age=age)
+        stamp = time.time()
+        for config in ("claude", ".claude-x"):  # copied with its mtime: a tie
+            tied = self.write(self.root / config / "projects/-elsewhere/tied.jsonl", [
+                {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": "tied release"}}])
+            os.utime(tied, (stamp, stamp))
+        self.write(self.root / ".claude-x/projects/-copy/copy.jsonl", [
+            {"type": "user", "cwd": self.top + '+"copy"/src', "message": {"content": f'sibling {self.top}+"copy"/x'}}])
+        out = self.run_script(since=0)
+        self.assertIn("U: own release notes", out)
+        self.assertIn(f"U: foreign edit {self.top}/x.py", out)
+        self.assertNotIn("foreign release", out)
+        self.assertNotIn("moved release", out)
+        self.assertNotIn("tied release", out)
+        self.assertNotIn("sibling", out)
+
     def test_sessions_before_since_are_skipped(self):
         self.write(self.claude_dir / "old.jsonl",
                    [{"type": "user", "cwd": self.top, "message": {"content": "old branch"}}], age=3600)
