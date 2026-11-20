@@ -71,7 +71,7 @@ class ReviewTests(unittest.TestCase):
         self.assertIn("print('b')", self.path("diff").read_text())
         [call] = self.recorded()
         args = call["args"]
-        self.assertEqual(args[:9], ["exec", "-s", "read-only", "-m", "gpt-6-astra",
+        self.assertEqual(args[:9], ["exec", "-s", "read-only", "-m", "gpt-6.2-astra",
                                     "-c", "model_reasoning_effort=high", "-o", str(self.path("md").resolve())])
         self.assertTrue(args[9].startswith(f"The diff under review is in the file {self.path('diff').resolve()}. "
                                            "You are an adversarial code reviewer."))

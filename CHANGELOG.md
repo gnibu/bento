@@ -7,6 +7,9 @@
   scopes open, so each file read after it got a higher `nesting` (diff mode reported `1->14` on
   functions a branch never touched). Each file now gets a fresh analyzer.
 
+- **`bento-adversarial-review` defaults to `gpt-6.2-astra` under Claude.** The Codex reviewer
+  was `gpt-6-astra`; `--model` still picks another.
+
 - **New skill: `bento-design`.** Rules for UI work. Its first: as little text as possible.
   Think twice before adding a word; cut what is left to the shortest wording.
 
