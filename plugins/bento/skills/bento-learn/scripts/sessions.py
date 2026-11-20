@@ -142,6 +142,15 @@ def candidates(since):
     return [item[1:] for item in sorted(found, key=lambda item: item[0])]
 
 
+def mention_pattern(root, names):
+    """The worktree path or one of `names` as a whole name: not <root>-other, nor feature/x/y for
+    feature/x. Raw JSON escapes a newline or tab as \\n or \\t, so a name right after one follows a letter."""
+    target = re.escape(str(root)) + r"(?![\w.-])"
+    if names:
+        target += r"|(?:%s)(?![\w./-])" % "|".join(map(re.escape, names))
+    return re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
+
+
 def transcripts(root, since, names):
     """Yield (agent, path, "") for worktree sessions, then (agent, path, " (other directory:
     <cwd>)") for sessions run elsewhere whose text names the worktree path or a branch name."""
@@ -153,13 +162,7 @@ def transcripts(root, since, names):
             other.append((agent, path, cwd, primary))
         elif agent == "codex" or path.parent.name == mangled or path.parent.name.startswith(mangled + "-"):
             yield agent, path, ""
-    # Whole names only: not <root>-other, nor feature/x/y for feature/x. Raw JSON escapes a
-    # newline or tab as \n or \t, so a name right after one follows a letter.
-    target = re.escape(str(root)) + r"(?![\w.-])"
-    by_path = re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
-    if names:
-        target += r"|(?:%s)(?![\w./-])" % "|".join(map(re.escape, names))
-    by_name = re.compile(r"(?:(?<![\w.-])|(?<=\\[nrt]))(?:%s)" % target)
+    by_name, by_path = mention_pattern(root, names), mention_pattern(root, ())
     for agent, path, cwd, primary in other:
         # Another account's sessions may be another company's: a branch name like `release` is too weak.
         if mentions(path, by_name if primary else by_path):
