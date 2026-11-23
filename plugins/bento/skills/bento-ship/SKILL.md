@@ -6,7 +6,9 @@ description: |
   ticket. Use for ANY request to commit, push, or open/update a PR; never run git commit /
   git push / gh pr create directly. Triggers: "ship it", "land this", "commit PR", "PR",
   "make a PR", "open a PR", "create a PR", "commit this", "commit and push", "push",
-  "ready to merge". Not for a rebase: rebase directly and ask before force-pushing.
+  "ready to merge". Invoke it on every such request, also when bento-ship already ran earlier
+  in this session: a copy loaded earlier does not count. Not for a rebase: rebase directly and
+  ask before force-pushing.
 ---
 
 # Ship
@@ -51,6 +53,13 @@ default (listed first). No preference relaxes a guardrail.
 
 ## Steps (paste as todos)
 
+**Before step 1, write the checklist** with the host's todo tool (`TaskCreate` or `TodoWrite` in
+Claude Code, `update_plan` in Codex; none → a list in your message): one todo per step below, on every run,
+a repeat in the same session included. Close each one as done, or as skipped with its reason:
+the user's request, a repo preference, or its condition not met (`docs: skipped, internal-only
+change`). Your own sense that a step adds nothing is not a reason. A step whose skill finds
+nothing to do (bento-learn: no learning survives) is done, not skipped.
+
 1. **Commit the task's work first.** Uncommitted task changes → commit them now; every step
    after reads `HEAD` only.
 2. **One PR per ticket.** Find the ticket (in context, the id in the branch name, or the body
@@ -76,9 +85,11 @@ default (listed first). No preference relaxes a guardrail.
    and ask, since it may be a collaborator's or a dependency's work. Then merge or rebase
    `origin/<base>` in; resolve conflicts before anything else.
 4. **Capture learnings** *(default: `Learnings`; `no` → skip)*. Run `/bento-learn` on every session of this worktree's branch (Claude
-   and Codex) and the full branch diff. Hold its repo-specific (L2) proposals for step 11.
-   Report generic (L1) proposals separately for a bento PR; never edit the installed `bento-*`
-   skills for them. Nothing survives → move on. Skip if `bento-learn` isn't installed.
+   and Codex) and the full branch diff, on every run: only bento-learn decides that nothing
+   survives, never your own read of the branch ("this PR is the learning", "already
+   documented"). Hold its repo-specific (L2) proposals for step 11. Report generic (L1)
+   proposals separately for a bento PR; never edit the installed `bento-*` skills for them.
+   Nothing survives → move on. Skip only if `bento-learn` isn't installed.
 5. **Docs, version + changelog** *(default)*. Public behavior, CLI flags, API/config contracts
    or usage examples changed → run `/bento-docs` against the branch diff before final checks.
    It updates affected docs and release notes and verifies examples against the implementation.
@@ -121,7 +132,9 @@ default (listed first). No preference relaxes a guardrail.
     pre-PR review on "commits since `<reviewed>`" and record its sha, so step 12's gate stays silent. Also skip if the user says "skip adversarial
     review" or the skill isn't installed.
 11. **The single stop before pushing** — only if there are L2 learnings to approve, or QA,
-    security or pre-PR review questions to answer. Wait for any background check first: the
+    security or pre-PR review questions to answer. The user asked not to be stopped ("ship and
+    merge", an unattended run) → learnings alone never stop: list each L2 proposal, unapplied,
+    under `## Open learnings` in the PR body, so running step 4 never costs a stop. Wait for any background check first: the
     stop is your last message, and one that ends after it means writing the whole stop again.
     Show each learning's diff, then end with this, leaving out empty sections:
 
@@ -166,9 +179,22 @@ default (listed first). No preference relaxes a guardrail.
     with its default, go under
     `## Open review questions` in the PR body.
 12. **Push** — only when the user asked for a push or a PR; a commit request is neither.
+    First write the ship record for `HEAD`, one line per checklist step named below, each
+    `done` or `skipped (<reason>)` as its todo was closed:
+
+    ```bash
+    { git rev-parse HEAD; printf '%s\n' 'ticket: done' 'sync: done' 'learn: done' \
+        'docs: skipped (internal-only change)' 'qa: done' 'security: skipped (no sensitive surface)' \
+        'checks: done' 'self-review: done' 'hotspots: done' 'pre-pr-review: done'
+    } > "$(git rev-parse --git-path bento-ship.head)"
+    ```
+
+    The steps are `ticket` (2), `sync` (3), `learn` (4), `docs` (5), `qa` (6), `security` and
+    `checks` (7), `self-review` and `hotspots` (8), `pre-pr-review` (10).
     `bento-setup`'s pre-PR review gate reminds the agent, without blocking, on `git push` and
-    `gh pr create` unless the recorded sha is `HEAD` or only the review's own fix commits
-    follow it: record the last `<reviewed>` from step 10 or 11 first. Pre-PR review skipped in
+    `gh pr create` without a ship record of `HEAD` with an outcome for every step, or unless
+    the review's recorded sha is `HEAD` or only its own fix commits follow it: record the last
+    `<reviewed>` from step 10 or 11 first. Pre-PR review skipped in
     this run (user request, or the skill isn't installed) → prefix both commands with
     `BENTO_PRE_PR_REVIEW=skip`. The gate stays silent on a `Pre-PR review gate: except`
     branch, but this flow still runs step 10 there: the exemption is for other flows, not a
@@ -182,7 +208,8 @@ default (listed first). No preference relaxes a guardrail.
     and body to match the whole diff instead. Title: covers
     the whole diff, not the branch name, the ticket title or the last commit; under 70
     characters; a conventional prefix only if every change fits one scope. Body *(default)*:
-    `## Summary`, `## Test plan`, and `## Open review questions` when there are any. Follow the
+    `## Summary`, `## Test plan`, and `## Open review questions` and `## Open learnings` (step
+    11) when there are any. Follow the
     [shared evidence contract](../bento-qa/references/proof.md) when presenting artifacts. The test
     plan comes from the QA report: tests added, paths exercised with their evidence, the
     end-to-end tests run and what did not run, and every untested behavior with its reason. Include docs/security outcomes and verification gaps;
@@ -202,8 +229,11 @@ default (listed first). No preference relaxes a guardrail.
     the full record, so a step that passed as expected gets no line:
     - outward side effects: `Ticket: <outcome>` (created, updated or skipped, and why) and
       `PR reviewers: <names>`;
-    - each of `QA`, `Docs`, `Security`, `Pre-PR review (local)` and CI that failed, was
-      skipped, or left an open question, with its reason, e.g. `QA: skipped, docs-only change`.
+    - each checklist step closed as skipped, one line with its reason, e.g. `QA: skipped,
+      docs-only change` or `Learnings: skipped, bento-learn isn't installed`; `Docs` and
+      `Security` skipped because their condition wasn't met get no line;
+    - each of `QA`, `Docs`, `Security`, `Pre-PR review (local)` and CI that failed or left an
+      open question, and `Learnings: <n> open in the PR body` when step 11 put them there.
 
     When the principles block says `Terse reports: off.`, report a line for every step instead: `Ticket`, `QA` (with tests added),
     `Docs`, `Security`, `Pre-PR review (local)`, `PR reviewers` and CI.

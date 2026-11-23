@@ -2,15 +2,20 @@
 """Pre-PR review gate: a PreToolUse hook (Claude Code and Codex) on shell commands.
 
 Reminds the agent, without blocking, to go through bento-ship when it runs `git push` or
-`gh pr create` before a pre-PR review covers HEAD: bento-adversarial-review's recorded sha
-(`git rev-parse --git-path adversarial-review.head`) is HEAD, or is followed only by that
-review's own fix commits. Silent without a record when the repo's bento-ship overlay says
-`- Pre-PR review: skip`, or `- Pre-PR review gate: except <glob>[, <glob>…]` matches the
-current branch (another automation's branches, e.g. `nightshift/*`), or the command carries
-`BENTO_PRE_PR_REVIEW=skip` (a review the user skipped for this run). Not a repo, unreadable
-input or an unparsable command → silent. It never blocks: a block broke automation bento
-does not own, and the routing evals credit bento-ship's description, not a block, for
-sending push requests through it.
+`gh pr create` before HEAD has
+- a ship record: bento-ship's step 12 writes `git rev-parse --git-path bento-ship.head`, HEAD's
+  sha on its first line, then one `<step>: done` or `<step>: skipped (<reason>)` line for each
+  of SHIP_STEPS. A partial flow run from memory writes none, so the gate names it.
+- a pre-PR review: bento-adversarial-review's recorded sha
+  (`git rev-parse --git-path adversarial-review.head`) is HEAD, or is followed only by that
+  review's own fix commits. Not needed when the repo's bento-ship overlay says
+  `- Pre-PR review: skip`, or the command carries `BENTO_PRE_PR_REVIEW=skip` (a review the user
+  skipped for this run).
+Silent on a branch matching the overlay's `- Pre-PR review gate: except <glob>[, <glob>…]`
+(another automation's branches, e.g. `nightshift/*`). Heredoc bodies fed to anything but a shell
+are text, not commands. Not a repo, unreadable input or an unparsable command → silent. It
+never blocks: a block broke automation bento does not own, and the routing evals credit
+bento-ship's description, not a block, for sending push requests through it.
 
 Usage:
   push_gate.py                                  hook: tool-call JSON on stdin, exit 0
@@ -31,6 +36,15 @@ from pathlib import Path
 MESSAGE = ("bento: no pre-PR review recorded for HEAD. Commit, push and PR requests go through "
            "bento-ship (QA, pre-PR review, ticket update). If this ran outside it, tell the user; "
            "a rebase push needs no bento-ship run.")
+NO_SHIP = ("bento: no bento-ship record for HEAD. Commit, push and PR requests go through bento-ship "
+           "(learnings, QA, pre-PR review, ticket update): invoke the skill, also when it already ran "
+           "earlier in this session; a copy loaded earlier does not count. If this ran outside it, "
+           "tell the user; a rebase push needs no bento-ship run.")
+OPEN_STEPS = ("bento: the bento-ship record for HEAD has no outcome for: {}. Run each step, or mark it "
+              "`skipped (<reason>)`: the user's request, a repo preference, or its condition not met. "
+              "Only bento-learn decides that no learning survives.")
+SHIP_STEPS = ("ticket", "sync", "learn", "docs", "qa", "security", "checks", "self-review",
+              "hotspots", "pre-pr-review")
 BYPASS = "BENTO_PRE_PR_REVIEW=skip"
 FIX_SUBJECT = "fix: address adversarial review findings"  # bento-adversarial-review ship mode
 GIT_ARG_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
@@ -46,6 +60,29 @@ def git_push_repo(tokens: list[str], i: int, here: str) -> str | None:
             repo = os.path.join(here, tokens[j + 1])
         j += 2 if tokens[j] in GIT_ARG_OPTS else 1
     return repo if tokens[j:j + 1] == ["push"] else None
+
+
+HEREDOC = re.compile(r"(?<![<\d])<<(-?)\s*(?:'([^'\n]+)'|\"([^\"\n]+)\"|\\?([\w.-]+))")
+
+
+def without_heredocs(command: str) -> str:
+    """The command minus each heredoc body that isn't a script for a shell (`bash <<EOF`)."""
+    out: list[str] = []
+    pending: list[tuple[str, bool, bool]] = []  # (delimiter, `<<-`, body is a script)
+    for line in command.split("\n"):
+        if pending:
+            delim, dash, script = pending[0]
+            if (line.lstrip("\t") if dash else line) == delim:
+                pending.pop(0)
+            elif script:
+                out.append(line)
+            continue
+        out.append(line)
+        for match in HEREDOC.finditer(line):
+            words = re.split(r"[;&|(]", line[:match.start()])[-1].split()
+            script = bool(words) and os.path.basename(words[0]) in SHELLS
+            pending.append((match.group(2) or match.group(3) or match.group(4), bool(match.group(1)), script))
+    return "\n".join(out)
 
 
 def tokenize(command: str) -> tuple[list[str], set[int]] | None:
@@ -92,8 +129,7 @@ def gated_at(tokens: list[str], i: int, here: str) -> list[str]:
 
 def gated_dirs(command: str, cwd: str) -> list[str]:
     """The directory of each `git push` / `gh pr create` in a shell command, following `cd`."""
-    if BYPASS in command:
-        return []
+    command = without_heredocs(command)
     parsed = tokenize(command)
     if parsed is None:  # match the raw text
         return [cwd] if re.search(r"\bgit(\s+-\S+)*\s+push\b|\bgh\s+pr\s+create\b", command) else []
@@ -126,26 +162,64 @@ def exempt_branch(top: str) -> bool:
     return bool(branch) and any(glob and fnmatch.fnmatchcase(branch, glob) for glob in globs)
 
 
-def opted_out(top: str) -> bool:
-    """The overlay skips the review or exempts this branch; unreadable → True (fail open)."""
+def opted_out(top: str, check) -> bool:
+    """`check(top)` on the overlay; unreadable → True (fail open)."""
     try:
-        return review_skipped(top) or exempt_branch(top)
+        return check(top)
     except (OSError, UnicodeDecodeError):
         return True
 
 
-def reviewed(repo: str) -> bool:
-    """True when HEAD needs no further pre-PR review before it leaves this machine."""
+def runner(repo: str):
     def git(*args: str) -> subprocess.CompletedProcess:
         return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True)
+    return git
 
-    top = git("rev-parse", "--show-toplevel")
-    if top.returncode or opted_out(top.stdout.strip()):
-        return True  # not a repo (nothing to push), or the repo opted out
+
+def read_record(repo: str, name: str) -> list[str] | None:
+    """The lines of `git rev-parse --git-path <name>`, or None when it is missing."""
     try:
-        sha = Path(repo, git("rev-parse", "--git-path", "adversarial-review.head").stdout.strip()).read_text().strip()
-    except OSError:
+        return Path(repo, runner(repo)("rev-parse", "--git-path", name).stdout.strip()).read_text().splitlines()
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def open_steps(repo: str) -> list[str] | None:
+    """SHIP_STEPS the ship record leaves without an outcome; None without a record of HEAD."""
+    lines = read_record(repo, "bento-ship.head")
+    head = runner(repo)("rev-parse", "HEAD").stdout.strip()
+    if not lines or not head or lines[0].strip() != head:
+        return None
+    outcomes = {}
+    for line in lines[1:]:
+        match = re.match(r"\s*[-*]?\s*([\w-]+)\s*:\s*(done|skipped)\b\W*(.*)$", line, re.I)
+        if match and (match.group(2).lower() == "done" or match.group(3).strip(" ()")):
+            outcomes[match.group(1).lower()] = True
+    return [step for step in SHIP_STEPS if step not in outcomes]
+
+
+def problem(repo: str, review_bypassed: bool = False) -> str | None:
+    """Why HEAD should not leave this machine yet, or None."""
+    top = runner(repo)("rev-parse", "--show-toplevel")
+    if top.returncode or opted_out(top.stdout.strip(), exempt_branch):
+        return None  # not a repo (nothing to push), or another automation's branch
+    steps = open_steps(repo)
+    if steps is None:
+        return NO_SHIP
+    if steps:
+        return OPEN_STEPS.format(", ".join(steps))
+    if review_bypassed or opted_out(top.stdout.strip(), review_skipped) or reviewed(repo):
+        return None
+    return MESSAGE
+
+
+def reviewed(repo: str) -> bool:
+    """True when a pre-PR review covers HEAD."""
+    git = runner(repo)
+    lines = read_record(repo, "adversarial-review.head")
+    if not lines:
         return False
+    sha = lines[0].strip()
     head = git("rev-parse", "HEAD").stdout.strip()
     recorded = git("rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}").stdout.strip()
     if not recorded or recorded == head:
@@ -169,8 +243,10 @@ def hook() -> int:
         dirs = gated_dirs(command, event.get("cwd") or os.getcwd()) if isinstance(command, str) else []
     except (ValueError, AttributeError):  # not a tool-call JSON
         return 0
-    if not all(reviewed(d) for d in dirs):
-        print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": MESSAGE}}))
+    problems = dict.fromkeys(p for p in (problem(d, BYPASS in command) for d in dirs) if p)
+    if problems:
+        context = " ".join(problems)
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": context}}))
     return 0
 
 

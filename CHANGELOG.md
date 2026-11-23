@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- **`bento-ship` runs every step, every time.** In three weeks of a downstream repo's sessions,
+  QA ran in 56% of ship runs and learnings in 47%, though both were set to always. A second ship
+  request in a session ran a partial flow from memory, no checklist was written, and the agent
+  judged learnings unnecessary on its own. Now the skill (and the "Ship through bento-ship"
+  principle) is invoked on every request, a repeat included; it starts with a todo per step and
+  closes each as done or skipped with a reason; only `bento-learn` decides no learning survives,
+  and on a "don't stop me" request learnings go unapplied to the PR body's `## Open learnings`
+  instead of a stop. Step 12 writes a ship record (`git rev-parse --git-path bento-ship.head`),
+  and the push gate reminds the agent when it is missing, names another commit, or leaves a
+  step without an outcome. `BENTO_PRE_PR_REVIEW=skip` and `Pre-PR review: skip` now waive only
+  the review check. Rerun `bento-setup` after updating, to refresh the principle.
+
+- **The push gate ignores `git push` written inside a heredoc.** A Python heredoc holding the
+  regex `r"git push|gh pr create"` set off the reminder; heredoc bodies are now text unless a
+  shell reads them (`bash <<EOF`).
+
 - **`bento-learn` reads a session once and keeps other accounts' sessions out.** Control Room
   moves a thread to another Claude account by copying its transcript, so `sessions.py` printed and
   counted that session twice; it now keeps the newest copy. A session run in another directory
