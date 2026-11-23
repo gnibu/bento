@@ -21,6 +21,8 @@ This repo runs its own working-tree skills (`/bento-ship`, `/bento-adversarial-r
 Conductor links them in each new workspace; elsewhere, run the `setup` command from
 `.conductor/settings.toml` once per checkout.
 
+The Skill tool sees only skills linked before the session began; else follow `SKILL.md` by hand.
+
 Never commit these links: `npx skills` would then find the skills under `.agents/skills/` and
 record that path, which GitHub's tree has as a symlink, breaking consumers' update checks.
 After editing `PRINCIPLES.md`, rerun

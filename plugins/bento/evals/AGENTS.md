@@ -6,3 +6,5 @@
 - `--json <file>` puts runs under `cases[].arms.with[]`, each with `graders[].passed`.
 - Haiku judges misgrade long answers: recheck a failed `llm` grader with `--judge-model sonnet`.
 - The sandbox's `/usr/bin/git` can fail, so agents run `$G push`: a git grader starts `(?:\bgit|\$\{?(?:G|GIT)\}?)\s+`.
+- Grader `input_match` is a JS regex: inline `(?i)` matches nothing; use `[Ll]earn`.
+- One prompt per case: an earlier turn in `append_system_prompt` didn't reproduce a repeat skip.
