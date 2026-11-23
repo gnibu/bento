@@ -89,7 +89,8 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
    survives, never your own read of the branch ("this PR is the learning", "already
    documented"). Hold its repo-specific (L2) proposals for step 11. Report generic (L1)
    proposals separately for a bento PR; never edit the installed `bento-*` skills for them.
-   Nothing survives → move on. Skip only if `bento-learn` isn't installed.
+   Nothing survives → move on. Skip only for `Learnings: no`, the user's request, or a missing
+   `bento-learn`.
 5. **Docs, version + changelog** *(default)*. Public behavior, CLI flags, API/config contracts
    or usage examples changed → run `/bento-docs` against the branch diff before final checks.
    It updates affected docs and release notes and verifies examples against the implementation.
@@ -134,7 +135,8 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
 11. **The single stop before pushing** — only if there are L2 learnings to approve, or QA,
     security or pre-PR review questions to answer. The user asked not to be stopped ("ship and
     merge", an unattended run) → learnings alone never stop: list each L2 proposal, unapplied,
-    under `## Open learnings` in the PR body, so running step 4 never costs a stop. Wait for any background check first: the
+    under `## Open learnings` in the PR body (no PR this run: in the report), so running step 4
+    never costs a stop. Wait for any background check first: the
     stop is your last message, and one that ends after it means writing the whole stop again.
     Show each learning's diff, then end with this, leaving out empty sections:
 

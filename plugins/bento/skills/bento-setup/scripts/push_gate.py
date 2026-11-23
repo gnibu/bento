@@ -62,7 +62,39 @@ def git_push_repo(tokens: list[str], i: int, here: str) -> str | None:
     return repo if tokens[j:j + 1] == ["push"] else None
 
 
-HEREDOC = re.compile(r"(?<![<\d])<<(-?)\s*(?:'([^'\n]+)'|\"([^\"\n]+)\"|\\?([\w.-]+))")
+HEREDOC = re.compile(r"<<(-?)\s*(?:'([^'\n]+)'|\"([^\"\n]+)\"|\\?([\w.-]+))")
+PREFIXES = {"env", "command", "exec", "nohup", "time", "sudo"}
+
+
+def heredocs(line: str):
+    """Each `<<` operator outside quotes and comments in a line of shell."""
+    quote, i = "", 0
+    while i < len(line):
+        ch = line[i]
+        if quote:
+            quote = "" if ch == quote else quote
+            i += 2 if ch == "\\" and quote == '"' else 1
+            continue
+        if ch == "\\":
+            i += 2
+            continue
+        if ch in "'\"":
+            quote = ch
+        elif ch == "#" and (i == 0 or line[i - 1].isspace()):
+            return
+        elif line.startswith("<<", i) and not line.startswith("<<<", i) and (i == 0 or line[i - 1] not in "<0123456789"):
+            match = HEREDOC.match(line, i)
+            if match:
+                yield match
+                i = match.end()
+                continue
+        i += 1
+
+
+def runs_shell(words: list[str]) -> bool:
+    """The command words run a shell, past `VAR=x` and wrappers such as `env`."""
+    words = [w for w in words if "=" not in w and os.path.basename(w) not in PREFIXES]
+    return bool(words) and os.path.basename(words[0]) in SHELLS
 
 
 def without_heredocs(command: str) -> str:
@@ -78,9 +110,8 @@ def without_heredocs(command: str) -> str:
                 out.append(line)
             continue
         out.append(line)
-        for match in HEREDOC.finditer(line):
-            words = re.split(r"[;&|(]", line[:match.start()])[-1].split()
-            script = bool(words) and os.path.basename(words[0]) in SHELLS
+        for match in heredocs(line):
+            script = runs_shell(re.split(r"[;&|(]", line[:match.start()])[-1].split())
             pending.append((match.group(2) or match.group(3) or match.group(4), bool(match.group(1)), script))
     return "\n".join(out)
 
@@ -243,7 +274,8 @@ def hook() -> int:
         dirs = gated_dirs(command, event.get("cwd") or os.getcwd()) if isinstance(command, str) else []
     except (ValueError, AttributeError):  # not a tool-call JSON
         return 0
-    problems = dict.fromkeys(p for p in (problem(d, BYPASS in command) for d in dirs) if p)
+    bypassed = isinstance(command, str) and BYPASS in without_heredocs(command)
+    problems = dict.fromkeys(p for p in (problem(d, bypassed) for d in dirs) if p)
     if problems:
         context = " ".join(problems)
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": context}}))

@@ -22,6 +22,16 @@ graders:
     tool: TaskCreate  # Claude Code's todo tool
     input_match: '[Ll]earn'
     arm: with-only
+  - type: tool_used
+    name: checklist-has-qa
+    tool: TaskCreate
+    input_match: '\bQA\b|bento-qa'
+    arm: with-only
+  - type: tool_used
+    name: checklist-has-pre-pr-review
+    tool: TaskCreate
+    input_match: '[Pp]re-PR review|adversarial'
+    arm: with-only
   - type: llm
     name: learnings-run-not-judged
     criteria: 'The repo records "Learnings: yes" and bento-learn is installed. PASS if the plan runs
@@ -44,7 +54,7 @@ graders:
   - type: tool_used
     name: no-commit-push-pr
     tool: Bash
-    input_match: \b(?:git\s+(?:commit|push|merge)|(?:gh|glab)\s+(?:pr|mr)\s+(?:create|merge))\b
+    input_match: \b(?:git\s+(?:commit|push|merge)|(?:gh|glab)\s+(?:pr|mr)\s+(?:create|merge))(?=\s|$|;|&|\|)
     min: 0
     max: 0
     arm: both

@@ -53,6 +53,9 @@ class GatedDirsTest(unittest.TestCase):
         self.assertEqual(gated_dirs("cat <<-X > f\n\tgit push\n\tX\ngh pr create", "/r"), ["/r"])
         self.assertEqual(gated_dirs("bash <<'EOF'\ngit push\nEOF", "/r"), ["/r"])
         self.assertEqual(gated_dirs('cat <<< "git push"', "/r"), [])
+        self.assertEqual(gated_dirs("printf '%s\\n' '<<EOF'\ngit push", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("echo x # <<EOF\ngit push", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("env FOO=1 bash <<'S'\ngit push\nS", "/r"), ["/r"])
 
 
 class ReviewedTest(unittest.TestCase):
@@ -167,6 +170,10 @@ class ReviewedTest(unittest.TestCase):
                              "cwd": str(self.repo)})
         self.commit("feat: unshipped")
         self.assertEqual(self.run_hook(bypass), (0, NO_SHIP))  # the bypass waives the review only
+        self.ship()
+        quoted = json.dumps({"tool_name": "Bash", "cwd": str(self.repo), "tool_input": {
+            "command": "cat > notes.md <<'EOF'\nBENTO_PRE_PR_REVIEW=skip\nEOF\ngit push"}})
+        self.assertEqual(self.run_hook(quoted), (0, MESSAGE))  # text in a heredoc is no bypass
 
     def test_hook_reminds_under_the_oldest_python(self):
         exe = oldest_python()
