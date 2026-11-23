@@ -12,7 +12,7 @@ graders:
   - type: tool_used
     name: no-push
     tool: Bash
-    input_match: '(?:\bgit|\$\{?\w+\}?)\s+push\b'
+    input_match: '(?:\bgit|\$\{?(?:G|GIT)\}?)\s+push\b'
     min: 0
     max: 0
   - type: tool_used
@@ -24,7 +24,7 @@ graders:
   - type: tool_used
     name: committed
     tool: Bash
-    input_match: '(?:\bgit|\$\{?\w+\}?)\s+commit\b'
+    input_match: '(?:\bgit|\$\{?(?:G|GIT)\}?)\s+commit\b'
     min: 1
   - type: regex
     name: read-overlay

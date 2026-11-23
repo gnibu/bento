@@ -80,7 +80,7 @@ def heredocs(line: str):
             continue
         if ch in "'\"":
             quote = ch
-        elif ch == "#" and (i == 0 or line[i - 1].isspace()):
+        elif ch == "#" and (i == 0 or line[i - 1].isspace() or line[i - 1] in ";&|()"):
             return
         elif line.startswith("<<", i) and not line.startswith("<<<", i) and (i == 0 or line[i - 1] not in "<0123456789"):
             match = HEREDOC.match(line, i)
@@ -92,8 +92,8 @@ def heredocs(line: str):
 
 
 def runs_shell(words: list[str]) -> bool:
-    """The command words run a shell, past `VAR=x` and wrappers such as `env`."""
-    words = [w for w in words if "=" not in w and os.path.basename(w) not in PREFIXES]
+    """The command words run a shell, past `VAR=x` and wrappers such as `env -i`."""
+    words = [w for w in words if "=" not in w and not w.startswith("-") and os.path.basename(w) not in PREFIXES]
     return bool(words) and os.path.basename(words[0]) in SHELLS
 
 

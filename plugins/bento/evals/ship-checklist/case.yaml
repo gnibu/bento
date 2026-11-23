@@ -54,7 +54,7 @@ graders:
   - type: tool_used
     name: no-commit-push-pr
     tool: Bash
-    input_match: '(?:(?:\bgit|\$\{?\w+\}?)\s+(?:commit|push|merge)|\b(?:gh|glab)\s+(?:pr|mr)\s+(?:create|merge))(?=\s|$|;|&|\|)'
+    input_match: '(?:(?:\bgit|\$\{?(?:G|GIT)\}?)\s+(?:commit|push|merge)|\b(?:gh|glab)\s+(?:pr|mr)\s+(?:create|merge))(?![\w-])'
     min: 0
     max: 0
     arm: both

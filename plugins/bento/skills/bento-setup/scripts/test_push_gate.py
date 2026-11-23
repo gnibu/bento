@@ -56,6 +56,8 @@ class GatedDirsTest(unittest.TestCase):
         self.assertEqual(gated_dirs("printf '%s\\n' '<<EOF'\ngit push", "/r"), ["/r"])
         self.assertEqual(gated_dirs("echo x # <<EOF\ngit push", "/r"), ["/r"])
         self.assertEqual(gated_dirs("env FOO=1 bash <<'S'\ngit push\nS", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("env -i bash <<'S'\ngit push\nS", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("echo x;# <<EOF\ngit push", "/r"), ["/r"])
 
 
 class ReviewedTest(unittest.TestCase):
