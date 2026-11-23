@@ -21,6 +21,8 @@ This repo runs its own working-tree skills (`/bento-ship`, `/bento-adversarial-r
 Conductor links them in each new workspace; elsewhere, run the `setup` command from
 `.conductor/settings.toml` once per checkout.
 
+The Skill tool sees only skills linked before the session began; else follow `SKILL.md` by hand.
+
 Never commit these links: `npx skills` would then find the skills under `.agents/skills/` and
 record that path, which GitHub's tree has as a symlink, breaking consumers' update checks.
 After editing `PRINCIPLES.md`, rerun
@@ -80,7 +82,8 @@ The reader may see only your last message: write it for someone who did not watc
 
 However short the request ("commit PR", "push", "commit this"), run `bento-ship` rather than
 `git commit`, `git push` or `gh pr create` yourself: it is where QA, the pre-PR review and the
-ticket update happen, and a direct commit skips all three.
+ticket update happen, and a direct commit skips all three. Invoke it on every such request,
+also when it already ran earlier in this session: a copy loaded earlier does not count.
 
 A rebase is not one, even when it ends in a force-push: rebase, rerun the checks and ask
 before pushing, without `bento-ship`.

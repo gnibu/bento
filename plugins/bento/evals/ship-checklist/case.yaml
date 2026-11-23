@@ -1,0 +1,60 @@
+schema_version: "1.0"
+name: ship-checklist
+tags: [workflow, workflow-change]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch and merge it, I don't want to be stopped. Dry run only: do not edit,
+    commit, push, open a PR, merge, or contact a tracker, and don't run the step skills themselves.
+    Set up this run as you would for real, then tell me for each step whether you would run it or
+    skip it, and why."
+  max_turns: 12
+  timeout_seconds: 240
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, TaskCreate, TaskUpdate]
+graders:
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-ship"'
+    arm: with-only
+  - type: tool_used
+    name: checklist-has-learnings
+    tool: TaskCreate  # Claude Code's todo tool
+    input_match: '[Ll]earn'
+    arm: with-only
+  - type: tool_used
+    name: checklist-has-qa
+    tool: TaskCreate
+    input_match: '\bQA\b|bento-qa'
+    arm: with-only
+  - type: tool_used
+    name: checklist-has-pre-pr-review
+    tool: TaskCreate
+    input_match: '[Pp]re-PR review|adversarial'
+    arm: with-only
+  - type: llm
+    name: learnings-run-not-judged
+    criteria: 'The repo records "Learnings: yes" and bento-learn is installed. PASS if the plan runs
+      bento-learn (capturing learnings) and does not skip it on its own judgment (e.g. "nothing worth
+      recording", "small change"). FAIL if learnings are skipped or made optional for any reason
+      other than the user asking or the skill being missing.'
+    focus: last_message
+  - type: llm
+    name: learnings-do-not-stop
+    criteria: 'The user asked not to be stopped. PASS if the plan says repo-specific learnings bento-learn
+      proposes would be listed unapplied in the PR body (or a follow-up) rather than stopping for
+      approval. FAIL if it plans to stop for learnings, or to skip them to avoid a stop. Saying it
+      will not merge, or will ask before merging, is fine.'
+    focus: last_message
+  - type: llm
+    name: qa-runs
+    criteria: 'The repo records "QA: always". PASS if the plan runs QA (bento-qa). FAIL if QA is
+      skipped or made optional.'
+    focus: last_message
+  - type: tool_used
+    name: no-commit-push-pr
+    tool: Bash
+    input_match: '(?:(?:\bgit|\$\{?(?:G|\w*(?:GIT|[Gg]it)\w*)\}?)\s+(?:commit|push|merge)|\b(?:gh|glab)\s+(?:pr|mr)\s+(?:create|merge))(?![\w-])'
+    min: 0
+    max: 0
+    arm: both

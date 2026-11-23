@@ -6,9 +6,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from push_gate import FIX_SUBJECT, MESSAGE, gated_dirs, hook_command, install, reviewed, uninstall
+from push_gate import (FIX_SUBJECT, MESSAGE, NO_SHIP, OPEN_STEPS, SHIP_STEPS, gated_dirs, hook_command,
+                       install, problem, reviewed, uninstall)
 
 SCRIPT = Path(__file__).resolve().parent / "push_gate.py"
+SHIP_SKILL = Path(__file__).resolve().parents[2] / "bento-ship/SKILL.md"
 OLDEST = (3, 9)  # the macOS system python3
 
 
@@ -40,10 +42,22 @@ class GatedDirsTest(unittest.TestCase):
         self.assertEqual(gated_dirs('cd /t && printf "(" && cd /a && printf ")" && git push', "/r"), ["/a"])
         self.assertEqual(gated_dirs('git -C "my dir" push', "/r"), ["/r/my dir"])
 
-    def test_ignores_other_commands_and_the_bypass(self):
+    def test_ignores_other_commands(self):
         self.assertEqual(gated_dirs('git commit -m "push it"', "/r"), [])
         self.assertEqual(gated_dirs("git log --grep push; gh pr view", "/r"), [])
-        self.assertEqual(gated_dirs("BENTO_PRE_PR_REVIEW=skip git push", "/r"), [])
+
+    def test_heredoc_text_is_not_a_command(self):
+        regex = "python3 - <<'EOF'\nhits = re.search(r\"git push|gh pr create\", l)\nEOF"
+        self.assertEqual(gated_dirs(regex, "/r"), [])
+        self.assertEqual(gated_dirs("cat > f <<EOF\nit's git push time\nEOF", "/r"), [])
+        self.assertEqual(gated_dirs("cat <<-X > f\n\tgit push\n\tX\ngh pr create", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("bash <<'EOF'\ngit push\nEOF", "/r"), ["/r"])
+        self.assertEqual(gated_dirs('cat <<< "git push"', "/r"), [])
+        self.assertEqual(gated_dirs("printf '%s\\n' '<<EOF'\ngit push", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("echo x # <<EOF\ngit push", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("env FOO=1 bash <<'S'\ngit push\nS", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("env -i bash <<'S'\ngit push\nS", "/r"), ["/r"])
+        self.assertEqual(gated_dirs("echo x;# <<EOF\ngit push", "/r"), ["/r"])
 
 
 class ReviewedTest(unittest.TestCase):
@@ -59,6 +73,15 @@ class ReviewedTest(unittest.TestCase):
         (self.repo / git(self.repo, "rev-parse", "--git-path", "adversarial-review.head")).write_text(
             git(self.repo, "rev-parse", rev) + "\n")
 
+    def ship(self, steps=SHIP_STEPS, rev="HEAD", outcome="done"):
+        lines = [git(self.repo, "rev-parse", rev)] + [f"{step}: {outcome}" for step in steps]
+        (self.repo / git(self.repo, "rev-parse", "--git-path", "bento-ship.head")).write_text("\n".join(lines) + "\n")
+
+    def overlay(self, text):
+        overlay = self.repo / ".agents/bento/bento-ship.md"
+        overlay.parent.mkdir(parents=True, exist_ok=True)
+        overlay.write_text(text)
+
     def test_needs_a_record_of_head(self):
         self.assertFalse(reviewed(str(self.repo)))
         self.record()
@@ -71,38 +94,63 @@ class ReviewedTest(unittest.TestCase):
         self.commit("feat: unreviewed")
         self.assertFalse(reviewed(str(self.repo)))
 
+    def test_needs_a_ship_record_of_head(self):
+        self.record()
+        self.assertEqual(problem(str(self.repo)), NO_SHIP)  # a review alone is a partial flow
+        self.ship()
+        self.assertIsNone(problem(str(self.repo)))
+        self.commit("feat: later work")  # a second ship request in the same session
+        self.record()
+        self.assertEqual(problem(str(self.repo)), NO_SHIP)
+
+    def test_every_step_needs_an_outcome(self):
+        self.record()
+        self.ship([s for s in SHIP_STEPS if s not in ("learn", "qa")])
+        self.assertEqual(problem(str(self.repo)), OPEN_STEPS.format("learn, qa"))
+        self.ship(outcome="skipped")  # no reason
+        self.assertEqual(problem(str(self.repo)), OPEN_STEPS.format(", ".join(SHIP_STEPS)))
+        self.ship(outcome="skipped (internal-only change)")
+        self.assertIsNone(problem(str(self.repo)))
+
+    def test_ship_record_does_not_replace_the_review(self):
+        self.ship()
+        self.assertEqual(problem(str(self.repo)), MESSAGE)
+        self.assertIsNone(problem(str(self.repo), review_bypassed=True))
+        self.overlay("- Pre-PR review: skip\n")
+        self.assertIsNone(problem(str(self.repo)))
+
     def test_overlay_skip_and_non_repo(self):
-        overlay = self.repo / ".agents/bento/bento-ship.md"
-        overlay.parent.mkdir(parents=True)
-        overlay.write_text("- Pre-PR review: always\n")
-        self.assertFalse(reviewed(str(self.repo)))
-        overlay.write_text("- Pre-PR review: skip\n")
-        self.assertTrue(reviewed(str(self.repo)))
-        self.assertTrue(reviewed(tempfile.mkdtemp()))
+        self.overlay("- Pre-PR review: skip\n")
+        self.assertEqual(problem(str(self.repo)), NO_SHIP)  # skipping the review is not skipping bento-ship
+        self.assertIsNone(problem(tempfile.mkdtemp()))
 
     def test_overlay_exempts_matching_branches(self):
-        overlay = self.repo / ".agents/bento/bento-ship.md"
-        overlay.parent.mkdir(parents=True)
-        overlay.write_text("- Pre-PR review: always\n")
+        self.overlay("- Pre-PR review: always\n")
         git(self.repo, "switch", "-q", "-c", "nightshift/run-42")
-        self.assertFalse(reviewed(str(self.repo)))  # no preference line: gated
-        overlay.write_text("- Pre-PR review: always\n- Pre-PR review gate: except nightshift/*\n")
-        self.assertTrue(reviewed(str(self.repo)))
+        self.assertIsNotNone(problem(str(self.repo)))  # no preference line: gated
+        self.overlay("- Pre-PR review: always\n- Pre-PR review gate: except nightshift/*\n")
+        self.assertIsNone(problem(str(self.repo)))
         git(self.repo, "switch", "-q", "-c", "feature/x")
-        self.assertFalse(reviewed(str(self.repo)))
-        overlay.write_text("- Pre-PR review gate: except nightshift/*, renovate/*\n")
+        self.assertIsNotNone(problem(str(self.repo)))
+        self.overlay("- Pre-PR review gate: except nightshift/*, renovate/*\n")
         git(self.repo, "switch", "-q", "-c", "renovate/deps")
-        self.assertTrue(reviewed(str(self.repo)))
+        self.assertIsNone(problem(str(self.repo)))
         git(self.repo, "switch", "-q", "nightshift/run-42")
-        self.assertTrue(reviewed(str(self.repo)))
+        self.assertIsNone(problem(str(self.repo)))
         git(self.repo, "switch", "-q", "--detach")
-        self.assertFalse(reviewed(str(self.repo)))
+        self.assertIsNotNone(problem(str(self.repo)))
 
     def test_unreadable_overlay_fails_open(self):
         overlay = self.repo / ".agents/bento/bento-ship.md"
         overlay.parent.mkdir(parents=True)
         overlay.write_bytes(b"- Pre-PR review: always\n\xff\n")
-        self.assertTrue(reviewed(str(self.repo)))
+        self.assertIsNone(problem(str(self.repo)))
+
+    def test_bento_ship_names_every_step(self):
+        text = SHIP_SKILL.read_text()
+        self.assertIn("bento-ship.head", text)
+        for step in SHIP_STEPS:
+            self.assertIn(f"`{step}`", text, step)
 
     def run_hook(self, event, exe=sys.executable):
         """The hook's exit code and the reminder it gave the agent, if any."""
@@ -115,15 +163,27 @@ class ReviewedTest(unittest.TestCase):
                             "cwd": str(self.repo)})
         self.assertEqual(self.run_hook(patch), (0, None))
         event = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git push"}, "cwd": str(self.repo)})
+        self.assertEqual(self.run_hook(event), (0, NO_SHIP))
+        self.ship()
         self.assertEqual(self.run_hook(event), (0, MESSAGE))
         self.record()
         self.assertEqual(self.run_hook(event), (0, None))
+        bypass = json.dumps({"tool_name": "Bash", "tool_input": {"command": "BENTO_PRE_PR_REVIEW=skip git push"},
+                             "cwd": str(self.repo)})
+        self.commit("feat: unshipped")
+        self.assertEqual(self.run_hook(bypass), (0, NO_SHIP))  # the bypass waives the review only
+        self.ship()
+        quoted = json.dumps({"tool_name": "Bash", "cwd": str(self.repo), "tool_input": {
+            "command": "cat > notes.md <<'EOF'\nBENTO_PRE_PR_REVIEW=skip\nEOF\ngit push"}})
+        self.assertEqual(self.run_hook(quoted), (0, MESSAGE))  # text in a heredoc is no bypass
 
     def test_hook_reminds_under_the_oldest_python(self):
         exe = oldest_python()
         if not exe:
             self.skipTest(f"no Python {OLDEST[0]}.{OLDEST[1]} found")
         event = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git push"}, "cwd": str(self.repo)})
+        self.assertEqual(self.run_hook(event, exe), (0, NO_SHIP))
+        self.ship()
         self.assertEqual(self.run_hook(event, exe), (0, MESSAGE))
 
 
