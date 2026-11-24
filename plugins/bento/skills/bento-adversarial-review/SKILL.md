@@ -78,11 +78,12 @@ models below are *(default)*.
 | Codex (or any non-Claude model) | Claude `opus` | C |
 
 **Reviewer out of quota → same provider.** When the reviewer's run ends with a non-zero `EXIT`
-and the end of its `.log` (`tail -n 40`) says it hit a usage limit, rate limit, `429` or quota,
-rerun `review.py` once with your own family's CLI as `<REVIEWER>` (`claude` under Claude, `codex`
-under Codex), same scope and focus. It is a fresh context, not the other family: say in the
-result that the review ran on the same provider, and why. Any other reviewer failure is reported,
-not swapped.
+and the end of its `.log` or `.md` (`tail -n 40`; `claude -p` prints its errors to the `.md`)
+says it hit a usage limit, rate limit, `429` or quota, rerun `review.py` once with your own
+family's CLI as `<REVIEWER>` (`claude` under Claude, `codex` under Codex; any other host → Path
+A), same scope and focus. It is a fresh context, not the other family: say in the result that
+the review ran on the same provider, and why. Any other reviewer failure is reported, not
+swapped.
 
 Fall back to Path A only if the reviewer's CLI is missing (`command -v codex` / `command -v
 claude`), or out of quota and your own CLI is missing, and say in the result that you did.
