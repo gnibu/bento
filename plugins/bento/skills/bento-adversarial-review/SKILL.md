@@ -3,10 +3,10 @@ name: bento-adversarial-review
 description: |
   Run an adversarial code review of a diff by the other model family, then triage every
   finding against the real code. Under Claude the reviewer is `codex exec` (gpt-6.2-astra);
-  under Codex it is headless `claude -p` (opus). Interactive mode (default) gets explicit
-  human sign-off before fixing anything; ship mode (called by a ship flow) fixes verified
-  findings itself and returns only the ones that need a human decision. Skips commits it
-  already reviewed. Triggers:
+  under Codex it is headless `claude -p` (opus); a reviewer out of quota falls back to the
+  same provider's CLI. Interactive mode (default) gets explicit human sign-off before fixing
+  anything; ship mode (called by a ship flow) fixes verified findings itself and returns only
+  the ones that need a human decision. Skips commits it already reviewed. Triggers:
   "adversarial review", "codex review", "claude review", "second opinion on my diff",
   "outside review".
 ---
@@ -77,8 +77,15 @@ models below are *(default)*.
 | Claude | Codex `gpt-6.2-astra` | B |
 | Codex (or any non-Claude model) | Claude `opus` | C |
 
+**Reviewer out of quota → same provider.** When the reviewer's run ends with a non-zero `EXIT`
+and the end of its `.log` (`tail -n 40`) says it hit a usage limit, rate limit, `429` or quota,
+rerun `review.py` once with your own family's CLI as `<REVIEWER>` (`claude` under Claude, `codex`
+under Codex), same scope and focus. It is a fresh context, not the other family: say in the
+result that the review ran on the same provider, and why. Any other reviewer failure is reported,
+not swapped.
+
 Fall back to Path A only if the reviewer's CLI is missing (`command -v codex` / `command -v
-claude`), and say in the result that you did.
+claude`), or out of quota and your own CLI is missing, and say in the result that you did.
 
 ### Path A — fallback: your own sub-agents
 

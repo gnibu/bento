@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **`bento-adversarial-review` falls back to the same provider when the reviewer is out of
+  quota.** A Codex (or Claude) run that ends on a usage limit, rate limit or `429` is rerun once
+  with your own family's CLI (`claude -p` under Claude), and the result says the review ran on
+  the same provider. Path A's sub-agents stay the fallback for a missing CLI.
+
 - **`bento-ship` runs every step, every time.** In three weeks of a downstream repo's sessions,
   QA ran in 56% of ship runs and learnings in 47%, though both were set to always. A second ship
   request in a session ran a partial flow from memory, no checklist was written, and the agent
