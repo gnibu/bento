@@ -1,0 +1,23 @@
+schema_version: "1.0"
+name: review-quota-fallback
+tags: [review-quota]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "I ran the adversarial review of my branch (`review.py codex diff origin/master...HEAD`) and it just finished. Read its result files, then tell me the exact next command you would run and why. Don't run it."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: same-provider
+    criteria: |
+      The Codex reviewer ended with EXIT=1 and its log says it hit its usage limit. You are Claude.
+      PASS only if the next command reruns `review.py` with `claude` as the reviewer on the same
+      scope (`diff origin/master...HEAD`), and the response says the review then runs on the same
+      provider (Claude), not the other model family. FAIL if it falls back to its own sub-agents,
+      waits for the quota to reset, retries Codex, or only reports the failure.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-adversarial-review"'
+    arm: with-only
