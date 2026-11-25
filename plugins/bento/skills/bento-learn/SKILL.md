@@ -86,17 +86,19 @@ preferences.
 - **Overkill check first.** Ask yourself: "Are those learnings not overkill?" Drop one a
   capable agent would get right anyway; shrink one whose text outweighs the mistake it
   prevents (a line, not a section; an existing doc, not a new one).
-- **Root `AGENTS.md` last.** Before proposing a new root entry, name the code folder it is
-  about. All its pointers under one subfolder → propose that folder's `AGENTS.md` (new: plus a
-  `CLAUDE.md` holding `@AGENTS.md`) or its README instead, even when the root already has a
-  section on it, and offer no root fallback. Correcting an existing line in place is fine.
+- **Root `AGENTS.md` last.** Before proposing a new root entry, name who needs it. Only work
+  in one subfolder (its pointers all under it) → propose that folder's nearest `AGENTS.md` (new:
+  plus a `CLAUDE.md` holding `@AGENTS.md`) or its README instead, even when the root already
+  has a section on it, and offer no root fallback. A rule every task needs (a check before
+  each PR) stays at the root; correcting an existing line in place is fine.
 - For each `AGENTS.md`/`CLAUDE.md` you would change, write the proposed text to a temp file
   and run `python3 "<skill>/scripts/check_entries.py" <file> <proposed> [<new doc>...]`, naming
   each doc the proposal creates (`docs/procedures/run-tests.md`). It rejects any new entry over
   one line without a pointer, or over two lines, and an `AGENTS.md` whose `## Docs` menu
   misses a doc git doesn't ignore (no menu: a new doc the file doesn't name). Re-route a
   rejected entry (step 2), add missing docs to the menu; never propose a failing file. A
-  `warning:` names a new entry whose paths all sit in one subfolder: move it there.
+  `warning:` names a new entry whose paths all sit in one subfolder: move it there, unless
+  every task needs it.
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
   Head each with the file, the text it adds, and why: what went wrong, in plain words a
   reader who did not watch the session understands (no turn ids or jargon alone). Add its

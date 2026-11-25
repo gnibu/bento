@@ -95,19 +95,33 @@ class CheckEntriesTests(unittest.TestCase):
     def test_new_entry_about_one_subfolder_is_misplaced(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for folder in ("control-room/e2e", "app", "docs/procedures"):
+            for folder in ("control-room/e2e", "app", "docs/procedures", ".conductor",
+                           "plugins/bento/evals/case", "plugins/bento/skills/x"):
                 Path(root, folder).mkdir(parents=True)
+            Path(root, "CHANGELOG.md").write_text("x")
+            Path(root, "plugins/bento/evals/AGENTS.md").write_text("x")
             old = "- e2e: `node control-room/e2e/drive.js`; fakes in `control-room/test/fakes/`.\n"
             tip = "- **Tests clobber threads:** run `CR_HOME=$(mktemp -d) npm test` in control-room/.\n"
             self.assertEqual(misplaced(root, old, old + tip), [(tip.strip(), "control-room")])
+            # The nearest AGENTS.md over every path, else the deepest folder they share.
+            nested = "- Cases: plugins/bento/evals/case/setup.sh runs first.\n"
+            self.assertEqual(misplaced(root, old, old + nested), [(nested.strip(), "plugins/bento/evals")])
+            deep = "- See plugins/bento/skills/x/a.py and plugins/bento/skills/x/b.py.\n"
+            self.assertEqual(misplaced(root, old, old + deep), [(deep.strip(), "plugins/bento/skills/x")])
             # A correction of an existing line, a cross-cutting entry, docs/ and home paths pass.
             self.assertEqual(misplaced(root, old, old.replace("test/fakes", "e2e/fakes")), [])
             for entry in ("- See control-room/README.md and app/main.py.\n",
+                          "- Update CHANGELOG.md when adding a case under plugins/bento/evals/.\n",
+                          "- Run .conductor/setup.sh and control-room/e2e/drive.js.\n",
                           "- Before running tests → docs/procedures/run-tests.md\n",
                           "- Logs: ~/.nightshift/control-room/chats/ and $HOME/x/y.\n",
                           "- See https://example.com/control-room/x.\n",
                           "- Missing folder: nowhere/x.js.\n"):
                 self.assertEqual(misplaced(root, old, old + entry), [], entry)
+            # One corrected line exempts only its own replacement.
+            fixed = old.replace("test/fakes", "e2e/fakes")
+            twin = "- e2e: `node control-room/e2e/drive.js`; fakes also in `control-room/e2e/x/`.\n"
+            self.assertEqual(len(misplaced(root, old, fixed + twin)), 1)
 
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:

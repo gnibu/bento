@@ -14,7 +14,8 @@ each one, by its path or a folder below docs/ that holds it ("Design briefs → 
 An AGENTS.md without a `## Docs` section routes docs its own way: only the NEW_DOCs are checked,
 and anywhere in the file. Exits 1 and names each rejected entry and each doc missing from the menu.
 It also warns, without failing, about a new entry whose repo paths all sit under one subfolder
-(not docs/): that folder's own AGENTS.md or README is the cheaper home. A changed line is not new.
+(not docs/, and naming no file at the top): it names the nearest AGENTS.md there, or the folder
+to create one in. A line changed in place is not new.
 """
 import difflib
 import re
@@ -27,8 +28,8 @@ BULLET = re.compile(r"\s*([-*+]|\d+\.)\s")
 # ponytail: a path-shaped token counts as a pointer, resolved or not; check existence if
 # entries start pointing at files that are never written.
 POINTER = re.compile(r"\]\(|https?://|\w/[\w.*]|[\w-]\.(md|py|sh|js|ts|tsx|json|toml|ya?ml)\b")
-# A relative path with a folder: not after ~, $ or / (home, variable, absolute paths).
-REPO_PATH = re.compile(r"(?<![\w~$/.-])(?:\./)?([\w-][\w.-]*)/[\w.*/-]*")
+# A path-like token, not inside a home (~/), variable ($X/) or absolute path.
+TOKEN = re.compile(r"(?<![\w~$/.-])[\w.*/-]+")
 
 
 def entries(text):
@@ -78,21 +79,56 @@ def check(current, proposed):
 
 
 def subfolder(entry, root):
-    """The one folder below root that every repo path in entry sits under, or None."""
-    tops = set(REPO_PATH.findall(re.sub(r"https?://\S+", "", entry)))
-    if len(tops) != 1:
+    """The folder below root to hold entry, when its repo paths all sit in one; else None.
+
+    That is the nearest folder with an AGENTS.md over all the paths, else the deepest one
+    they share. A file at the top, a dot-folder or docs/ keeps the entry where it is."""
+    dirs = []
+    for token in TOKEN.findall(re.sub(r"https?://\S+", "", entry)):
+        token = token.rstrip(".,")
+        parts = [part for part in token.split("/") if part not in ("", ".")]
+        if "/" not in token:
+            if "." in token and (root / token).is_file():
+                return None
+            continue
+        if token.startswith("/") or not parts or parts[0] == "..":
+            continue
+        if parts[0].startswith(".") or parts[0] == "docs":
+            return None
+        if not (root / Path(*parts)).is_dir():
+            parts = parts[:-1]
+        if not parts or not (root / Path(*parts)).is_dir():
+            return None
+        dirs.append(parts)
+    if not dirs:
         return None
-    top = tops.pop()
-    return top if top != "docs" and (root / top).is_dir() else None
+    common = []
+    for level in zip(*dirs):
+        if len(set(level)) > 1:
+            break
+        common.append(level[0])
+    for depth in range(len(common), 0, -1):
+        if (root / Path(*common[:depth]) / "AGENTS.md").is_file():
+            return "/".join(common[:depth])
+    return "/".join(common) or None
 
 
 def misplaced(root, current, proposed):
-    """New entries (not corrections of an old line) whose paths all sit under one subfolder."""
+    """New entries whose paths all sit in one subfolder, and that folder. A line changed in
+    place (close to one removed line, each removed line used once) is not new."""
     old, new = entries(current), entries(proposed)
     removed = [entry for entry in old if entry not in new]
-    return [(entry, folder) for entry in new
-            if entry not in old and (folder := subfolder(entry, root))
-            and not any(difflib.SequenceMatcher(None, entry, gone).ratio() > 0.6 for gone in removed)]
+    found = []
+    for entry in new:
+        if entry in old:
+            continue
+        edit = next((gone for gone in removed
+                     if difflib.SequenceMatcher(None, entry, gone).ratio() > 0.6), None)
+        if edit is not None:
+            removed.remove(edit)
+        elif folder := subfolder(entry, root):
+            found.append((entry, folder))
+    return found
 
 
 def menu_section(text):
