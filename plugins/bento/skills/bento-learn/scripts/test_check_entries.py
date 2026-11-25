@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 
-from check_entries import check, entries, menu_gaps
+from check_entries import check, entries, menu_gaps, misplaced
 
 SCRIPT = Path(__file__).with_name("check_entries.py")
 LONG = "Run the full suite with the database container up, then the browser tests, " \
@@ -92,6 +92,23 @@ class CheckEntriesTests(unittest.TestCase):
             # With a menu, every doc on disk counts, but never an ignored one.
             self.assertEqual(menu_gaps(root, "## Docs\n\n- x\n"), ["docs/DEPLOY.md", "docs/résumé.md"])
 
+    def test_new_entry_about_one_subfolder_is_misplaced(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for folder in ("control-room/e2e", "app", "docs/procedures"):
+                Path(root, folder).mkdir(parents=True)
+            old = "- e2e: `node control-room/e2e/drive.js`; fakes in `control-room/test/fakes/`.\n"
+            tip = "- **Tests clobber threads:** run `CR_HOME=$(mktemp -d) npm test` in control-room/.\n"
+            self.assertEqual(misplaced(root, old, old + tip), [(tip.strip(), "control-room")])
+            # A correction of an existing line, a cross-cutting entry, docs/ and home paths pass.
+            self.assertEqual(misplaced(root, old, old.replace("test/fakes", "e2e/fakes")), [])
+            for entry in ("- See control-room/README.md and app/main.py.\n",
+                          "- Before running tests → docs/procedures/run-tests.md\n",
+                          "- Logs: ~/.nightshift/control-room/chats/ and $HOME/x/y.\n",
+                          "- See https://example.com/control-room/x.\n",
+                          "- Missing folder: nowhere/x.js.\n"):
+                self.assertEqual(misplaced(root, old, old + entry), [], entry)
+
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             proposed = Path(tmp, "proposed.md")
@@ -111,6 +128,12 @@ class CheckEntriesTests(unittest.TestCase):
             result = subprocess.run([sys.executable, SCRIPT, agents, proposed], capture_output=True, text=True)
             self.assertEqual(result.returncode, 1)
             self.assertIn("menu misses docs/DEPLOY.md", result.stdout)
+            Path(tmp, "pkg").mkdir()
+            proposed.write_text("- In pkg/, run `make` before pkg/test.sh.\n")
+            result = subprocess.run([sys.executable, SCRIPT, agents, proposed], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0)  # a warning never fails
+            self.assertIn("warning:", result.stdout)
+            self.assertIn("pkg/AGENTS.md (new: with a CLAUDE.md holding @AGENTS.md)", result.stdout)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **`bento-learn` stops growing the root `AGENTS.md` with learnings that belong lower, or
+  nowhere.** It drops a learning whose cause the branch's own fix removes, sends one whose
+  paths all sit in one subfolder to that folder's `AGENTS.md` or README (`check_entries.py`
+  now warns about it), and says for each learning why it chose that file over a cheaper one,
+  a line `bento-ship`'s stop now shows as **Home**.
+
 - **`bento-adversarial-review` falls back to the same provider when the reviewer is out of
   quota.** A Codex (or Claude) run that ends on a usage limit, rate limit or `429` is rerun once
   with your own family's CLI (`claude -p` under Claude), and the result says the review ran on

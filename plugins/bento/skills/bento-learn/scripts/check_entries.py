@@ -13,7 +13,10 @@ same change (NEW_DOC, relative to the AGENTS.md's directory): its `## Docs` sect
 each one, by its path or a folder below docs/ that holds it ("Design briefs → docs/briefs/").
 An AGENTS.md without a `## Docs` section routes docs its own way: only the NEW_DOCs are checked,
 and anywhere in the file. Exits 1 and names each rejected entry and each doc missing from the menu.
+It also warns, without failing, about a new entry whose repo paths all sit under one subfolder
+(not docs/): that folder's own AGENTS.md or README is the cheaper home. A changed line is not new.
 """
+import difflib
 import re
 import subprocess
 import sys
@@ -24,6 +27,8 @@ BULLET = re.compile(r"\s*([-*+]|\d+\.)\s")
 # ponytail: a path-shaped token counts as a pointer, resolved or not; check existence if
 # entries start pointing at files that are never written.
 POINTER = re.compile(r"\]\(|https?://|\w/[\w.*]|[\w-]\.(md|py|sh|js|ts|tsx|json|toml|ya?ml)\b")
+# A relative path with a folder: not after ~, $ or / (home, variable, absolute paths).
+REPO_PATH = re.compile(r"(?<![\w~$/.-])(?:\./)?([\w-][\w.-]*)/[\w.*/-]*")
 
 
 def entries(text):
@@ -70,6 +75,24 @@ def check(current, proposed):
     old = set(entries(current))
     return [(entry, reason) for entry in entries(proposed)
             if entry not in old and (reason := problem(entry))]
+
+
+def subfolder(entry, root):
+    """The one folder below root that every repo path in entry sits under, or None."""
+    tops = set(REPO_PATH.findall(re.sub(r"https?://\S+", "", entry)))
+    if len(tops) != 1:
+        return None
+    top = tops.pop()
+    return top if top != "docs" and (root / top).is_dir() else None
+
+
+def misplaced(root, current, proposed):
+    """New entries (not corrections of an old line) whose paths all sit under one subfolder."""
+    old, new = entries(current), entries(proposed)
+    removed = [entry for entry in old if entry not in new]
+    return [(entry, folder) for entry in new
+            if entry not in old and (folder := subfolder(entry, root))
+            and not any(difflib.SequenceMatcher(None, entry, gone).ratio() > 0.6 for gone in removed)]
 
 
 def menu_section(text):
@@ -121,6 +144,11 @@ def main():
     for doc in gaps:
         print(f"{current_path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
               " or where this file routes its docs")
+    for entry, folder in misplaced(current_path.parent, current, proposed):
+        home = Path(current_path.parent, folder, "AGENTS.md")
+        new = "" if home.exists() else " (new: with a CLAUDE.md holding @AGENTS.md)"
+        print(f"{current_path}: warning: {entry[:70]}…: every path is under {folder}/: propose"
+              f" {folder}/AGENTS.md{new} or {folder}/README.md instead")
     sys.exit(1 if rejected or gaps else 0)
 
 

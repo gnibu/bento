@@ -47,7 +47,9 @@ session/turn/command:
 
 **Reuse gate (hard filter):** keep a candidate only if you can name a concrete recurring
 trigger. Default to dropping. Surfacing nothing is a valid outcome — don't manufacture
-learnings. Ignore anything already documented (grep first).
+learnings. Ignore anything already documented (grep first). **The fix is the learning:** drop
+one whose cause this branch's own fix removes (how a fixed failure was diagnosed, a workaround
+for it); keep only what still recurs after the fix.
 
 ## 2. Route — one destination per learning
 
@@ -84,15 +86,21 @@ preferences.
 - **Overkill check first.** Ask yourself: "Are those learnings not overkill?" Drop one a
   capable agent would get right anyway; shrink one whose text outweighs the mistake it
   prevents (a line, not a section; an existing doc, not a new one).
+- **Root `AGENTS.md` last.** Before proposing a new root entry, name the code folder it is
+  about. All its pointers under one subfolder → propose that folder's `AGENTS.md` (new: plus a
+  `CLAUDE.md` holding `@AGENTS.md`) or its README instead, even when the root already has a
+  section on it, and offer no root fallback. Correcting an existing line in place is fine.
 - For each `AGENTS.md`/`CLAUDE.md` you would change, write the proposed text to a temp file
   and run `python3 "<skill>/scripts/check_entries.py" <file> <proposed> [<new doc>...]`, naming
   each doc the proposal creates (`docs/procedures/run-tests.md`). It rejects any new entry over
   one line without a pointer, or over two lines, and an `AGENTS.md` whose `## Docs` menu
   misses a doc git doesn't ignore (no menu: a new doc the file doesn't name). Re-route a
-  rejected entry (step 2), add missing docs to the menu; never propose a failing file.
+  rejected entry (step 2), add missing docs to the menu; never propose a failing file. A
+  `warning:` names a new entry whose paths all sit in one subfolder: move it there.
 - Show the concrete diff per learning, grouped by destination, **before** touching anything.
   Head each with the file, the text it adds, and why: what went wrong, in plain words a
-  reader who did not watch the session understands (no turn ids or jargon alone).
+  reader who did not watch the session understands (no turn ids or jargon alone). Add its
+  home: why this file and not a cheaper one (the code, a README, a nested `AGENTS.md`).
 - Apply on explicit go-ahead. Leave commits/PRs to the user (or to `bento-ship`, when it called you).
 - **Preserve generated-file ownership.** If `.bento-state/baseline.json` lists the
   destination, build a proposal from its last-generated text plus this learning,
