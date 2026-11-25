@@ -99,6 +99,7 @@ class CheckEntriesTests(unittest.TestCase):
                            "plugins/bento/evals/case", "plugins/bento/skills/x"):
                 Path(root, folder).mkdir(parents=True)
             Path(root, "CHANGELOG.md").write_text("x")
+            Path(root, "LICENSE").write_text("x")
             Path(root, "plugins/bento/evals/AGENTS.md").write_text("x")
             old = "- e2e: `node control-room/e2e/drive.js`; fakes in `control-room/test/fakes/`.\n"
             tip = "- **Tests clobber threads:** run `CR_HOME=$(mktemp -d) npm test` in control-room/.\n"
@@ -116,12 +117,19 @@ class CheckEntriesTests(unittest.TestCase):
                           "- Before running tests → docs/procedures/run-tests.md\n",
                           "- Logs: ~/.nightshift/control-room/chats/ and $HOME/x/y.\n",
                           "- See https://example.com/control-room/x.\n",
-                          "- Missing folder: nowhere/x.js.\n"):
+                          "- Missing folder: nowhere/x.js.\n",
+                          "- Check plugins/../CHANGELOG.md.\n",
+                          "- Follow LICENSE when copying plugins/bento/evals/ fixtures.\n"):
                 self.assertEqual(misplaced(root, old, old + entry), [], entry)
-            # One corrected line exempts only its own replacement.
+            # A glob keeps its folder; a link counts by its target, not its label.
+            glob = "- Run the tests in plugins/bento/skills/*/scripts/.\n"
+            self.assertEqual(misplaced(root, old, old + glob), [(glob.strip(), "plugins/bento/skills")])
+            link = "- See [AGENTS.md](plugins/bento/evals/AGENTS.md).\n"
+            self.assertEqual(misplaced(root, old, old + link), [(link.strip(), "plugins/bento/evals")])
+            # One corrected line exempts only the new line most like it, wherever it sits.
             fixed = old.replace("test/fakes", "e2e/fakes")
             twin = "- e2e: `node control-room/e2e/drive.js`; fakes also in `control-room/e2e/x/`.\n"
-            self.assertEqual(len(misplaced(root, old, fixed + twin)), 1)
+            self.assertEqual(misplaced(root, old, twin + fixed), [(twin.strip(), "control-room/e2e")])
 
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -148,6 +156,13 @@ class CheckEntriesTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0)  # a warning never fails
             self.assertIn("warning:", result.stdout)
             self.assertIn("pkg/AGENTS.md (new: with a CLAUDE.md holding @AGENTS.md)", result.stdout)
+            # Only the repository's root AGENTS.md warns: a nested one is already the cheap home.
+            subprocess.run(["git", "init", "-q", tmp], check=True)
+            Path(tmp, "pkg", "sub").mkdir()
+            proposed.write_text("- In sub/, run `make` before sub/test.sh.\n")
+            result = subprocess.run([sys.executable, SCRIPT, Path(tmp, "pkg", "AGENTS.md"), proposed],
+                                    capture_output=True, text=True)
+            self.assertNotIn("warning:", result.stdout)
 
 
 if __name__ == "__main__":

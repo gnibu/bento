@@ -13,11 +13,12 @@ same change (NEW_DOC, relative to the AGENTS.md's directory): its `## Docs` sect
 each one, by its path or a folder below docs/ that holds it ("Design briefs → docs/briefs/").
 An AGENTS.md without a `## Docs` section routes docs its own way: only the NEW_DOCs are checked,
 and anywhere in the file. Exits 1 and names each rejected entry and each doc missing from the menu.
-It also warns, without failing, about a new entry whose repo paths all sit under one subfolder
+It also warns, without failing, about a new root AGENTS.md entry whose paths all sit in one subfolder
 (not docs/, and naming no file at the top): it names the nearest AGENTS.md there, or the folder
 to create one in. A line changed in place is not new.
 """
 import difflib
+import os
 import re
 import subprocess
 import sys
@@ -84,51 +85,47 @@ def subfolder(entry, root):
     That is the nearest folder with an AGENTS.md over all the paths, else the deepest one
     they share. A file at the top, a dot-folder or docs/ keeps the entry where it is."""
     dirs = []
-    for token in TOKEN.findall(re.sub(r"https?://\S+", "", entry)):
+    text = re.sub(r"https?://\S+|\[[^\]]*\](?=\()", "", entry)  # URLs and link labels
+    for token in TOKEN.findall(text):
         token = token.rstrip(".,")
-        parts = [part for part in token.split("/") if part not in ("", ".")]
         if "/" not in token:
-            if "." in token and (root / token).is_file():
+            if (root / token).is_file():
                 return None
             continue
-        if token.startswith("/") or not parts or parts[0] == "..":
+        parts = [part for part in token.split("/") if part not in ("", ".")]
+        if token.startswith("/") or ".." in parts or not parts:
             continue
         if parts[0].startswith(".") or parts[0] == "docs":
             return None
-        if not (root / Path(*parts)).is_dir():
+        if any("*" in part for part in parts):
+            parts = parts[:next(i for i, part in enumerate(parts) if "*" in part)]
+        elif not (root / Path(*parts)).is_dir():
             parts = parts[:-1]
         if not parts or not (root / Path(*parts)).is_dir():
             return None
-        dirs.append(parts)
+        dirs.append("/".join(parts))
     if not dirs:
         return None
-    common = []
-    for level in zip(*dirs):
-        if len(set(level)) > 1:
-            break
-        common.append(level[0])
-    for depth in range(len(common), 0, -1):
-        if (root / Path(*common[:depth]) / "AGENTS.md").is_file():
-            return "/".join(common[:depth])
-    return "/".join(common) or None
+    common = Path(os.path.commonpath(dirs))
+    for folder in [common, *common.parents][:-1]:  # never root itself
+        if (root / folder / "AGENTS.md").is_file():
+            return folder.as_posix()
+    return common.as_posix() if common.parts else None
 
 
 def misplaced(root, current, proposed):
     """New entries whose paths all sit in one subfolder, and that folder. A line changed in
-    place (close to one removed line, each removed line used once) is not new."""
+    place (the new line most like a removed one) is not new."""
     old, new = entries(current), entries(proposed)
-    removed = [entry for entry in old if entry not in new]
-    found = []
-    for entry in new:
-        if entry in old:
-            continue
-        edit = next((gone for gone in removed
-                     if difflib.SequenceMatcher(None, entry, gone).ratio() > 0.6), None)
-        if edit is not None:
-            removed.remove(edit)
-        elif folder := subfolder(entry, root):
-            found.append((entry, folder))
-    return found
+    added = [entry for entry in new if entry not in old]
+    edits = set()
+    for gone in (entry for entry in old if entry not in new):
+        ratio, edit = max(((difflib.SequenceMatcher(None, entry, gone).ratio(), entry)
+                           for entry in added), default=(0, None))
+        if ratio > 0.6:
+            edits.add(edit)
+    return [(entry, folder) for entry in added
+            if entry not in edits and (folder := subfolder(entry, root))]
 
 
 def menu_section(text):
@@ -180,7 +177,11 @@ def main():
     for doc in gaps:
         print(f"{current_path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
               " or where this file routes its docs")
-    for entry, folder in misplaced(current_path.parent, current, proposed):
+    top = subprocess.run(["git", "-C", str(current_path.parent), "rev-parse", "--show-toplevel"],
+                         capture_output=True, text=True).stdout.strip()
+    at_root = not top or Path(top).resolve() == current_path.parent.resolve()
+    for entry, folder in (misplaced(current_path.parent, current, proposed)
+                          if at_root and current_path.name == "AGENTS.md" else []):
         home = Path(current_path.parent, folder, "AGENTS.md")
         new = "" if home.exists() else " (new: with a CLAUDE.md holding @AGENTS.md)"
         print(f"{current_path}: warning: {entry[:70]}…: every path is under {folder}/: propose"
