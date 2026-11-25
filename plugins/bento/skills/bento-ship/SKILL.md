@@ -159,6 +159,7 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
     > - **A1. `<file>`, <section>**
     >   - Adds: "<the new text, verbatim or its first line>"
     >   - Why: <what went wrong on this branch, in plain words>
+    >   - Home: <why this file, not a cheaper one: the code, a README, a nested AGENTS.md>
     >
     > **Decisions**
     > - **B1. `<file:line>`: <the problem, in plain words>**

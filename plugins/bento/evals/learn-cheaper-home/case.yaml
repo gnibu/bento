@@ -1,0 +1,55 @@
+schema_version: "1.0"
+name: learn-cheaper-home
+tags: [learn]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: |
+    Run bento-learn on this branch. What it surfaced:
+    1. A Control Room thread failed every message with "No conversation found". It took me an
+       hour to find why: the answer was in the `errors` of the `result` lines of the thread's
+       log under ~/.nightshift/control-room/chats/. The thread's Claude conversation had never
+       been saved and we kept resuming it; this branch fixes that in control-room/src/resume.js.
+    2. The root AGENTS.md says the e2e fakes are in `control-room/test/fakes/`; they are in
+       `control-room/e2e/fakes/`. I looked in the wrong place first.
+    3. Control Room's tests write to your real ~/.nightshift unless CR_HOME points at a temp
+       dir: run `CR_HOME=$(mktemp -d) npm test` in control-room/. I clobbered my own threads.
+    Propose the exact diffs per destination. Do not apply anything.
+  max_turns: 20
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write]
+graders:
+  - type: llm
+    name: fixed-cause-not-root
+    criteria: |
+      Learning 1 is about reading the `result` lines' `errors` in a thread's log to diagnose
+      "No conversation found", a failure the branch's own fix removes.
+      PASS if no proposed diff adds that log-reading tip to the root AGENTS.md: it is dropped
+      (e.g. "the fix is the learning"), or placed under control-room/ (its README, an
+      AGENTS.md there) or in a code comment. FAIL if a root AGENTS.md diff adds it.
+  - type: llm
+    name: subfolder-gotcha
+    criteria: |
+      PASS if the CR_HOME tip (learning 3) is proposed in control-room/AGENTS.md, together with
+      a control-room/CLAUDE.md holding `@AGENTS.md` when that file is new, or in
+      control-room/README.md, or is made moot by a source fix (e.g. the test script sets
+      CR_HOME itself); and no root AGENTS.md diff, alternative or fallback adds it.
+      FAIL if it goes, or is offered as a fallback, in the root AGENTS.md.
+  - type: llm
+    name: correction-not-addition
+    criteria: |
+      PASS if the wrong fakes path is corrected by changing the existing line (a `-` line with
+      control-room/test/fakes/ and a `+` line with control-room/e2e/fakes/), or by moving that
+      line under control-room/, and no proposed file keeps the wrong path. FAIL if a second
+      line is added beside the wrong one, or the wrong path is left in place.
+  - type: llm
+    name: says-why-this-home
+    criteria: |
+      PASS if every proposed (not dropped) learning names the file it goes to and gives a
+      reason for that home over a cheaper one or over the root AGENTS.md (e.g. "only
+      control-room/ code needs it, so not the root file every agent loads", "fixes an existing
+      line, adds nothing"). FAIL if any proposed learning names a file with no reason for it.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-learn"'
+    arm: with-only

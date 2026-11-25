@@ -35,6 +35,12 @@ graders:
     tests). A bare label such as "AGENTS.md: test gotcha" with no added text or reason fails.'
   focus: last_message
 - type: llm
+  name: learning-says-why-this-home
+  criteria: 'PASS if the stop''s learning entry says why AGENTS.md is its home rather than a cheaper one
+    (the code, a README, a nested AGENTS.md, a doc), e.g. "every agent runs these checks, so it is
+    repo-wide". FAIL if it names AGENTS.md with no reason for choosing that file.'
+  focus: last_message
+- type: llm
   name: decision-explains-answers
   criteria: 'PASS if the decision about client.py names the code, states the problem in plain words (the
     loop retries forever on a 401 / never gives up), describes what each answer does (keep: unchanged
