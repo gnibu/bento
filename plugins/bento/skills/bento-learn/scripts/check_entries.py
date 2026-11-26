@@ -230,8 +230,19 @@ def menu_gaps(root, proposed, new_docs=()):
     return gaps
 
 
+NAMES = ("AGENTS.md", "CLAUDE.md")
+
+
 def git(cwd, *args):
     return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True)
+
+
+def git_out(cwd, *args):
+    """git's stdout; exit with its error when it fails, so a check never passes unchecked."""
+    done = git(cwd, *args)
+    if done.returncode:
+        sys.exit(f"check_entries: git {' '.join(args)}: {done.stderr.strip()}")
+    return done.stdout
 
 
 def warnings(path, current, proposed):
@@ -250,11 +261,14 @@ def warnings(path, current, proposed):
 
 
 def placement(path):
-    """(path is the repository's root AGENTS.md, the root AGENTS.md text a nested file loads with)."""
-    top = git(path.parent, "rev-parse", "--show-toplevel").stdout.strip()
-    if not top or Path(top).resolve() == path.parent.resolve():
+    """(path is the repository's root AGENTS.md, the root AGENTS.md text it loads with)."""
+    here = next(folder for folder in [path.parent, *path.parent.parents] if folder.is_dir())
+    top = git(here, "rev-parse", "--show-toplevel").stdout.strip()
+    if not top:
         return path.name == "AGENTS.md", ""
     root = Path(top, "AGENTS.md")
+    if root.resolve() == path.resolve():
+        return True, ""
     return False, root.read_text() if root.is_file() else ""
 
 
@@ -274,24 +288,25 @@ def report(path, current, proposed, new_docs=()):
 
 
 def branch_files(top, fork):
-    """((old name, name) per file the branch changed or left untracked, names it added)."""
-    fields = git(top, "diff", "--name-status", "-z", "-M", "--diff-filter=d", fork).stdout.split("\0")
-    moves, added = [], []
-    while len(fields) > 1:
-        size = 3 if fields[0][:1] in "RC" else 2  # a rename or copy names its source too
-        status, *names = fields[:size]
-        fields = fields[size:]
+    """((old name, name) per file the branch changed or left untracked, names it added or moved)."""
+    fields = git_out(top, "diff", "--name-status", "-z", "-M", "--diff-filter=d", fork).split("\0")
+    moves, added, i = [], [], 0
+    while i < len(fields) - 1:
+        status = fields[i]
+        size = 2 if status[:1] in "RC" else 1  # a rename or copy names its source too
+        names = fields[i + 1:i + 1 + size]
+        i += 1 + size
         moves.append((names[0], names[-1]))
-        if status == "A":
+        if status[:1] in "ARC":
             added.append(names[-1])
-    untracked = [name for name in git(top, "ls-files", "-z", "--others", "--exclude-standard")
-                 .stdout.split("\0") if name]
+    untracked = [name for name in git_out(top, "ls-files", "-z", "--others", "--exclude-standard")
+                 .split("\0") if name]
     return moves + [(name, name) for name in untracked], added + untracked
 
 
 def instruction_file(top, path):
     """True for an AGENTS.md/CLAUDE.md that is, or links to, a file inside the checkout."""
-    return path.name in ("AGENTS.md", "CLAUDE.md") and path.is_file() and top in path.resolve().parents
+    return path.name in NAMES and path.is_file() and top in path.resolve().parents
 
 
 def docs_beside(name, added):
@@ -305,11 +320,8 @@ def changed(base):
     """(path, text at the merge base, docs the branch added beside it) per AGENTS.md/CLAUDE.md
     the branch changed, worktree included. A renamed file keeps its old text; a symlink is its
     target, once, and only inside the repository."""
-    top = Path(git(".", "rev-parse", "--show-toplevel").stdout.strip()).resolve()
-    fork = git(top, "merge-base", base, "HEAD")
-    if fork.returncode:
-        sys.exit(f"check_entries: no merge base with {base}: {fork.stderr.strip()}")
-    fork = fork.stdout.strip()
+    top = Path(git_out(".", "rev-parse", "--show-toplevel").strip()).resolve()
+    fork = git_out(top, "merge-base", base, "HEAD").strip()
     moves, added = branch_files(top, fork)
     seen, out = set(), []
     for old_name, name in moves:
@@ -320,7 +332,9 @@ def changed(base):
         if path.resolve() != path:  # a CLAUDE.md symlink: its target's old text
             old_name = path.resolve().relative_to(top).as_posix()
         old = git(top, "show", f"{fork}:{old_name}")
-        out.append((path, old.stdout if old.returncode == 0 else "", docs_beside(name, added)))
+        # A file that only now becomes an instruction file (notes.md renamed) is all new.
+        was = old.returncode == 0 and Path(old_name).name in NAMES
+        out.append((path, old.stdout if was else "", docs_beside(name, added)))
     return out
 
 

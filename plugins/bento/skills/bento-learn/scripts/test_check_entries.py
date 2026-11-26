@@ -226,6 +226,44 @@ class CheckEntriesTests(unittest.TestCase):
             result = run("--diff", "main")
             self.assertIn("menu misses docs/procedures/release.md", result.stdout)
 
+    def test_cli_diff_edge_cases(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            git = lambda *a: subprocess.run(["git", "-C", tmp, *a], check=True, capture_output=True)
+            git("init", "-q", "-b", "main")
+            git("config", "user.email", "a@b.c")
+            git("config", "user.name", "a")
+            Path(tmp, "AGENTS.md").write_text(bento_block("on") + "- Base branch: `main`.\n")
+            Path(tmp, "notes.md").write_text(f"- {LONG} {LONG}\n")
+            Path(tmp, "howto.md").write_text("x")
+            git("add", "-A")
+            git("commit", "-q", "-m", "init")
+            git("switch", "-q", "-c", "feature")
+            run = lambda *a: subprocess.run([sys.executable, SCRIPT, *a], capture_output=True,
+                                            text=True, cwd=tmp)
+            # Git failing to list the branch's files fails the check instead of passing it.
+            failed = run("--diff", "no-such-ref")
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertIn("check_entries: git", failed.stderr)
+            # notes.md renamed to an AGENTS.md is all new; a doc moved under docs/ must be listed.
+            Path(tmp, "pkg").mkdir()
+            git("mv", "notes.md", "pkg/AGENTS.md")
+            Path(tmp, "docs").mkdir()
+            git("mv", "howto.md", "docs/howto.md")
+            Path(tmp, "AGENTS.md").write_text(Path(tmp, "AGENTS.md").read_text() + "- Lint: `make lint`.\n")
+            git("commit", "-q", "-am", "moves")
+            result = run("--diff", "main")
+            self.assertIn("pkg/AGENTS.md: - Run the full suite", result.stdout)
+            self.assertIn("menu misses docs/howto.md", result.stdout)
+            # A root CLAUDE.md that imports AGENTS.md is judged against the root block.
+            Path(tmp, "CLAUDE.md").write_text("@AGENTS.md\n\n- Asked to commit or open a PR: run bento-ship.\n")
+            self.assertIn("CLAUDE.md: - Asked", run("--diff", "main").stdout)
+            # So is a proposal for a folder that doesn't exist yet.
+            proposed = Path(tmp, "proposed.md")
+            proposed.write_text("- Asked to commit or open a PR: run bento-ship.\n")
+            result = run(str(Path(tmp, "new", "deep", "AGENTS.md")), str(proposed))
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("restates the bento block's", result.stdout)
+
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             proposed = Path(tmp, "proposed.md")
