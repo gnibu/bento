@@ -20,10 +20,10 @@ Precedence: **L2 > L1.** The project's own rules win; bento fills the gaps. See
 Everything ships as skills (`bento-*`, plus `wup`) under `plugins/bento/skills/`, each self-contained:
 
 - **Principles** — always-on standing rules (autonomy, prove-on-artifact, subtract-before-add,
-  report-what-matters, ship-through-bento-ship),
+  report-what-matters, ship-through-bento-ship, change-bento-through-overlays),
   in `bento-setup/PRINCIPLES.md`. `bento-setup` wires them into `CLAUDE.md` / `AGENTS.md`.
 - **Conventions** — how to author a repo's L2 (instruction-file pricing, pointer form, where
-  each fact goes), in `bento-learn/references/instruction-layer.md`.
+  each fact goes, the root `AGENTS.md` size budget), in `bento-learn/references/instruction-layer.md`.
 - **Playbooks** — triggered skills, each a pasteable checklist that proves its work on a real
   artifact:
   - `bento-eval-blind` — compare models/prompts without bias leaking into the verdict.

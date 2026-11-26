@@ -7,8 +7,9 @@
   the checks ran only on what `bento-learn` itself added. Now:
   - `bento-ship` runs `check_entries.py --diff origin/<base>` on every `AGENTS.md`/`CLAUDE.md`
     line the branch changed, whoever wrote it; `--all <file>` checks a whole file.
-  - `check_entries.py` rejects a repo entry that restates a bento principle, says "move it to
-    `<dir>/AGENTS.md`" for a root entry about one subfolder, and warns when a root `AGENTS.md`
+  - `check_entries.py` rejects a repo entry that restates a line of the bento block the repo
+    loads, says "move it to `<dir>/AGENTS.md`" for a root entry about one subfolder (unless
+    every task needs it), and warns when a root `AGENTS.md`
     grows past 60 lines outside the bento block (the budget is explained in
     `instruction-layer.md`).
   - `bento-learn`'s step 3 prunes what it touches: proposing an entry for a file, it also
