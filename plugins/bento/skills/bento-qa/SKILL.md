@@ -94,7 +94,7 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    where the proof lives (`pass — 3 paths exercised, 2 tests added; evidence: <screenshot dir>,
    <test command>`), `Harness:` only when bootstrapped, and the `E2E`, `Defects`, `Untested`
    and `Questions` lines; the passing `Exercised` and `Tests added` lines stay out. When
-   the principles block says `Terse reports: off.`, interactive mode reports every line too.
+   the principles block has no `Report what matters` principle (terse reports off), interactive mode reports every line too.
 
    ```
    QA: <pass | defects open | no behavior changed>

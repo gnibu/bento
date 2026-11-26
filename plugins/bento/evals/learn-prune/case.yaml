@@ -1,0 +1,46 @@
+schema_version: "1.0"
+name: learn-prune
+tags: [learn]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: |
+    Run bento-learn on this branch. What it surfaced: I pushed this branch twice with a lint
+    error, and CI failed both times. `make lint` catches it locally, and every change in this
+    repo, api or web, needs it before a push.
+    Propose the exact diffs per destination. Do not apply anything.
+  max_turns: 25
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write]
+graders:
+  - type: llm
+    name: drops-principle-restatement
+    criteria: |
+      The root AGENTS.md has a repo line "Asked to commit or open a PR: run bento-ship.", which
+      only restates the "Ship through bento-ship" principle already in the file's bento block.
+      PASS if a proposed diff deletes that line. FAIL if no diff removes it.
+  - type: llm
+    name: drops-stale-or-overlap
+    criteria: |
+      The root AGENTS.md names `scripts/format.sh`, which does not exist (`make format` does),
+      and says twice to run `make test` before pushing / before every PR.
+      PASS if the proposed diffs fix or delete the `scripts/format.sh` line AND merge or delete
+      one of the two `make test` lines. FAIL if either is left as it is.
+  - type: llm
+    name: moves-e2e-gotchas
+    criteria: |
+      The root AGENTS.md has a "Web e2e tests" section of about 30 lines, all about web/e2e/,
+      which has no AGENTS.md of its own.
+      PASS if a proposed diff moves that section (most of its lines) out of the root file to
+      web/e2e/AGENTS.md or web/AGENTS.md (or a README or doc under web/), removing it from the
+      root. FAIL if the section stays in the root AGENTS.md with no proposal to move it.
+  - type: llm
+    name: keeps-the-learning-lean
+    criteria: |
+      PASS if the lint learning is either dropped as already covered (the file already has
+      "Lint: `make lint`") or proposed as a change to that existing line rather than a second
+      line about lint. FAIL if a new, separate lint line is added beside the existing one.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-learn"'
+    arm: with-only

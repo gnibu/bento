@@ -7,6 +7,7 @@ from pathlib import Path
 from agents_block import PRINCIPLES, apply, build_block, recorded_terse
 
 SCRIPT = Path(__file__).with_name("agents_block.py")
+CHECK = Path(__file__).resolve().parents[2] / "bento-learn" / "scripts" / "check_entries.py"
 
 
 def run(*args):
@@ -30,9 +31,28 @@ class BlockTest(unittest.TestCase):
         principles = PRINCIPLES.read_text()
         self.assertNotIn(principles.splitlines()[0], block)  # the file's title and intro stay out
         for section in principles.split("\n## ")[1:]:
-            heading, _, rest = section.partition("\n")
-            summary, _, body = rest.strip().partition("\n\n")
-            self.assertIn(f"### {heading}\n\n**{summary[2:]}**\n\n{body.strip()}", block)
+            heading, _, body = section.partition("\n")
+            self.assertIn(f"### {heading}\n\n{body.strip()}", block)
+
+    def test_keeps_the_override_rule_and_records_terse_out_of_sight(self):
+        block = build_block(True)
+        self.assertIn("This repo's own instructions override them where they overlap.", block)
+        self.assertNotIn("no exceptions", block)
+        self.assertIn("<!-- bento:terse-reports on -->", block)
+        self.assertNotIn("Terse reports:", block)
+
+    def test_block_passes_the_instruction_file_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for terse in (True, False):
+                Path(tmp, "AGENTS.md").write_text(build_block(terse) + "\n")
+                result = subprocess.run([sys.executable, str(CHECK), "--all", str(Path(tmp, "AGENTS.md"))],
+                                        capture_output=True, text=True)
+                self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_reads_the_answer_an_old_block_recorded(self):
+        old = "<!-- bento:start -->\n## bento\n\nTerse reports: off.\n\nx\n<!-- bento:end -->\n"
+        self.assertEqual(recorded_terse(old), "off")
+        self.assertEqual(recorded_terse(old.replace("off", "on")), "on")
 
     def test_terse_off_drops_only_report_what_matters(self):
         on, off = build_block(True), build_block(False)

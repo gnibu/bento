@@ -5,9 +5,11 @@ import sys
 import tempfile
 import unittest
 
-from check_entries import check, entries, menu_gaps, misplaced
+from check_entries import BUDGET, check, entries, menu_gaps, misplaced, over_budget
 
 SCRIPT = Path(__file__).with_name("check_entries.py")
+SHIP = [("Ship through bento-ship", {"commit", "push", "pr", "request", "bento-ship", "git", "never"})]
+BLOCK = "<!-- bento:start -->\n- **Commit, push or PR request → run `bento-ship`**, never `git commit`.\n<!-- bento:end -->\n"
 LONG = "Run the full suite with the database container up, then the browser tests, " \
        "then the linter, and only then the type checker, because"
 
@@ -131,6 +133,54 @@ class CheckEntriesTests(unittest.TestCase):
             twin = "- e2e: `node control-room/e2e/drive.js`; fakes also in `control-room/e2e/x/`.\n"
             self.assertEqual(misplaced(root, old, twin + fixed), [(twin.strip(), "control-room/e2e")])
 
+    def test_entry_restating_a_principle_is_rejected(self):
+        rejected = check("", BLOCK + "- Asked to commit or open a PR: run bento-ship.\n", SHIP)
+        self.assertEqual(len(rejected), 1)
+        self.assertIn('restates the bento principle "Ship through bento-ship"', rejected[0][1])
+        # The block itself, a repo fact that shares a word or two, and an old line all pass.
+        for entry in ("- Tests: `npm test` before a PR.\n", "- Deploy: `make deploy`; never on Fridays.\n"):
+            self.assertEqual(check("", BLOCK + entry, SHIP), [], entry)
+        old = "- Asked to commit or open a PR: run bento-ship.\n"
+        self.assertEqual(check(old, old, SHIP), [])
+
+    def test_real_principles_catch_a_restated_ship_rule(self):
+        self.assertEqual(len(check("", "- **Shipping:** run `/bento-ship` for every commit, push or PR.\n")), 1)
+
+    def test_root_file_over_budget_warns_only_when_it_grows(self):
+        lines = "".join(f"- Fact {i}.\n" for i in range(BUDGET))
+        self.assertIsNone(over_budget("", lines))
+        self.assertEqual(over_budget(lines, lines + "- One more.\n"), BUDGET + 1)
+        self.assertIsNone(over_budget(lines + "- One more.\n", lines + "- Another.\n"))  # same size
+        self.assertIsNone(over_budget("", BLOCK * 30 + lines))  # the bento block doesn't count
+
+    def test_cli_all_checks_every_entry_and_diff_only_the_branch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            git = lambda *a: subprocess.run(["git", "-C", tmp, *a], check=True, capture_output=True)
+            git("init", "-q", "-b", "main")
+            git("config", "user.email", "a@b.c")
+            git("config", "user.name", "a")
+            agents = Path(tmp, "AGENTS.md")
+            agents.write_text(f"- {LONG} {LONG}\n")
+            git("add", "-A")
+            git("commit", "-q", "-m", "init")
+            git("switch", "-q", "-c", "feature")
+            run = lambda *a: subprocess.run([sys.executable, SCRIPT, *a], capture_output=True,
+                                            text=True, cwd=tmp)
+            self.assertEqual(run("--all", str(agents)).returncode, 1)  # the old entry counts too
+            self.assertEqual(run("--diff", "main").returncode, 0)  # nothing changed
+            Path(tmp, "CLAUDE.md").symlink_to("AGENTS.md")
+            Path(tmp, "pkg").mkdir()
+            Path(tmp, "pkg", "AGENTS.md").write_text("- Asked to commit or open a PR: run bento-ship.\n")
+            git("add", "-A")
+            git("commit", "-q", "-m", "feature agent edits")
+            agents.write_text(agents.read_text() + f"- **Testing:** {LONG}.\n")  # uncommitted
+            result = run("--diff", "main")
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stdout.count("AGENTS.md:"), 2, result.stdout)  # symlink once
+            self.assertIn("pkg/AGENTS.md: - Asked", result.stdout)
+            self.assertIn("over one line without a pointer", result.stdout)
+            self.assertNotIn("over two lines", result.stdout)  # the old entry isn't the branch's
+
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             proposed = Path(tmp, "proposed.md")
@@ -155,7 +205,7 @@ class CheckEntriesTests(unittest.TestCase):
             result = subprocess.run([sys.executable, SCRIPT, agents, proposed], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0)  # a warning never fails
             self.assertIn("warning:", result.stdout)
-            self.assertIn("pkg/AGENTS.md (new: with a CLAUDE.md holding @AGENTS.md)", result.stdout)
+            self.assertIn("move it to pkg/AGENTS.md (new: with a CLAUDE.md holding @AGENTS.md)", result.stdout)
             # Only the repository's root AGENTS.md warns: a nested one is already the cheap home.
             subprocess.run(["git", "init", "-q", tmp], check=True)
             Path(tmp, "pkg", "sub").mkdir()

@@ -31,64 +31,47 @@ After editing `PRINCIPLES.md`, rerun
 <!-- bento:start -->
 ## bento (shared agent operating layer)
 
-Terse reports: on.
-
-**Always-on principles — apply to every task, no exceptions:**
+<!-- bento:terse-reports on -->
+Always-on principles. This repo's own instructions override them where they overlap.
 
 ### Autonomy contract
 
-**Act on reversible work and reads; pause for irreversible writes (deploy, delete, force-push, customer message).**
-
-- **Reversible work and reads → just do it:** editing code, running tests, reading
-  files/logs/APIs, local experiments, draft commits. Don't ask permission for work you can undo.
-- **Irreversible writes → confirm first:** force-push, deploy, deleting data, merging or
-  closing PRs, messaging a customer or third party, writing to production or shared state.
-  Approval in one context does not carry to the next.
-
-When unsure whether an action is reversible, treat it as irreversible and ask.
+- **Reversible work and reads → just do it:** edit code, run tests, read logs and APIs, experiment.
+- **Irreversible writes → confirm first:** deploy, delete data, force-push, merge or close a PR.
+- Messaging a customer or third party, or writing to production or shared state, is one too.
+- Approval in one context does not carry to the next. Unsure whether it is reversible → ask.
 
 ### Prove it on a real artifact
 
-**Verify against the real output — transcript, passing test, rendered page, before/after — never a self-report.**
-
-A task is done when the real thing works, not when I say it works. If you can't show the
-artifact, the task isn't finished.
+- **Done = shown on the real output:** a transcript, passing test, rendered page or before/after.
+- Never a self-report: if you can't show the artifact, the task isn't finished.
 
 ### Subtract before you add
 
-**Smallest change that holds: reuse before writing, delete over add, no speculative work.**
-
-One stated simplification beats a paragraph defending complexity.
+- **Smallest change that holds:** reuse before writing, delete over add, no speculative work.
+- One stated simplification beats a paragraph defending complexity.
 
 ### Report what matters
 
-**Every message leads with the result; report only decisions, failures, risks and side effects.**
-
-The reader may see only your last message: write it for someone who did not watch you work.
-
-- **Verdict first:** done, blocked or needs a decision. Stop there when nothing else qualifies.
-- **Cut what went as expected:** the request or plan restated, step narration, "Let me…",
-  passing checks, a recap of local edits. Updates while working: one line on what you found.
-- **Keep what the reader acts on:** decisions (numbered, naming the action and its side
-  effect), outward side effects done (push, PR, ticket, message), risks (production, security,
-  data), failed or skipped checks and whether they matter. Link the proof once; don't paste it.
-- **Short by default, full on request:** 1–3 sentences for a simple question; headers and
-  tables only for real structure. Never shorten error output, failing tests, security
-  warnings or confirmations for destructive actions.
+- **Lead with the result:** done, blocked or needs a decision; stop there if nothing else qualifies.
+- Write the last message for a reader who didn't watch you work: it may be the only one they see.
+- **Cut** what went as expected: the plan restated, narration, "Let me…", passing checks, recaps.
+- **Keep** decisions (numbered, each with its side effect) and side effects done (push, PR, ticket).
+- Also keep risks (production, security, data) and failed or skipped checks, saying if they matter.
+- While working, one line per finding. Link the proof once; don't paste it.
+- **Short by default, full on request:** 1–3 sentences; headers and tables only for real structure.
+- Never shorten errors, failing tests, security warnings or confirmations of destructive actions.
 
 ### Ship through bento-ship
 
-**Commit, push or PR requests go through bento-ship.**
+- **Commit, push or PR request → run `bento-ship`**, not `git commit`, `git push`, `gh pr create`.
+- It runs QA, the pre-PR review and the ticket update; a direct commit skips all three.
+- Run it on every such request, however short ("commit this"), even if it ran earlier this session.
+- Not for a rebase: rebase, rerun the checks, and ask before force-pushing.
 
-However short the request ("commit PR", "push", "commit this"), run `bento-ship` rather than
-`git commit`, `git push` or `gh pr create` yourself: it is where QA, the pre-PR review and the
-ticket update happen, and a direct commit skips all three. Invoke it on every such request,
-also when it already ran earlier in this session: a copy loaded earlier does not count.
+### Change bento through overlays
 
-A rebase is not one, even when it ends in a force-push: rebase, rerun the checks and ask
-before pushing, without `bento-ship`.
+- Never edit an installed `bento-*` skill: put this repo's rules for one in `.agents/bento/<skill>.md`.
 
-Playbooks are the `bento-*` skills. Generated by `bento-setup`. After any `npx skills add` or
-`update` of bento, run `bento-setup` yourself without asking: it is idempotent and only edits
-local files the user reviews before committing.
+Generated by `bento-setup`; rerun it, unasked, after any `npx skills add` or `update` of bento.
 <!-- bento:end -->

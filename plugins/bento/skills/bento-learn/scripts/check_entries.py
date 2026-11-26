@@ -2,12 +2,18 @@
 """Reject instruction-file entries that belong somewhere else.
 
 Usage: check_entries.py CURRENT PROPOSED [NEW_DOC...]
+       check_entries.py --all FILE...      every entry of each file, as if all were new
+       check_entries.py --diff BASE        every AGENTS.md/CLAUDE.md changed since BASE
 
 CURRENT is the instruction file as it is now (AGENTS.md or CLAUDE.md, at any depth; it may
 not exist yet), PROPOSED the full text bento-learn wants to write there. Only entries that
 are new or changed in PROPOSED are checked, so an old file never blocks a new learning.
+`--diff BASE` checks the working tree of each instruction file the branch changed against its
+text at the merge base with BASE, whoever made the change; `--all` checks the whole file.
 An entry (a bullet, a table row, a paragraph or a code block) must fit on one line, or on two when it
-carries a pointer (a path or a link) to where the detail lives. An AGENTS.md is also the
+carries a pointer (a path or a link) to where the detail lives. An entry outside the bento block
+must not restate a bento principle (../../bento-setup/PRINCIPLES.md): the block already loads it.
+An AGENTS.md is also the
 menu of the docs/**/*.md beside it, tracked or untracked but not ignored, or proposed in the
 same change (NEW_DOC, relative to the AGENTS.md's directory): its `## Docs` section must name
 each one, by its path or a folder below docs/ that holds it ("Design briefs → docs/briefs/").
@@ -15,7 +21,8 @@ An AGENTS.md without a `## Docs` section routes docs its own way: only the NEW_D
 and anywhere in the file. Exits 1 and names each rejected entry and each doc missing from the menu.
 It also warns, without failing, about a new root AGENTS.md entry whose paths all sit in one subfolder
 (not docs/, and naming no file at the top): it names the nearest AGENTS.md there, or the folder
-to create one in. A line changed in place is not new.
+to create one in. A line changed in place is not new. And it warns when a root AGENTS.md that
+grows ends over BUDGET lines outside the bento block (see references/instruction-layer.md).
 """
 import difflib
 import os
@@ -31,6 +38,13 @@ BULLET = re.compile(r"\s*([-*+]|\d+\.)\s")
 POINTER = re.compile(r"\]\(|https?://|\w/[\w.*]|[\w-]\.(md|py|sh|js|ts|tsx|json|toml|ya?ml)\b")
 # A path-like token, not inside a home (~/), variable ($X/) or absolute path.
 TOKEN = re.compile(r"(?<![\w~$/.-])[\w.*/-]+")
+BLOCK = re.compile(r"<!-- bento:start -->.*?<!-- bento:end -->", re.S)
+PRINCIPLES = Path(__file__).resolve().parents[2] / "bento-setup" / "PRINCIPLES.md"
+BUDGET = 60  # non-blank lines of a root AGENTS.md outside the bento block
+# Words too common to tell a restated principle from a repo fact.
+STOP = set("""a an the and or but nor to of in on at for by with from into as is are be been was were it its
+this that these those there here your you we our they them their not no any every all each when then than so
+if else also only just do does did done don't before after while via per run asked ask""".split())
 
 
 def entries(text):
@@ -73,10 +87,64 @@ def problem(entry):
     return None
 
 
-def check(current, proposed):
+def words(text):
+    """The entry's content words, lowercased, a plural `s` dropped."""
+    found = set()
+    for word in re.findall(r"[a-z][a-z0-9-]*", text.lower()):
+        word = word.strip("-")
+        if len(word) > 3 and word.endswith("s") and not word.endswith("ss"):
+            word = word[:-1]
+        if word and word not in STOP:
+            found.add(word)
+    return found
+
+
+def principles():
+    """(heading, content words) per principle of bento-setup's PRINCIPLES.md; none if absent."""
+    if not PRINCIPLES.is_file():
+        return []
+    return [(section.partition("\n")[0].strip(), words(section))
+            for section in re.split(r"^## ", PRINCIPLES.read_text(), flags=re.M)[1:]]
+
+
+def restates(entry, sections):
+    """The principle an entry outside the bento block repeats: at least 3 of its content
+    words, and 70% of them, are that principle's. None if it says something new."""
+    own = words(entry)
+    for heading, theirs in sections:
+        shared = len(own & theirs)
+        if shared >= 3 and shared >= 0.7 * len(own):
+            return heading
+    return None
+
+
+def outside_block(text):
+    return BLOCK.sub("", text)
+
+
+def over_budget(current, proposed):
+    """Lines of proposed outside the bento block, when they pass BUDGET and grew; else None."""
+    def size(text):
+        return sum(1 for line in outside_block(text).splitlines() if line.strip())
+    lines = size(proposed)
+    return lines if lines > BUDGET and lines > size(current) else None
+
+
+def check(current, proposed, sections=None):
+    """(entry, reason) per new entry of proposed that is too long or restates a principle."""
     old = set(entries(current))
-    return [(entry, reason) for entry in entries(proposed)
-            if entry not in old and (reason := problem(entry))]
+    sections = principles() if sections is None else sections
+    l2 = set(entries(outside_block(proposed)))
+    rejected = []
+    for entry in entries(proposed):
+        if entry in old:
+            continue
+        reason = problem(entry)
+        if not reason and entry in l2 and (heading := restates(entry, sections)):
+            reason = f"restates the bento principle \"{heading}\", already in the bento block: drop it"
+        if reason:
+            rejected.append((entry, reason))
+    return rejected
 
 
 def subfolder(entry, root):
@@ -163,30 +231,68 @@ def menu_gaps(root, proposed, new_docs=()):
     return gaps
 
 
-def main():
-    if len(sys.argv) < 3:
-        sys.exit(__doc__)
-    current_path = Path(sys.argv[1])
-    current = current_path.read_text() if current_path.exists() else ""
-    proposed = Path(sys.argv[2]).read_text()
+def report(path, current, proposed, new_docs=()):
+    """Print what's wrong with proposed as the next text of the instruction file at path.
+    True when something fails."""
     rejected = check(current, proposed)
     for entry, reason in rejected:
-        print(f"{current_path}: {entry[:70]}…: {reason}")
-    gaps = (menu_gaps(current_path.parent, proposed, sys.argv[3:])
-            if current_path.name == "AGENTS.md" else [])
+        print(f"{path}: {entry[:70]}…: {reason}")
+    gaps = menu_gaps(path.parent, proposed, new_docs) if path.name == "AGENTS.md" else []
     for doc in gaps:
-        print(f"{current_path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
+        print(f"{path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
               " or where this file routes its docs")
-    top = subprocess.run(["git", "-C", str(current_path.parent), "rev-parse", "--show-toplevel"],
+    top = subprocess.run(["git", "-C", str(path.parent), "rev-parse", "--show-toplevel"],
                          capture_output=True, text=True).stdout.strip()
-    at_root = not top or Path(top).resolve() == current_path.parent.resolve()
-    for entry, folder in (misplaced(current_path.parent, current, proposed)
-                          if at_root and current_path.name == "AGENTS.md" else []):
-        home = Path(current_path.parent, folder, "AGENTS.md")
+    at_root = path.name == "AGENTS.md" and (not top or Path(top).resolve() == path.parent.resolve())
+    for entry, folder in misplaced(path.parent, current, proposed) if at_root else []:
+        home = Path(path.parent, folder, "AGENTS.md")
         new = "" if home.exists() else " (new: with a CLAUDE.md holding @AGENTS.md)"
-        print(f"{current_path}: warning: {entry[:70]}…: every path is under {folder}/: propose"
-              f" {folder}/AGENTS.md{new} or {folder}/README.md instead")
-    sys.exit(1 if rejected or gaps else 0)
+        print(f"{path}: warning: {entry[:70]}…: every path is under {folder}/: move it to"
+              f" {folder}/AGENTS.md{new} or {folder}/README.md")
+    lines = over_budget(current, proposed) if at_root else None
+    if lines:
+        print(f"{path}: warning: {lines} lines outside the bento block, over the {BUDGET}-line budget:"
+              " merge, move or delete stale entries (bento-learn's prune pass)")
+    return bool(rejected or gaps)
+
+
+def changed(base):
+    """(path, text at the merge base) per AGENTS.md/CLAUDE.md the branch changed, worktree included."""
+    git = ["git", "rev-parse", "--show-toplevel"]
+    top = Path(subprocess.run(git, capture_output=True, text=True, check=True).stdout.strip())
+    fork = subprocess.run(["git", "merge-base", base, "HEAD"], capture_output=True, text=True,
+                          check=True).stdout.strip()
+    names = subprocess.run(["git", "-C", str(top), "diff", "--name-only", "--diff-filter=d", "-z", fork],
+                           capture_output=True, text=True, check=True).stdout.split("\0")
+    names += subprocess.run(["git", "-C", str(top), "ls-files", "-z", "--others", "--exclude-standard"],
+                            capture_output=True, text=True, check=True).stdout.split("\0")
+    seen, out = set(), []
+    for name in names:
+        path = top / name
+        if Path(name).name not in ("AGENTS.md", "CLAUDE.md") or not path.is_file():
+            continue
+        if path.resolve() in seen:  # a CLAUDE.md symlink to the AGENTS.md beside it
+            continue
+        seen.add(path.resolve())
+        old = subprocess.run(["git", "-C", str(top), "show", f"{fork}:{name}"],
+                             capture_output=True, text=True)
+        out.append((path, old.stdout if old.returncode == 0 else ""))
+    return out
+
+
+def main():
+    args = sys.argv[1:]
+    if args[:1] == ["--diff"] and len(args) == 2:
+        failed = [report(path, old, path.read_text()) for path, old in changed(args[1])]
+    elif args[:1] == ["--all"] and len(args) > 1:
+        failed = [report(Path(name), "", Path(name).read_text()) for name in args[1:]]
+    elif len(args) >= 2 and not args[0].startswith("--"):
+        current_path = Path(args[0])
+        current = current_path.read_text() if current_path.exists() else ""
+        failed = [report(current_path, current, Path(args[1]).read_text(), args[2:])]
+    else:
+        sys.exit(__doc__)
+    sys.exit(1 if any(failed) else 0)
 
 
 if __name__ == "__main__":

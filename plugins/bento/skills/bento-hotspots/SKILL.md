@@ -50,7 +50,7 @@ files are skipped.
 4. **Report** a ranked table of the **refactor** verdicts: location, the metrics, a one-line
    reason and the target shape. High fan-in modules raise the stakes of a change; say so next
    to them. **Leave** and **exclude** verdicts get one closing line: location and reason each.
-   When the principles block says `Terse reports: off.`, every verdict gets a table row.
+   When the principles block has no `Report what matters` principle (terse reports off), every verdict gets a table row.
 5. **Hand off, don't refactor here.** Each target the user picks goes through
    `bento-refactor` as its own change (pin behaviour, reshape, prove), and its rerun of the
    scan shows the metric dropped.

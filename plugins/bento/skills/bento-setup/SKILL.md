@@ -83,8 +83,9 @@ Offline → skip this, and report that new bento skills may be missing.
    script prints `added`, `updated` or `unchanged` (no write) per file. Edit the `AGENTS.md`
    source, never a `CLAUDE.md` symlink.
 
-   **Terse reports** ("Report what matters") are opt-in, and the answer lives in the block as `Terse reports: on.` or `off.`; with
-   `off`, playbooks give their full reports too.
+   **Terse reports** ("Report what matters") are opt-in, and the answer lives in the block as an HTML comment,
+   `<!-- bento:terse-reports on -->` or `off` (blocks before it: a `Terse reports: on.` line); with
+   `off`, the block leaves that principle out and playbooks give their full reports too.
    Exit 3 means no block records it yet (a new install, or one from before the option): ask
    once, "Terse reports: agents lead with the result and report only decisions, failures,
    risks and side effects? on (default) / off", then rerun with `--terse on|off`. A recorded
