@@ -5,9 +5,10 @@ context:
   scaffold_script: setup.sh
 execution:
   prompt: |
-    Run bento-learn on this branch. What it surfaced: I pushed this branch twice with a lint
-    error, and CI failed both times. `make lint` catches it locally, and every change in this
-    repo, api or web, needs it before a push.
+    Run bento-learn on this branch. What it surfaced: I pushed this branch twice with a type
+    error, and CI failed both times. `make lint` doesn't run the type checker; CI also runs
+    `make typecheck` (mypy + tsc), and every change in this repo, api or web, needs both before
+    a push.
     Propose the exact diffs per destination. Do not apply anything.
   max_turns: 25
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write]
@@ -36,9 +37,10 @@ graders:
   - type: llm
     name: keeps-the-learning-lean
     criteria: |
-      PASS if the lint learning is either dropped as already covered (the file already has
-      "Lint: `make lint`") or proposed as a change to that existing line rather than a second
-      line about lint. FAIL if a new, separate lint line is added beside the existing one.
+      The root AGENTS.md already has "- Lint: `make lint` (ruff + eslint)." PASS if the
+      typecheck learning is proposed by changing that existing line (or merging it with the
+      `make test` lines into one pre-push line) rather than adding a separate new line beside
+      it. FAIL if a new, separate typecheck or pre-push line is added and the lint line stays.
   - type: tool_used
     name: fired
     tool: Skill

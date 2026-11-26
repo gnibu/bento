@@ -9,10 +9,11 @@ CURRENT is the instruction file as it is now (AGENTS.md or CLAUDE.md, at any dep
 not exist yet), PROPOSED the full text bento-learn wants to write there. Only entries that
 are new or changed in PROPOSED are checked, so an old file never blocks a new learning.
 `--diff BASE` checks the working tree of each instruction file the branch changed against its
-text at the merge base with BASE, whoever made the change; `--all` checks the whole file.
+text at the merge base with BASE (a rename: its old path), whoever made the change, and the
+docs the branch added beside it as NEW_DOCs; `--all` checks the whole file (a missing one is empty).
 An entry (a bullet, a table row, a paragraph or a code block) must fit on one line, or on two when it
 carries a pointer (a path or a link) to where the detail lives. An entry outside the bento block
-must not restate a bento principle (../../bento-setup/PRINCIPLES.md): the block already loads it.
+must not restate one of its entries (the file's own block, else the root AGENTS.md's): it loads already.
 An AGENTS.md is also the
 menu of the docs/**/*.md beside it, tracked or untracked but not ignored, or proposed in the
 same change (NEW_DOC, relative to the AGENTS.md's directory): its `## Docs` section must name
@@ -39,7 +40,6 @@ POINTER = re.compile(r"\]\(|https?://|\w/[\w.*]|[\w-]\.(md|py|sh|js|ts|tsx|json|
 # A path-like token, not inside a home (~/), variable ($X/) or absolute path.
 TOKEN = re.compile(r"(?<![\w~$/.-])[\w.*/-]+")
 BLOCK = re.compile(r"<!-- bento:start -->.*?<!-- bento:end -->", re.S)
-PRINCIPLES = Path(__file__).resolve().parents[2] / "bento-setup" / "PRINCIPLES.md"
 BUDGET = 60  # non-blank lines of a root AGENTS.md outside the bento block
 # Words too common to tell a restated principle from a repo fact.
 STOP = set("""a an the and or but nor to of in on at for by with from into as is are be been was were it its
@@ -99,27 +99,24 @@ def words(text):
     return found
 
 
-def principles():
-    """(heading, content words) per principle of bento-setup's PRINCIPLES.md; none if absent."""
-    if not PRINCIPLES.is_file():
-        return []
-    return [(section.partition("\n")[0].strip(), words(section))
-            for section in re.split(r"^## ", PRINCIPLES.read_text(), flags=re.M)[1:]]
-
-
-def restates(entry, sections):
-    """The principle an entry outside the bento block repeats: at least 3 of its content
-    words, and 70% of them, are that principle's. None if it says something new."""
+def restates(entry, principles):
+    """The bento block entry that entry repeats: at least 3 of its content words, and 70% of
+    them, are in that one entry. None if it says something new."""
     own = words(entry)
-    for heading, theirs in sections:
-        shared = len(own & theirs)
+    for principle in principles:
+        shared = len(own & words(principle))
         if shared >= 3 and shared >= 0.7 * len(own):
-            return heading
+            return principle
     return None
 
 
 def outside_block(text):
     return BLOCK.sub("", text)
+
+
+def block_of(text):
+    match = BLOCK.search(text)
+    return match.group(0) if match else ""
 
 
 def over_budget(current, proposed):
@@ -130,18 +127,20 @@ def over_budget(current, proposed):
     return lines if lines > BUDGET and lines > size(current) else None
 
 
-def check(current, proposed, sections=None):
-    """(entry, reason) per new entry of proposed that is too long or restates a principle."""
-    old = set(entries(current))
-    sections = principles() if sections is None else sections
-    l2 = set(entries(outside_block(proposed)))
-    rejected = []
-    for entry in entries(proposed):
-        if entry in old:
+def check(current, proposed, loaded=""):
+    """(entry, reason) per new entry of proposed that is too long or, outside the bento block,
+    repeats one of its entries. The block is proposed's own, else the one `loaded` holds (the
+    root AGENTS.md a nested file sits under): only principles the repo actually loads count."""
+    principles = entries(block_of(proposed) or block_of(loaded))
+    old_block, old_l2 = set(entries(block_of(current))), set(entries(outside_block(current)))
+    rejected = [(entry, reason) for entry in entries(block_of(proposed))
+                if entry not in old_block and (reason := problem(entry))]
+    for entry in entries(outside_block(proposed)):
+        if entry in old_l2:
             continue
         reason = problem(entry)
-        if not reason and entry in l2 and (heading := restates(entry, sections)):
-            reason = f"restates the bento principle \"{heading}\", already in the bento block: drop it"
+        if not reason and (principle := restates(entry, principles)):
+            reason = f"restates the bento block's \"{principle[:60]}…\": drop it"
         if reason:
             rejected.append((entry, reason))
     return rejected
@@ -231,65 +230,109 @@ def menu_gaps(root, proposed, new_docs=()):
     return gaps
 
 
+def git(cwd, *args):
+    return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True)
+
+
+def warnings(path, current, proposed):
+    """Warning lines for a repository's root AGENTS.md: misplaced entries, then the budget."""
+    out = []
+    for entry, folder in misplaced(path.parent, current, proposed):
+        home = Path(path.parent, folder, "AGENTS.md")
+        new = "" if home.exists() else " (new: with a CLAUDE.md holding @AGENTS.md)"
+        out.append(f"{path}: warning: {entry[:70]}…: every path is under {folder}/: move it to"
+                   f" {folder}/AGENTS.md{new} or {folder}/README.md, unless every task needs it")
+    lines = over_budget(current, proposed)
+    if lines:
+        out.append(f"{path}: warning: {lines} lines outside the bento block, over the {BUDGET}-line"
+                   " budget: merge, move or delete stale entries (bento-learn's prune pass)")
+    return out
+
+
+def placement(path):
+    """(path is the repository's root AGENTS.md, the root AGENTS.md text a nested file loads with)."""
+    top = git(path.parent, "rev-parse", "--show-toplevel").stdout.strip()
+    if not top or Path(top).resolve() == path.parent.resolve():
+        return path.name == "AGENTS.md", ""
+    root = Path(top, "AGENTS.md")
+    return False, root.read_text() if root.is_file() else ""
+
+
 def report(path, current, proposed, new_docs=()):
     """Print what's wrong with proposed as the next text of the instruction file at path.
     True when something fails."""
-    rejected = check(current, proposed)
-    for entry, reason in rejected:
-        print(f"{path}: {entry[:70]}…: {reason}")
+    at_root, loaded = placement(path)
+    rejected = check(current, proposed, loaded)
     gaps = menu_gaps(path.parent, proposed, new_docs) if path.name == "AGENTS.md" else []
-    for doc in gaps:
-        print(f"{path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
-              " or where this file routes its docs")
-    top = subprocess.run(["git", "-C", str(path.parent), "rev-parse", "--show-toplevel"],
-                         capture_output=True, text=True).stdout.strip()
-    at_root = path.name == "AGENTS.md" and (not top or Path(top).resolve() == path.parent.resolve())
-    for entry, folder in misplaced(path.parent, current, proposed) if at_root else []:
-        home = Path(path.parent, folder, "AGENTS.md")
-        new = "" if home.exists() else " (new: with a CLAUDE.md holding @AGENTS.md)"
-        print(f"{path}: warning: {entry[:70]}…: every path is under {folder}/: move it to"
-              f" {folder}/AGENTS.md{new} or {folder}/README.md")
-    lines = over_budget(current, proposed) if at_root else None
-    if lines:
-        print(f"{path}: warning: {lines} lines outside the bento block, over the {BUDGET}-line budget:"
-              " merge, move or delete stale entries (bento-learn's prune pass)")
+    lines = [f"{path}: {entry[:70]}…: {reason}" for entry, reason in rejected]
+    lines += [f"{path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
+              " or where this file routes its docs" for doc in gaps]
+    lines += warnings(path, current, proposed) if at_root else []
+    for line in lines:
+        print(line)
     return bool(rejected or gaps)
 
 
+def branch_files(top, fork):
+    """((old name, name) per file the branch changed or left untracked, names it added)."""
+    fields = git(top, "diff", "--name-status", "-z", "-M", "--diff-filter=d", fork).stdout.split("\0")
+    moves, added = [], []
+    while len(fields) > 1:
+        size = 3 if fields[0][:1] in "RC" else 2  # a rename or copy names its source too
+        status, *names = fields[:size]
+        fields = fields[size:]
+        moves.append((names[0], names[-1]))
+        if status == "A":
+            added.append(names[-1])
+    untracked = [name for name in git(top, "ls-files", "-z", "--others", "--exclude-standard")
+                 .stdout.split("\0") if name]
+    return moves + [(name, name) for name in untracked], added + untracked
+
+
+def instruction_file(top, path):
+    """True for an AGENTS.md/CLAUDE.md that is, or links to, a file inside the checkout."""
+    return path.name in ("AGENTS.md", "CLAUDE.md") and path.is_file() and top in path.resolve().parents
+
+
+def docs_beside(name, added):
+    """The added docs/**/*.md under the instruction file `name`'s folder, relative to it."""
+    docs = Path(name).parent / "docs"
+    return [Path(doc).relative_to(docs.parent).as_posix() for doc in added
+            if doc.endswith(".md") and docs in Path(doc).parents]
+
+
 def changed(base):
-    """(path, text at the merge base) per AGENTS.md/CLAUDE.md the branch changed, worktree included."""
-    git = ["git", "rev-parse", "--show-toplevel"]
-    top = Path(subprocess.run(git, capture_output=True, text=True, check=True).stdout.strip())
-    fork = subprocess.run(["git", "merge-base", base, "HEAD"], capture_output=True, text=True,
-                          check=True).stdout.strip()
-    names = subprocess.run(["git", "-C", str(top), "diff", "--name-only", "--diff-filter=d", "-z", fork],
-                           capture_output=True, text=True, check=True).stdout.split("\0")
-    names += subprocess.run(["git", "-C", str(top), "ls-files", "-z", "--others", "--exclude-standard"],
-                            capture_output=True, text=True, check=True).stdout.split("\0")
+    """(path, text at the merge base, docs the branch added beside it) per AGENTS.md/CLAUDE.md
+    the branch changed, worktree included. A renamed file keeps its old text; a symlink is its
+    target, once, and only inside the repository."""
+    top = Path(git(".", "rev-parse", "--show-toplevel").stdout.strip()).resolve()
+    fork = git(top, "merge-base", base, "HEAD")
+    if fork.returncode:
+        sys.exit(f"check_entries: no merge base with {base}: {fork.stderr.strip()}")
+    fork = fork.stdout.strip()
+    moves, added = branch_files(top, fork)
     seen, out = set(), []
-    for name in names:
+    for old_name, name in moves:
         path = top / name
-        if Path(name).name not in ("AGENTS.md", "CLAUDE.md") or not path.is_file():
-            continue
-        if path.resolve() in seen:  # a CLAUDE.md symlink to the AGENTS.md beside it
+        if not instruction_file(top, path) or path.resolve() in seen:
             continue
         seen.add(path.resolve())
-        old = subprocess.run(["git", "-C", str(top), "show", f"{fork}:{name}"],
-                             capture_output=True, text=True)
-        out.append((path, old.stdout if old.returncode == 0 else ""))
+        if path.resolve() != path:  # a CLAUDE.md symlink: its target's old text
+            old_name = path.resolve().relative_to(top).as_posix()
+        old = git(top, "show", f"{fork}:{old_name}")
+        out.append((path, old.stdout if old.returncode == 0 else "", docs_beside(name, added)))
     return out
 
 
 def main():
     args = sys.argv[1:]
+    read = lambda name: Path(name).read_text() if Path(name).exists() else ""
     if args[:1] == ["--diff"] and len(args) == 2:
-        failed = [report(path, old, path.read_text()) for path, old in changed(args[1])]
+        failed = [report(path, old, path.read_text(), docs) for path, old, docs in changed(args[1])]
     elif args[:1] == ["--all"] and len(args) > 1:
-        failed = [report(Path(name), "", Path(name).read_text()) for name in args[1:]]
+        failed = [report(Path(name), "", read(name)) for name in args[1:]]
     elif len(args) >= 2 and not args[0].startswith("--"):
-        current_path = Path(args[0])
-        current = current_path.read_text() if current_path.exists() else ""
-        failed = [report(current_path, current, Path(args[1]).read_text(), args[2:])]
+        failed = [report(Path(args[0]), read(args[0]), Path(args[1]).read_text(), args[2:])]
     else:
         sys.exit(__doc__)
     sys.exit(1 if any(failed) else 0)

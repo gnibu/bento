@@ -81,6 +81,8 @@ format:
 	ruff format .
 test:
 	python3 -m unittest
+typecheck:
+	mypy api && cd web && npx tsc --noEmit
 MK
 for f in api/flags.py api/db.py api/limits.py api/auth.py web/e2e/global-setup.ts \
          web/e2e/playwright.config.ts web/e2e/checkout.spec.ts web/.nvmrc; do printf 'x\n' > "$f"; done

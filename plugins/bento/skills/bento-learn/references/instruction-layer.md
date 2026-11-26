@@ -84,7 +84,8 @@ whoever wrote it (`check_entries.py --diff origin/<base>`).
 
 An entry never restates a bento principle: the bento block (`<!-- bento:start -->`) already
 loads it in every session, so a repo line saying "asked to commit, run bento-ship" pays twice
-for one rule. The check rejects an entry most of whose words are one principle's.
+for one rule. The check rejects an entry most of whose words are one line of the block the repo
+loads (the file's own, or the root `AGENTS.md`'s), so a rule the block leaves out stays.
 
 ## A size budget for the root AGENTS.md
 

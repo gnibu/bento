@@ -118,7 +118,7 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
    or `CLAUDE.md`, whoever edited it → also run
    `python3 "<this skill's dir>/../bento-learn/scripts/check_entries.py" --diff origin/<base>`:
    re-route each entry it rejects as `bento-learn` step 2 says, and move each one a `warning:`
-   places under a subfolder to the `AGENTS.md` it names. End-to-end tests: only those the
+   places under a subfolder to the `AGENTS.md` it names, unless every task needs it. End-to-end tests: only those the
    branch touches, chosen as in `bento-qa` step 7 (its `E2E:` line when QA ran). Fix failures. Green is the gate;
    "it compiles" is not, and neither is a suite that runs zero tests. The diff changes behavior
    and no test covers it → back to step 6; QA was skipped → stop and ask.

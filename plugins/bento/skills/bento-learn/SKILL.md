@@ -70,7 +70,8 @@ Pick the cheapest correct home. Price the sink first (see [instruction-layer.md]
 - Code-scoped gotcha / command / env quirk → the **nearest `AGENTS.md`** to that code; none
   below the root → create `AGENTS.md` in that code's directory, plus a `CLAUDE.md` holding
   `@AGENTS.md` so Claude loads it too. `check_entries.py` flags a root entry whose paths all
-  sit under one folder ("move it to `<dir>/AGENTS.md`"): route it there.
+  sit under one folder ("move it to `<dir>/AGENTS.md`"): route it there, unless every
+  task needs it (a check before each push stays at the root).
 - Restates a bento principle (the `bento:start` block) → **drop it**; the block already loads.
 - Human-facing architecture / decision → **docs** (or an ADR).
 - One-off → **drop it.**
@@ -93,7 +94,7 @@ preferences.
   plus a `CLAUDE.md` holding `@AGENTS.md`) or its README instead, even when the root already
   has a section on it, and offer no root fallback. A rule every task needs (a check before
   each PR) stays at the root; correcting an existing line in place is fine.
-- **Prune what you touch.** For each `AGENTS.md`/`CLAUDE.md` you would add to, run
+- **Prune what you touch.** For each existing `AGENTS.md`/`CLAUDE.md` you would add to, run
   `python3 "<skill>/scripts/check_entries.py" --all <file>` and read the file whole. Propose,
   in the same diff, cutting what no longer earns its line: an entry that restates a bento
   principle, names a path or command that no longer exists, or repeats another entry (merge
