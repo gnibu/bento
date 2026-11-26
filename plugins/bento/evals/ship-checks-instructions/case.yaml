@@ -1,0 +1,39 @@
+schema_version: "1.0"
+name: ship-checks-instructions
+tags: [workflow, workflow-change]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Ship this branch. Dry run only: do not edit, commit, push, open a PR, or contact a
+    tracker, and don't run the step skills themselves (bento-learn, bento-qa, bento-docs,
+    bento-cso, bento-hotspots, bento-adversarial-review). Do run the checks step 7 runs, then
+    tell me whether this branch passes them and what you would fix before pushing."
+  max_turns: 20
+  timeout_seconds: 300
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, TaskCreate, TaskUpdate]
+graders:
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-ship"'
+    arm: with-only
+  - type: tool_used
+    name: checks-instruction-files
+    tool: Bash
+    input_match: 'check_entries\.py'
+  - type: llm
+    name: flags-agents-md-entries
+    criteria: 'This branch added two lines to the root AGENTS.md: a long "E2E flakiness" gotcha
+      about web/e2e/ and "Asked to commit or open a PR: run bento-ship.", which restates the
+      bento block''s Ship principle. PASS if the answer says the branch does not pass as is
+      because of those AGENTS.md lines and would fix them before pushing: move or shorten the
+      e2e gotcha (e.g. to web/e2e/AGENTS.md or a doc) and drop the bento-ship line. FAIL if it
+      says the checks pass, or does not mention both lines.'
+    focus: last_message
+  - type: tool_used
+    name: no-commit-push-pr
+    tool: Bash
+    input_match: '(?:(?:\bgit|\$\{?(?:G|\w*(?:GIT|[Gg]it)\w*)\}?)\s+(?:commit|push|merge)|\b(?:gh|glab)\s+(?:pr|mr)\s+(?:create|merge))(?![\w-])'
+    min: 0
+    max: 0
+    arm: both

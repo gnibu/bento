@@ -114,7 +114,11 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
    No separate approval gate to run either specialist. Keep the audit
    scope and unresolved findings for the PR; a missing skill is an explicit verification gap.
    Recheck affected docs after QA/security fixes. Run whatever checks exist: tests, lint,
-   type-check, build — discover from the repo, don't assume. End-to-end tests: only those the
+   type-check, build — discover from the repo, don't assume. The branch changed an `AGENTS.md`
+   or `CLAUDE.md`, whoever edited it → also run
+   `python3 "<this skill's dir>/../bento-learn/scripts/check_entries.py" --diff origin/<base>`:
+   re-route each entry it rejects as `bento-learn` step 2 says, and move each one a `warning:`
+   places under a subfolder to the `AGENTS.md` it names, unless every task needs it. End-to-end tests: only those the
    branch touches, chosen as in `bento-qa` step 7 (its `E2E:` line when QA ran). Fix failures. Green is the gate;
    "it compiles" is not, and neither is a suite that runs zero tests. The diff changes behavior
    and no test covers it → back to step 6; QA was skipped → stop and ask.
@@ -238,7 +242,7 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
     - each of `QA`, `Docs`, `Security`, `Pre-PR review (local)` and CI that failed or left an
       open question, and `Learnings: <n> open in the PR body` when step 11 put them there.
 
-    When the principles block says `Terse reports: off.`, report a line for every step instead: `Ticket`, `QA` (with tests added),
+    When the principles block has no `Report what matters` principle (terse reports off), report a line for every step instead: `Ticket`, `QA` (with tests added),
     `Docs`, `Security`, `Pre-PR review (local)`, `PR reviewers` and CI.
 
     Each line a preference decided names its source: `(repo preference)`, `(default)` or

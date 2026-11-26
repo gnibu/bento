@@ -79,7 +79,28 @@ lives. If reasoning doesn't fit in two lines, it belongs at the code site, in a 
 guide, or in a skill reference — not in `AGENTS.md`. Writing "which caused…", a ticket
 number, or a second justifying sentence means you're drafting a code comment in the wrong
 file. Cut to the pointer. `bento-learn` enforces this with `scripts/check_entries.py` on
-every entry it proposes.
+every entry it proposes, and `bento-ship` on every instruction-file line a branch changes,
+whoever wrote it (`check_entries.py --diff origin/<base>`).
+
+An entry never restates a bento principle: the bento block (`<!-- bento:start -->`) already
+loads it in every session, so a repo line saying "asked to commit, run bento-ship" pays twice
+for one rule. The check rejects an entry most of whose words are one line of the block the repo
+loads (the file's own, or the root `AGENTS.md`'s), so a rule the block leaves out stays.
+
+## A size budget for the root AGENTS.md
+
+**60 non-blank lines outside the bento block.** That is about 40 entries at one or two lines
+each, roughly 800 words: a page an agent can read whole before every task. Why a number at all:
+the file only grows (each learning adds a line, none removes one), every session pays for all of
+it, and instruction-following degrades as instructions pile up, so a stale line costs the rules
+that matter, not only tokens. Why 60: a repo's cross-cutting facts (base branch, forge, tracker,
+checks, the docs menu, a handful of repo-wide gotchas) fit in it with room to spare; a file
+that passes it is carrying subfolder detail that belongs in a nested `AGENTS.md`, or entries
+nobody pruned. The bento block doesn't count: `bento-setup` owns and sizes it.
+
+`check_entries.py` warns when a root `AGENTS.md` grows past the budget, and `bento-learn`'s
+prune pass then proposes merges, moves and deletions alongside its new entry. Over budget,
+a learning's diff leaves the file shorter than it found it.
 
 ## Procedures: how to do what
 

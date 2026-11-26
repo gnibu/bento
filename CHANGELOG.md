@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- **Instruction files stay lean, and bento's own block now follows its rules.** A downstream
+  root `AGENTS.md` had grown to 167 lines, most of them e2e gotchas for one subfolder, because
+  the checks ran only on what `bento-learn` itself added. Now:
+  - `bento-ship` runs `check_entries.py --diff origin/<base>` on every `AGENTS.md`/`CLAUDE.md`
+    line the branch changed, whoever wrote it; `--all <file>` checks a whole file.
+  - `check_entries.py` rejects a repo entry that restates a line of the bento block the repo
+    loads, says "move it to `<dir>/AGENTS.md`" for a root entry about one subfolder (unless
+    every task needs it), and warns when a root `AGENTS.md`
+    grows past 60 lines outside the bento block (the budget is explained in
+    `instruction-layer.md`).
+  - `bento-learn`'s step 3 prunes what it touches: proposing an entry for a file, it also
+    proposes deleting restated, stale or duplicate entries and moving subfolder ones, and over
+    budget its diff leaves the file shorter.
+  - The principles block drops from about 60 lines to 40: each principle states its rule once,
+    the block says a repo's own instructions override it (no more "no exceptions"), commits
+    leave the do-without-asking list for "Ship through bento-ship", a new principle says never
+    to edit an installed `bento-*` skill (use `.agents/bento/<skill>.md`), and the terse-reports
+    answer is an HTML comment. Rerun `bento-setup` after updating to refresh the block.
+
 - **`bento-learn` stops growing the root `AGENTS.md` with learnings that belong lower, or
   nowhere.** It drops a learning whose cause the branch's own fix removes, sends one only work
   in one subfolder needs to that folder's nearest `AGENTS.md` or README (`check_entries.py`
