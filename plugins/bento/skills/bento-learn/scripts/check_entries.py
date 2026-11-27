@@ -10,8 +10,9 @@ not exist yet), PROPOSED the full text bento-learn wants to write there. Only en
 are new or changed in PROPOSED are checked, so an old file never blocks a new learning.
 `--diff BASE` checks the working tree of each instruction file the branch changed against its
 text at the merge base with BASE (a rename: its old path), whoever made the change, and the
-docs the branch added beside it as NEW_DOCs; it skips a skill's own files (a folder below the
-root holding a SKILL.md: an installed skill's AGENTS.md is its reference, not an instruction layer); `--all` checks the whole file (a missing one is empty).
+docs the branch added beside it as NEW_DOCs, skipping a skill's files (under a folder below the
+root holding a SKILL.md: a vendored skill's AGENTS.md is its reference, not an instruction layer);
+`--all` checks the whole file (a missing one is empty).
 An entry (a bullet, a table row, a paragraph or a code block) must fit on one line, or on two when it
 carries a pointer (a path or a link) to where the detail lives. An entry outside the bento block
 that shares most of the words of one of its entries (the file's own block, else the root AGENTS.md's)
@@ -275,16 +276,23 @@ def placement(path):
     return False, root.read_text() if root.is_file() else ""
 
 
+WARNING = "warning: "
+
+
+def entry_line(path, entry, reason):
+    """The output line for one entry; a warning's tag goes first, as warnings() writes it."""
+    tag = WARNING if reason.startswith(WARNING) else ""
+    return f"{path}: {tag}{entry[:70]}…: {reason[len(tag):]}"
+
+
 def report(path, current, proposed, new_docs=()):
     """Print what's wrong with proposed as the next text of the instruction file at path.
     True when something fails."""
     at_root, loaded = placement(path)
     found = check(current, proposed, loaded)
-    rejected = [(entry, reason) for entry, reason in found if not reason.startswith("warning:")]
+    rejected = [reason for _, reason in found if not reason.startswith(WARNING)]
     gaps = menu_gaps(path.parent, proposed, new_docs) if path.name == "AGENTS.md" else []
-    lines = [f"{path}: {entry[:70]}…: {reason}" for entry, reason in rejected]
-    lines += [f"{path}: warning: {entry[:70]}…: {reason[len('warning: '):]}"
-              for entry, reason in found if (entry, reason) not in rejected]
+    lines = [entry_line(path, entry, reason) for entry, reason in found]
     lines += [f"{path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
               " or where this file routes its docs" for doc in gaps]
     lines += warnings(path, current, proposed) if at_root else []
