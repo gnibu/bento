@@ -42,9 +42,8 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
 ## Steps (paste as todos)
 
 1. **Find the test system.** Read the checks `AGENTS.md` names, the manifests (`package.json`
-   scripts, `pyproject.toml`, `Makefile`, `go.mod`, `Cargo.toml`) and CI config. Run the suite
-   once for a baseline (end-to-end tests: step 7's selection); tests already red are pre-existing, report them as such.
-   A command that runs zero tests is no test system. **None → bootstrap the smallest one**
+   scripts, `pyproject.toml`, `Makefile`, `go.mod`, `Cargo.toml`) and CI config. No baseline
+   run: step 7 sorts pre-existing failures from new ones. A command that runs zero tests is no test system. **None → bootstrap the smallest one**
    native to the stack: the stdlib runner first (`python3 -m unittest`, `node --test`,
    `go test`, `cargo test`, a `tests/run.sh` of asserting commands for shell); for a web UI,
    also a headless browser runner (the one the repo already has, else Playwright) that starts
@@ -65,6 +64,8 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
      production data or a publish, and open its output in the browser the same way.
    - CLI/TUI → run the binary. API → curl/HTTP against the running service. Library → call it
      from a scratch script.
+   - **A runner test already drives the path on its real surface** (an end-to-end scenario) →
+     that is the exercise: run it and keep its output; don't also drive the path by hand.
    Save screenshots outside tracked files (a gitignored dir or tmp).
    **A server you start in the background:** before testing against it, confirm the process
    listening on its port is yours (`lsof -nP -iTCP:<port> -sTCP:LISTEN` shows your PID).
@@ -80,14 +81,16 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    split logic from I/O). A small, behavior-preserving seam follows the mode table; anything
    larger is a finding: `untestable: <behavior> — needs <seam>`.
 6. **Fix defects per the mode.** Root cause (see `bento-investigate`), the pinning test turns
-   green, re-run the path on the surface.
+   green, re-run that path's own surface check; nothing else reruns here.
 7. **Run the full suite.** Green, with the new tests in it. Full means every unit and
    integration suite; end-to-end (browser) tests only for what the scope touches: the repo's own
    selective runner if it has one (print its choice first when it has a dry mode, and add what
    it misses of the scope: uncommitted changes, the tests just added), else the spec files or
    tests (by title) that open the changed pages or components, new ones included. The whole end-to-end
    suite only when code every page uses changed (layout, routing, auth, the e2e harness) or no
-   test matches the change. Commit the tests (ship mode, or when asked) in conventional style,
+   test matches the change. A red test the scope doesn't touch → rerun it on `origin/<base>`:
+   red there too is pre-existing, report it as such. **Ship mode:** the ship flow's final run is
+   this run; return the selection in `E2E:` and let it run there. Commit the tests (ship mode, or when asked) in conventional style,
    one logical change per commit.
 8. **Report**, blockers first. Ship mode returns every line below: the ship flow builds the
    PR's test plan from it. Interactive mode's message keeps the `QA:` line with counts and

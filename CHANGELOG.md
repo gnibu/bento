@@ -11,6 +11,9 @@
   - `bento-adversarial-review` treats a clean rebase as already reviewed: when `git range-diff`
     shows every reviewed commit unchanged, it reviews only the commits after them, not the whole
     branch.
+  - `bento-qa` runs no baseline suite, takes a runner test that already drives a path end to end
+    as that path's exercise, reruns only the fixed path after a fix, and in ship mode leaves the
+    full run to the ship flow.
 
 - **Instruction files stay lean, and bento's own block now follows its rules.** A downstream
   root `AGENTS.md` had grown to 167 lines, most of them e2e gotchas for one subfolder, because
