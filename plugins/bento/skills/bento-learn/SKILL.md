@@ -32,7 +32,7 @@ several Claude and Codex sessions. From the consumer repo root run
 `python3 "<skill>/scripts/sessions.py"`: it prints each worktree session since the branch was
 created (operator turns, failed tool calls, blocking hook errors), oldest first, with its
 transcript path. Pass `--since <epoch>` to widen the window. Sessions marked "other directory"
-(started elsewhere but naming this worktree's path or branch) are the branch's sessions too.
+(started elsewhere but naming this worktree's path) are the branch's sessions too.
 Open a printed transcript only when a line needs more context.
 
 Scan those sessions, this conversation, and the branch diff for signal, citing the

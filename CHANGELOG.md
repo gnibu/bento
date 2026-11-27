@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **A ship run stops repeating work.** A ~100-line fix in a consumer repo took hours: the same
+  end-to-end scenarios ran by hand three times and then again in the merge checklist, a
+  pre-existing complex function got refactored, pre-existing review findings got fixed, and a
+  rebase sent the whole branch back through review. Now:
+  - `bento-learn`'s `sessions.py` lists a session run from another directory only when it names
+    the worktree path: a branch name alone matched an agent that monitors every thread.
+
 - **Instruction files stay lean, and bento's own block now follows its rules.** A downstream
   root `AGENTS.md` had grown to 167 lines, most of them e2e gotchas for one subfolder, because
   the checks ran only on what `bento-learn` itself added. Now:

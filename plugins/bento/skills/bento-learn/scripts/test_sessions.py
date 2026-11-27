@@ -95,20 +95,18 @@ class SessionsTests(unittest.TestCase):
         self.assertIn(f"(other directory: {self.root / 'elsewhere'})\nU: edit {self.top}/src/x.py", out)
         self.assertNotIn("some/other", out)
 
-    def test_renamed_branch_old_name_matches_after_branch_start(self):
+    def test_a_branch_name_alone_does_not_list_another_directorys_session(self):
+        # An agent monitoring every thread names every branch; only the worktree path counts.
         git = ["git", "-C", str(self.repo), "-c", "user.name=t", "-c", "user.email=t@t"]
-        subprocess.run([*git, "checkout", "-q", "-b", "feature-old"], check=True)
+        subprocess.run([*git, "checkout", "-q", "-b", "feature-x"], check=True)
         subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
-        subprocess.run([*git, "branch", "-m", "feature-new"], check=True)
-        self.elsewhere("renamed.jsonl", "work on feature-old please")
-        self.elsewhere("stale.jsonl", "earlier feature-old work", age=3600)
-        self.elsewhere("newline.jsonl", "branch:\nfeature-new")
-        self.elsewhere("longer.jsonl", "see feature-new/other")
+        self.elsewhere("monitor.jsonl", "threads: feature-x, feature-y, feature-z")
+        self.elsewhere("newline.jsonl", f"cd\n{self.top}")
+        self.elsewhere("stale.jsonl", f"earlier {self.top}/x.py", age=3600)
         out = self.run_script()
-        self.assertIn("U: work on feature-old please", out)
-        self.assertIn("U: branch:\nfeature-new", out)
+        self.assertNotIn("feature-y", out)
+        self.assertIn(f"U: cd\n{self.top}", out)
         self.assertNotIn("earlier", out)
-        self.assertNotIn("feature-new/other", out)
 
     def test_injected_text_blocks_are_dropped_from_operator_turns(self):
         self.write(self.claude_dir / "blocks.jsonl", [
@@ -143,33 +141,13 @@ class SessionsTests(unittest.TestCase):
         self.assertNotIn("old copy", out)
         self.assertEqual(out.count("=== "), 1)
 
-    def test_another_accounts_session_needs_the_worktree_path_not_a_branch_name(self):
-        git = ["git", "-C", str(self.repo), "-c", "user.name=t", "-c", "user.email=t@t"]
-        subprocess.run([*git, "checkout", "-q", "-b", "release"], check=True)
-        subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
-        for config, name, text in (("claude", "own.jsonl", "own release notes"),
-                                   (".claude-x", "foreign.jsonl", "foreign release notes"),
-                                   (".claude-x", "path.jsonl", f"foreign edit {self.top}/x.py")):
-            self.write(self.root / config / "projects/-elsewhere" / name,
-                       [{"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": text}}])
-        # Moved from this account to the other one: its newest copy is the other account's, path only.
-        for config, age in (("claude", 60), (".claude-x", 0)):
-            self.write(self.root / config / "projects/-elsewhere/moved.jsonl", [
-                {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": "moved release"}}],
-                age=age)
-        stamp = time.time()
-        for config in ("claude", ".claude-x"):  # copied with its mtime: a tie
-            tied = self.write(self.root / config / "projects/-elsewhere/tied.jsonl", [
-                {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": "tied release"}}])
-            os.utime(tied, (stamp, stamp))
+    def test_another_accounts_session_is_listed_by_the_worktree_path(self):
+        self.write(self.root / ".claude-x/projects/-elsewhere/path.jsonl", [
+            {"type": "user", "cwd": str(self.root / "elsewhere"), "message": {"content": f"foreign edit {self.top}/x.py"}}])
         self.write(self.root / ".claude-x/projects/-copy/copy.jsonl", [
             {"type": "user", "cwd": self.top + '+"copy"/src', "message": {"content": f'sibling {self.top}+"copy"/x'}}])
         out = self.run_script(since=0)
-        self.assertIn("U: own release notes", out)
         self.assertIn(f"U: foreign edit {self.top}/x.py", out)
-        self.assertNotIn("foreign release", out)
-        self.assertNotIn("moved release", out)
-        self.assertNotIn("tied release", out)
         self.assertNotIn("sibling", out)
 
     def test_sessions_before_since_are_skipped(self):
