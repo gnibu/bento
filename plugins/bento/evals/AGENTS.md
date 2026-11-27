@@ -9,3 +9,4 @@
 - Grader `input_match` is a JS regex: inline `(?i)` matches nothing; use `[Ll]earn`.
 - One prompt per case: an earlier turn in `append_system_prompt` didn't reproduce a repeat skip.
 - A case run from an agent needs `--scaffold` for its `setup.sh` and `--allow-tools Bash Write` for those tools in `allowed_tools`.
+- Baseline for a skill edit: `--ablation` compares no plugin, not the old skill; run the case in a `git worktree` at `origin/master` with the new case copied in.
