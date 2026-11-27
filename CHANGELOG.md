@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **Six fixes from a consumer repo's pre-PR review.**
+  - `check_entries.py` only warns about an entry in a bento principle's words: it rejected the
+    stricter "Never force-push, deploy, or delete data" against "Irreversible writes → confirm first".
+  - `check_entries.py --diff` skips a vendored skill's `AGENTS.md` (a folder with a `SKILL.md`):
+    a skill update no longer fails `bento-ship`'s gate on third-party text.
+  - `check_entries.py --diff` checks a `CLAUDE.md` alias as its `AGENTS.md` target, so the
+    `## Docs` menu check runs even when the alias is listed first.
+  - `bento-learn` creates a nested `CLAUDE.md` like the repo's others (a symlink is fine too).
+  - `bento-adversarial-review` reviews the whole branch when a rebased branch holds a merge:
+    `git range-diff` skips merges, so a merge resolved differently showed as unchanged.
+  - `bento-ship` and `bento-qa` count a red test as pre-existing only when it fails on the base
+    with the same assertion or error.
 - **A ship run stops repeating work.** A ~100-line fix in a consumer repo took hours: the same
   end-to-end scenarios ran by hand three times and then again in the merge checklist, and a
   rebase sent the whole branch back through review. Now:

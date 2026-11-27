@@ -194,7 +194,7 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
     end-to-end tests chosen as in `bento-qa` step 7 on the final diff (QA's `E2E:` line, unless
     later commits reached other pages or shared code). The repo keeps a local per-commit
     record (a merge checklist) → run them through it, so the merge reuses them. A red test the
-    branch doesn't touch → rerun it on `origin/<base>`: red there too is pre-existing, report
+    branch doesn't touch → rerun it on `origin/<base>`: red there with the same failure is pre-existing, report
     it rather than fix it here. Red otherwise → fix and commit, give the fix the pre-PR review
     on "commits since `<reviewed>`" unless step 10 was skipped, then run again: the ship record
     names the commit the full run passed on. The forge's own checks are read after the push.

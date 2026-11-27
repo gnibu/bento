@@ -10,10 +10,12 @@ not exist yet), PROPOSED the full text bento-learn wants to write there. Only en
 are new or changed in PROPOSED are checked, so an old file never blocks a new learning.
 `--diff BASE` checks the working tree of each instruction file the branch changed against its
 text at the merge base with BASE (a rename: its old path), whoever made the change, and the
-docs the branch added beside it as NEW_DOCs; `--all` checks the whole file (a missing one is empty).
+docs the branch added beside it as NEW_DOCs; it skips a skill's own files (a folder below the
+root holding a SKILL.md: an installed skill's AGENTS.md is its reference, not an instruction layer); `--all` checks the whole file (a missing one is empty).
 An entry (a bullet, a table row, a paragraph or a code block) must fit on one line, or on two when it
 carries a pointer (a path or a link) to where the detail lives. An entry outside the bento block
-must not restate one of its entries (the file's own block, else the root AGENTS.md's): it loads already.
+that shares most of the words of one of its entries (the file's own block, else the root AGENTS.md's)
+warns: it may restate what loads already, or be a stricter rule.
 An AGENTS.md is also the
 menu of the docs/**/*.md beside it, tracked or untracked but not ignored, or proposed in the
 same change (NEW_DOC, relative to the AGENTS.md's directory): its `## Docs` section must name
@@ -100,7 +102,7 @@ def words(text):
 
 
 def restates(entry, principles):
-    """The bento block entry that entry repeats: at least 3 of its content words, and 70% of
+    """The bento block entry that entry may repeat: at least 3 of its content words, and 70% of
     them, are in that one entry. None if it says something new."""
     own = words(entry)
     for principle in principles:
@@ -129,8 +131,9 @@ def over_budget(current, proposed):
 
 def check(current, proposed, loaded=""):
     """(entry, reason) per new entry of proposed that is too long or, outside the bento block,
-    repeats one of its entries. The block is proposed's own, else the one `loaded` holds (the
-    root AGENTS.md a nested file sits under): only principles the repo actually loads count."""
+    may repeat one of its entries (a reason starting "warning:", which never fails). The block is
+    proposed's own, else the one `loaded` holds (the root AGENTS.md a nested file sits under):
+    only principles the repo actually loads count."""
     principles = entries(block_of(proposed) or block_of(loaded))
     old_block, old_l2 = set(entries(block_of(current))), set(entries(outside_block(current)))
     rejected = [(entry, reason) for entry in entries(block_of(proposed))
@@ -140,7 +143,7 @@ def check(current, proposed, loaded=""):
             continue
         reason = problem(entry)
         if not reason and (principle := restates(entry, principles)):
-            reason = f"restates the bento block's \"{principle[:60]}…\": drop it"
+            reason = f"warning: may restate the bento block's \"{principle[:60]}…\": drop it unless stricter"
         if reason:
             rejected.append((entry, reason))
     return rejected
@@ -250,7 +253,7 @@ def warnings(path, current, proposed):
     out = []
     for entry, folder in misplaced(path.parent, current, proposed):
         home = Path(path.parent, folder, "AGENTS.md")
-        new = "" if home.exists() else " (new: with a CLAUDE.md holding @AGENTS.md)"
+        new = "" if home.exists() else " (new: with a CLAUDE.md beside it, like the repo's others)"
         out.append(f"{path}: warning: {entry[:70]}…: every path is under {folder}/: move it to"
                    f" {folder}/AGENTS.md{new} or {folder}/README.md, unless every task needs it")
     lines = over_budget(current, proposed)
@@ -276,9 +279,12 @@ def report(path, current, proposed, new_docs=()):
     """Print what's wrong with proposed as the next text of the instruction file at path.
     True when something fails."""
     at_root, loaded = placement(path)
-    rejected = check(current, proposed, loaded)
+    found = check(current, proposed, loaded)
+    rejected = [(entry, reason) for entry, reason in found if not reason.startswith("warning:")]
     gaps = menu_gaps(path.parent, proposed, new_docs) if path.name == "AGENTS.md" else []
     lines = [f"{path}: {entry[:70]}…: {reason}" for entry, reason in rejected]
+    lines += [f"{path}: warning: {entry[:70]}…: {reason[len('warning: '):]}"
+              for entry, reason in found if (entry, reason) not in rejected]
     lines += [f"{path}: menu misses {doc}: add \"- <when you need it> → {doc}\" under ## Docs,"
               " or where this file routes its docs" for doc in gaps]
     lines += warnings(path, current, proposed) if at_root else []
@@ -305,8 +311,13 @@ def branch_files(top, fork):
 
 
 def instruction_file(top, path):
-    """True for an AGENTS.md/CLAUDE.md that is, or links to, a file inside the checkout."""
-    return path.name in NAMES and path.is_file() and top in path.resolve().parents
+    """True for an AGENTS.md/CLAUDE.md that is, or links to, a file inside the checkout, and
+    sits in no skill (a folder below top holding a SKILL.md: a vendored skill's AGENTS.md)."""
+    if path.name not in NAMES or not path.is_file() or top not in path.resolve().parents:
+        return False
+    folders = {path.parent, path.resolve().parent}
+    return not any((folder / "SKILL.md").is_file() for start in folders
+                   for folder in [start, *start.parents] if top in folder.parents)
 
 
 def docs_beside(name, added):
@@ -319,7 +330,7 @@ def docs_beside(name, added):
 def changed(base):
     """(path, text at the merge base, docs the branch added beside it) per AGENTS.md/CLAUDE.md
     the branch changed, worktree included. A renamed file keeps its old text; a symlink is its
-    target, once, and only inside the repository."""
+    target, once and by the target's name, and only inside the repository."""
     top = Path(git_out(".", "rev-parse", "--show-toplevel").strip()).resolve()
     fork = git_out(top, "merge-base", base, "HEAD").strip()
     moves, added = branch_files(top, fork)
@@ -329,8 +340,9 @@ def changed(base):
         if not instruction_file(top, path) or path.resolve() in seen:
             continue
         seen.add(path.resolve())
-        if path.resolve() != path:  # a CLAUDE.md symlink: its target's old text
-            old_name = path.resolve().relative_to(top).as_posix()
+        if path.resolve() != path:  # a CLAUDE.md symlink: its target, named so (menu check)
+            path = path.resolve()
+            old_name = name = path.relative_to(top).as_posix()
         old = git(top, "show", f"{fork}:{old_name}")
         # A file that only now becomes an instruction file (notes.md renamed) is all new.
         was = old.returncode == 0 and Path(old_name).name in NAMES
