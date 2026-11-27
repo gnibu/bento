@@ -85,6 +85,31 @@ check captured edits, commands and artifacts, including spec/plan continuation, 
 docs/security passes, and negative controls for routine test runs and tiny edits. See
 `plugins/bento/evals/`. Coverage alone is not evidence of lift; compare the scored behavior.
 
+## How a ship run tests the change
+
+`bento-qa` runs once. The full run (every suite, lint, type-check, build and the end-to-end
+tests the branch touches) also runs once, on the last commit; every check before it is
+targeted.
+
+```mermaid
+flowchart TD
+  S[1-5 Commit, ticket, sync, learnings, docs] --> QA
+  subgraph QA["6 bento-qa, ship mode: once"]
+    Q1[Exercise each path: an e2e test that drives it, else by hand] --> Q2[Pin each behavior with a test, seen red then green]
+    Q2 --> Q3[Fix: rerun that test and path only]
+  end
+  QA --> C[7 Targeted checks: pinning tests, lint, type-check]
+  C --> H[8 Self-review, hotspots] --> V[10 Pre-PR review] --> ST{11 Stop for decisions?}
+  H & V & ST -.->|a commit| C
+  ST --> F[12 Fetch base, rebase if it moved on this branch's files]
+  F --> FULL[["Full run, once: through the repo's merge checklist or required CI if it has one"]]
+  FULL -->|red| FIX[Fix, commit, review the fix] --> FULL
+  FULL -->|green| P[Push and PR, only when asked]
+```
+
+A pre-PR review recorded before a clean rebase still counts: `git range-diff` shows the
+reviewed commits unchanged, so only later commits are reviewed.
+
 ## Repo overlays
 
 A repo adds rules to a bento skill without copying it: `.agents/bento/<skill-name>.md` at the
