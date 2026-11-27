@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- **A ship run stops repeating work.** A ~100-line fix in a consumer repo took hours: the same
+  end-to-end scenarios ran by hand three times and then again in the merge checklist, and a
+  rebase sent the whole branch back through review. Now:
+  - `bento-learn`'s `sessions.py` lists a session run from another directory only when it names
+    the worktree path: a branch name alone matched an agent that monitors every thread.
+  - `bento-adversarial-review` treats a clean rebase as already reviewed: when `git range-diff`
+    shows every reviewed commit unchanged, it reviews only the commits after them, not the whole
+    branch.
+  - `bento-qa` runs no baseline suite, takes a runner test that already drives a path end to end
+    as that path's exercise, reruns only the fixed path after a fix, and in ship mode leaves the
+    full run to the ship flow.
+  - `bento-ship` runs every check and the end-to-end tests once, on the last commit (step 12),
+    after a fetch that rebases first if the base moved on the branch's files (the pre-PR review
+    then checks the rebase), and through the repo's local per-commit check record (a merge
+    checklist) when it has one. Earlier steps run only the tests that pin the change, plus lint
+    and type-check.
+
 - **Instruction files stay lean, and bento's own block now follows its rules.** A downstream
   root `AGENTS.md` had grown to 167 lines, most of them e2e gotchas for one subfolder, because
   the checks ran only on what `bento-learn` itself added. Now:

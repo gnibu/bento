@@ -113,13 +113,14 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
    answered; never apply a policy while also listing it as an open question.
    No separate approval gate to run either specialist. Keep the audit
    scope and unresolved findings for the PR; a missing skill is an explicit verification gap.
-   Recheck affected docs after QA/security fixes. Run whatever checks exist: tests, lint,
-   type-check, build — discover from the repo, don't assume. The branch changed an `AGENTS.md`
+   Recheck affected docs after QA/security fixes. Run the unit and integration tests that pin the
+   change, plus lint and type-check (discover them from the repo, don't assume); no end-to-end
+   test, even one QA just added. The full run, every check and the end-to-end tests, is once,
+   on the last commit (step 12); later steps that rerun step 7 rerun only this. The branch changed an `AGENTS.md`
    or `CLAUDE.md`, whoever edited it → also run
    `python3 "<this skill's dir>/../bento-learn/scripts/check_entries.py" --diff origin/<base>`:
    re-route each entry it rejects as `bento-learn` step 2 says, and move each one a `warning:`
-   places under a subfolder to the `AGENTS.md` it names, unless every task needs it. End-to-end tests: only those the
-   branch touches, chosen as in `bento-qa` step 7 (its `E2E:` line when QA ran). Fix failures. Green is the gate;
+   places under a subfolder to the `AGENTS.md` it names, unless every task needs it. Fix failures. Green is the gate;
    "it compiles" is not, and neither is a suite that runs zero tests. The diff changes behavior
    and no test covers it → back to step 6; QA was skipped → stop and ask.
 8. **Review your own diff.** Read `git diff origin/<base>...HEAD` and the staged and unstaged
@@ -185,7 +186,19 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
     time: new questions from the security audit or pre-PR review, and every skipped decision
     with its default, go under
     `## Open review questions` in the PR body.
-12. **Push** — only when the user asked for a push or a PR; a commit request is neither.
+12. **Final run, then push.** Every run, a commit request included: `git fetch origin <base>`;
+    it moved on files this branch touches → rebase onto it now (a later rebase redoes every
+    result), then rerun step 10's pre-PR review unless it was skipped: its scope check returns
+    "already reviewed" after a clean rebase and reviews what the rebase changed otherwise. Then
+    run every check once on this commit: the full suites, lint, type-check, build, and
+    end-to-end tests chosen as in `bento-qa` step 7 on the final diff (QA's `E2E:` line, unless
+    later commits reached other pages or shared code). The repo keeps a local per-commit
+    record (a merge checklist) → run them through it, so the merge reuses them. A red test the
+    branch doesn't touch → rerun it on `origin/<base>`: red there too is pre-existing, report
+    it rather than fix it here. Red otherwise → fix and commit, give the fix the pre-PR review
+    on "commits since `<reviewed>`" unless step 10 was skipped, then run again: the ship record
+    names the commit the full run passed on. The forge's own checks are read after the push.
+    Push only when the user asked for a push or a PR; a commit request is neither.
     First write the ship record for `HEAD`, one line per checklist step named below, each
     `done` or `skipped (<reason>)` as its todo was closed:
 
@@ -196,8 +209,8 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
     } > "$(git rev-parse --git-path bento-ship.head)"
     ```
 
-    The steps are `ticket` (2), `sync` (3), `learn` (4), `docs` (5), `qa` (6), `security` and
-    `checks` (7), `self-review` and `hotspots` (8), `pre-pr-review` (10).
+    The steps are `ticket` (2), `sync` (3), `learn` (4), `docs` (5), `qa` (6), `security` (7),
+    `checks` (7 and 12), `self-review` and `hotspots` (8), `pre-pr-review` (10).
     `bento-setup`'s pre-PR review gate reminds the agent, without blocking, on `git push` and
     `gh pr create` without a ship record of `HEAD` with an outcome for every step, or unless
     the review's recorded sha is `HEAD` or only its own fix commits follow it: record the last

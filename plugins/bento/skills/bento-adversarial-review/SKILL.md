@@ -52,8 +52,11 @@ the last recorded review. Every review path uses the same diff command:
   stop. Interactive: say so, and ask before running a full review.
 - it is an ancestor of `HEAD` (`git merge-base --is-ancestor <sha> HEAD`) and
   `git rev-list --merges <sha>..HEAD` is empty → `git diff <sha>..HEAD`.
-- otherwise (missing, rebased away, base merged in) → the whole branch,
-  `git diff origin/<base>...HEAD`.
+- not an ancestor (rebased) → `git range-diff origin/<base> <sha> HEAD`. Every line up to
+  `<sha>`'s is `=` (same patch, same order, no `>` commit inserted between them) → its rebased
+  copy (the right-hand sha on `<sha>`'s line) stands for `<sha>`: record that copy now, then
+  apply the two cases above to it. Any `!`, `<` or `>` before it → the whole branch.
+- otherwise (missing, base merged in) → the whole branch, `git diff origin/<base>...HEAD`.
 
 Say which case applied and the diff command before phase 1.
 
@@ -241,7 +244,7 @@ the ship flow) — so the next run doesn't review the same commits twice:
 echo <reviewed> > "$(git rev-parse --git-path adversarial-review.head)"
 ```
 
-Record `<reviewed>`, never the current `HEAD`: fix commits made in phase 3 haven't been
+Record `<reviewed>` (or, after a clean rebase, its rebased copy: Scope), never the current `HEAD`: fix commits made in phase 3 haven't been
 reviewed, and the next review must see them. With open findings, delete the marker instead
 (`rm -f "$(git rev-parse --git-path adversarial-review.head)"`: the path inline, never in a
 variable, which makes Claude Code ask first), so an earlier review's sha can't mark these commits reviewed; a later run
