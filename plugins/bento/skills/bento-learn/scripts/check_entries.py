@@ -10,8 +10,8 @@ not exist yet), PROPOSED the full text bento-learn wants to write there. Only en
 are new or changed in PROPOSED are checked, so an old file never blocks a new learning.
 `--diff BASE` checks the working tree of each instruction file the branch changed against its
 text at the merge base with BASE (a rename: its old path), whoever made the change, and the
-docs the branch added beside it as NEW_DOCs, skipping a skill's files (under a folder below the
-root holding a SKILL.md: a vendored skill's AGENTS.md is its reference, not an instruction layer);
+docs the branch added beside it as NEW_DOCs, skipping one beside a SKILL.md below the root (a
+vendored skill's AGENTS.md is its reference, not an instruction layer);
 `--all` checks the whole file (a missing one is empty).
 An entry (a bullet, a table row, a paragraph or a code block) must fit on one line, or on two when it
 carries a pointer (a path or a link) to where the detail lives. An entry outside the bento block
@@ -144,7 +144,7 @@ def check(current, proposed, loaded=""):
             continue
         reason = problem(entry)
         if not reason and (principle := restates(entry, principles)):
-            reason = f"warning: may restate the bento block's \"{principle[:60]}…\": drop it unless stricter"
+            reason = f"warning: may restate the bento block's \"{principle[:60]}…\": drop it if it adds nothing"
         if reason:
             rejected.append((entry, reason))
     return rejected
@@ -320,12 +320,10 @@ def branch_files(top, fork):
 
 def instruction_file(top, path):
     """True for an AGENTS.md/CLAUDE.md that is, or links to, a file inside the checkout, and
-    sits in no skill (a folder below top holding a SKILL.md: a vendored skill's AGENTS.md)."""
-    if path.name not in NAMES or not path.is_file() or top not in path.resolve().parents:
-        return False
-    folders = {path.parent, path.resolve().parent}
-    return not any((folder / "SKILL.md").is_file() for start in folders
-                   for folder in [start, *start.parents] if top in folder.parents)
+    is not beside a SKILL.md below top (a vendored skill's AGENTS.md)."""
+    real = path.resolve()
+    return (path.name in NAMES and path.is_file() and top in real.parents
+            and not (real.parent != top and (real.parent / "SKILL.md").is_file()))
 
 
 def docs_beside(name, added):
@@ -338,19 +336,19 @@ def docs_beside(name, added):
 def changed(base):
     """(path, text at the merge base, docs the branch added beside it) per AGENTS.md/CLAUDE.md
     the branch changed, worktree included. A renamed file keeps its old text; a symlink is its
-    target, once and by the target's name, and only inside the repository."""
+    target, once and under its AGENTS.md name if the branch changed one (for the menu check), and
+    only inside the repository."""
     top = Path(git_out(".", "rev-parse", "--show-toplevel").strip()).resolve()
     fork = git_out(top, "merge-base", base, "HEAD").strip()
     moves, added = branch_files(top, fork)
     seen, out = set(), []
-    for old_name, name in moves:
+    for old_name, name in sorted(moves, key=lambda move: Path(move[1]).name != "AGENTS.md"):
         path = top / name
         if not instruction_file(top, path) or path.resolve() in seen:
             continue
         seen.add(path.resolve())
-        if path.resolve() != path:  # a CLAUDE.md symlink: its target, named so (menu check)
-            path = path.resolve()
-            old_name = name = path.relative_to(top).as_posix()
+        if path.resolve() != path:  # a CLAUDE.md symlink: its target's old text
+            old_name = path.resolve().relative_to(top).as_posix()
         old = git(top, "show", f"{fork}:{old_name}")
         # A file that only now becomes an instruction file (notes.md renamed) is all new.
         was = old.returncode == 0 and Path(old_name).name in NAMES

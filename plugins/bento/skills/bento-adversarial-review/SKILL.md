@@ -52,7 +52,8 @@ the last recorded review. Every review path uses the same diff command:
   stop. Interactive: say so, and ask before running a full review.
 - it is an ancestor of `HEAD` (`git merge-base --is-ancestor <sha> HEAD`) and
   `git rev-list --merges <sha>..HEAD` is empty → `git diff <sha>..HEAD`.
-- not an ancestor (rebased), and no merge in the branch (range-diff skips merges) →
+- not an ancestor (rebased), and `git rev-list --merges` lists none in `origin/<base>..<sha>`
+  or `origin/<base>..HEAD` (range-diff skips merges) →
   `git range-diff origin/<base> <sha> HEAD`. Every line up to
   `<sha>`'s is `=` (same patch, same order, no `>` commit inserted between them) → its rebased
   copy (the right-hand sha on `<sha>`'s line) stands for `<sha>`: record that copy now, then

@@ -69,7 +69,7 @@ Pick the cheapest correct home. Price the sink first (see [instruction-layer.md]
   installed `bento-*` skill.
 - Code-scoped gotcha / command / env quirk → the **nearest `AGENTS.md`** to that code; none
   below the root → create `AGENTS.md` in that code's directory, plus a `CLAUDE.md` beside it,
-  like the repo's others, so Claude loads it too. `check_entries.py` flags a root entry whose paths all
+  like the repo's others (none: one holding `@AGENTS.md`), so Claude loads it too. `check_entries.py` flags a root entry whose paths all
   sit under one folder ("move it to `<dir>/AGENTS.md`"): route it there, unless every
   task needs it (a check before each push stays at the root).
 - Restates a bento principle (the `bento:start` block) → **drop it**; the block already loads.

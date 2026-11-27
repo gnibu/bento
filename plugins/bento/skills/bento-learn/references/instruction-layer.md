@@ -33,7 +33,7 @@ the moment they need it.
   create one only if none fits).
 - **Code-scoped gotcha / command / env quirk** → the **nearest** `AGENTS.md` to that code,
   not the subsystem root. Root only for cross-cutting rules. None nearby → create one in the
-  code's directory with a sibling `CLAUDE.md` containing `@AGENTS.md`.
+  code's directory with a sibling `CLAUDE.md` like the repo's others (none: one holding `@AGENTS.md`).
 - **Human-facing architecture / decision** → docs (or an ADR).
 - **One-off** → drop it.
 

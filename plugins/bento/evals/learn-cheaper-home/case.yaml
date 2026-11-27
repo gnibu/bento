@@ -30,7 +30,7 @@ graders:
     name: subfolder-gotcha
     criteria: |
       PASS if the CR_HOME tip (learning 3) is proposed in control-room/AGENTS.md, together with
-      a control-room/CLAUDE.md holding `@AGENTS.md` when that file is new, or in
+      a control-room/CLAUDE.md holding `@AGENTS.md` (or a symlink to it) when that file is new, or in
       control-room/README.md, or is made moot by a source fix (e.g. the test script sets
       CR_HOME itself); and no root AGENTS.md diff, alternative or fallback adds it.
       FAIL if it goes, or is offered as a fallback, in the root AGENTS.md.

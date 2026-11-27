@@ -25,7 +25,7 @@ graders:
 - type: tool_used
   name: no-unneeded-playbook
   tool: Skill
-  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-(?:spec|multi-phase-plan|cso|qa|figure-it-out|authoring-a-skill)"'
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-(?:spec|multi-phase-plan|cso|qa|figure-it-out|authoring-a-(?:skill|playbook))"'
   min: 0
   max: 0
   arm: both

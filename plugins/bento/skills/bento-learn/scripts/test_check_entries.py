@@ -310,6 +310,15 @@ class CheckEntriesTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1, result.stdout)
             self.assertIn("AGENTS.md: menu misses docs/guide.md", result.stdout)
             self.assertNotIn("vendor", result.stdout)
+            # The other way round, AGENTS.md -> CLAUDE.md, keeps the menu check too.
+            Path(tmp, "CLAUDE.md").unlink()
+            Path(tmp, "AGENTS.md").rename(Path(tmp, "CLAUDE.md"))
+            Path(tmp, "AGENTS.md").symlink_to("CLAUDE.md")
+            self.assertIn("AGENTS.md: menu misses docs/guide.md", run("--diff", "main").stdout)
+            # A first-party AGENTS.md below a skill's folder is still checked.
+            Path(vendor, "scripts").mkdir()
+            Path(vendor, "scripts", "AGENTS.md").write_text(f"- {LONG} {LONG}\n")
+            self.assertIn("vendor/scripts/AGENTS.md: - Run", run("--diff", "main").stdout)
 
     def test_cli_exit_codes_and_missing_current_file(self):
         with tempfile.TemporaryDirectory() as tmp:
