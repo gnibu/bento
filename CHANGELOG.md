@@ -8,6 +8,9 @@
   rebase sent the whole branch back through review. Now:
   - `bento-learn`'s `sessions.py` lists a session run from another directory only when it names
     the worktree path: a branch name alone matched an agent that monitors every thread.
+  - `bento-adversarial-review` treats a clean rebase as already reviewed: when `git range-diff`
+    shows every reviewed commit unchanged, it reviews only the commits after them, not the whole
+    branch.
 
 - **Instruction files stay lean, and bento's own block now follows its rules.** A downstream
   root `AGENTS.md` had grown to 167 lines, most of them e2e gotchas for one subfolder, because

@@ -1,0 +1,23 @@
+schema_version: "1.0"
+name: review-scope-rebased-clean
+tags: [review-scope]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Run an adversarial review of my branch. First step only: tell me which commits you will send to the reviewer, why, and the exact diff command. Stop before launching the reviewer."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: scope
+    criteria: |
+      The recorded reviewed sha a48d0e5 is not an ancestor of HEAD: the branch was rebased onto a
+      newer master, and a48d0e5's rebased copy is 803376e with the same patch. PASS only if the
+      chosen scope is the commits after 803376e, i.e. only "chore: mark end of module" (a diff
+      like `git diff 803376e..HEAD`, full or short sha). FAIL if the scope is the whole branch
+      against origin/master. Offering the whole branch as an alternative the user may pick is fine.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-adversarial-review"'
+    arm: with-only
