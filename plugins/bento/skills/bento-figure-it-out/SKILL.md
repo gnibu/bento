@@ -22,7 +22,7 @@ overlay `.agents/bento/bento-figure-it-out.md` at the repo root; follow it under
 2. **Sequence.** Write ordered, checkable todos before acting.
 3. **Execute and prove.** Follow the todos and autonomy contract; verify the real artifact.
 4. **Capture only a recurring procedure.** Repeated task with a concrete trigger → consult
-   `bento-authoring-a-playbook`; one-off → capture nothing.
+   `bento-authoring-a-skill`; one-off → capture nothing.
 
 ## Guardrails
 

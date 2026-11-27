@@ -63,7 +63,7 @@ Pick the cheapest correct home. Price the sink first (see [instruction-layer.md]
   or, when it has no menu and routes docs its own way (a procedures table), there.
   See [procedures](references/instruction-layer.md#procedures-how-to-do-what).
 - Agent orchestration / tool choice / review behavior → a **skill** (amend the owner; create
-  one only if none fits — see `bento-authoring-a-playbook`).
+  one only if none fits — see `bento-authoring-a-skill`).
 - How a bento skill should run in this repo (an extra step, a different default) → that
   skill's **overlay**, `.agents/bento/<skill-name>.md` (create it if missing). Never edit the
   installed `bento-*` skill.

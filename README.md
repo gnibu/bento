@@ -31,7 +31,7 @@ Everything ships as skills (`bento-*`, plus `wup`) under `plugins/bento/skills/`
   - `bento-until-done` — drive one task or ticket to a pass/fail check: change approach when one
     fails, never relax the goal, stop only when it passes or at a dead end written up.
   - `bento-figure-it-out` — fallback for unmatched multi-step work; frame it, then maybe capture it.
-  - `bento-authoring-a-playbook` — how to write a new bento playbook (gate, checklist, prove, eval).
+  - `bento-authoring-a-skill` — how to write a bento skill (gate, checklist, prove, eval).
   - `bento-investigate` — evidence-first root-cause debugging; fix at the shared source.
   - `bento-checkpoint` — capture in-progress state so work survives a reset or handoff.
   - `wup` — status on demand: the task as a title, then what's done, what's next, what you must do.

@@ -1,20 +1,20 @@
 ---
-name: bento-authoring-a-playbook
+name: bento-authoring-a-skill
 description: |
-  How to write a new bento playbook (a bento skill). Use when adding or editing a
-  playbook, turning a repeated task into one, or customising a bento skill for one repo.
-  Triggers: "add a playbook", "new skill for bento", "capture this as a skill", "write a
+  How to write a bento skill (a playbook). Use when adding, editing or fixing a skill,
+  turning a repeated task into one, or customising a bento skill for one repo.
+  Triggers: "add a skill", "add a playbook", "new skill for bento", "capture this as a skill", "write a
   SKILL.md", "add a repo rule to a bento skill", "bento overlay", "customise bento for this
   repo", "make bento-<skill> also do X".
 ---
 
-# Authoring a playbook
+# Authoring a skill
 
 A bento playbook is a triggered skill that opens with a pasteable checklist and proves its
 work on a real artifact. Keep them few and earned.
 
 **Repo layer first.** Read the repo's `AGENTS.md`/`CLAUDE.md` and, if it exists, the
-overlay `.agents/bento/bento-authoring-a-playbook.md` at the repo root; follow it under the
+overlay `.agents/bento/bento-authoring-a-skill.md` at the repo root; follow it under the
 [overlay rules](../bento-learn/references/instruction-layer.md#repo-overlays-for-bento-skills).
 
 ## Repo rule or new playbook?
@@ -71,3 +71,5 @@ Speculative playbooks are cost paid by every future reader. Default to not addin
   the instruction alone isn't enough.
 - No verbatim production data, no dates/history in the body — state current scope only.
 - Shorter is better: if the explanation is longer than the steps, cut the explanation.
+- Write for a capable agent: the rule and when it applies, not the reasoning it can infer.
+  Leave out what a script already enforces or its message says; a fix adds a clause, not a paragraph.

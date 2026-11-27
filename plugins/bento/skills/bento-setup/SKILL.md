@@ -46,6 +46,8 @@ before Apply install the missing ones: list bento's skills with
 `npx skills add gnibu/bento --list`, and for any absent from both of the scope's skill folders
 above (a real folder in the Claude one is installed, not missing) run `npx skills add gnibu/bento --skill <names…> -a claude-code codex -y` (add `-g` for
 global). Also run any `npx skills add … -y` command `update` printed for a skill it skipped.
+A `bento-*` skill installed from gnibu/bento that the list no longer has (renamed or dropped)
+→ `npx skills remove <names…> -y` (add `-g` for global).
 Offline → skip this, and report that new bento skills may be missing.
 
 ## Apply

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **`bento-authoring-a-playbook` is now `bento-authoring-a-skill`, written for a capable agent.**
+  The name agents look for is "skill". It now also fires when fixing a skill, and says to state
+  the rule and when it applies, leaving out reasoning the agent infers and what a script already
+  enforces. `npx skills update` keeps the old copy when run with `-y` or from an agent: remove it
+  with `npx skills remove bento-authoring-a-playbook -y` (add `-g` for a global install), or let
+  `bento-setup`, which now removes bento skills the source no longer lists. Rename an overlay
+  `.agents/bento/bento-authoring-a-playbook.md` to `bento-authoring-a-skill.md`.
 - **Six fixes from a consumer repo's pre-PR review.**
   - `check_entries.py` only warns about an entry in a bento principle's words: it rejected the
     stricter "Never force-push, deploy, or delete data" against "Irreversible writes → confirm first".
