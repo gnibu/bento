@@ -104,7 +104,7 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    Harness: <existing `<cmd>` | bootstrapped `<cmd>` in <sha>>
    Exercised: <path> — <driver> — <evidence: screenshot paths for web UI>
    Tests added: <file::test> — <behavior>
-   E2E: <`<cmd>` it ran | whole suite> — <why chosen; what did not run>
+   E2E: <`<cmd>` it ran | whole suite | ship mode: `<cmd>` left to the ship flow's final run> — <why chosen; what did not run>
    Defects: <severity> <path>: expected / actual — <artifact> — <fixed in <sha> | open>
    Untested: <behavior> — <reason>
    Questions (ship mode): <one-line question> (default: <answer>)

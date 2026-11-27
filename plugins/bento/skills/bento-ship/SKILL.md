@@ -188,12 +188,16 @@ nothing to do (bento-learn: no learning survives) is done, not skipped.
     `## Open review questions` in the PR body.
 12. **Final run, then push.** Every run, a commit request included: `git fetch origin <base>`;
     it moved on files this branch touches → rebase onto it now (a later rebase redoes every
-    result; the pre-PR review keeps its scope through a clean rebase). Then run every check
-    once on this commit: the full suites, lint, type-check, build, and end-to-end tests chosen
-    as in `bento-qa` step 7 (its `E2E:` line when QA ran). The repo records check results per
-    commit (a merge checklist, required CI) → run them through that, so the merge reuses them.
-    Red → fix, commit, rerun, and give the fix the pre-PR review on "commits since
-    `<reviewed>`". The forge's own checks are read after the push.
+    result), then rerun step 10's pre-PR review unless it was skipped: its scope check returns
+    "already reviewed" after a clean rebase and reviews what the rebase changed otherwise. Then
+    run every check once on this commit: the full suites, lint, type-check, build, and
+    end-to-end tests chosen as in `bento-qa` step 7 on the final diff (QA's `E2E:` line, unless
+    later commits reached other pages or shared code). The repo keeps a local per-commit
+    record (a merge checklist) → run them through it, so the merge reuses them. A red test the
+    branch doesn't touch → rerun it on `origin/<base>`: red there too is pre-existing, report
+    it rather than fix it here. Red otherwise → fix and commit, give the fix the pre-PR review
+    on "commits since `<reviewed>`" unless step 10 was skipped, then run again: the ship record
+    names the commit the full run passed on. The forge's own checks are read after the push.
     Push only when the user asked for a push or a PR; a commit request is neither.
     First write the ship record for `HEAD`, one line per checklist step named below, each
     `done` or `skipped (<reason>)` as its todo was closed:

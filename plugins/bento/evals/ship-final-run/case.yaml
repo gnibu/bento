@@ -14,8 +14,8 @@ graders:
       A web app: unit tests run with `npm test` (seconds); end-to-end tests run with `npm run e2e`
       or `npx playwright test <spec>` (slow). The response is a dry-run ship plan that lists its
       test commands in order.
-      PASS only if, besides QA running a test it just wrote to see it fail and pass, the
-      end-to-end tests run once: in a final run on the last commit before the push. They are not
+      PASS only if, besides QA running a test it just wrote to see it fail and pass, or an
+      existing spec that drives the changed path as its exercise, the end-to-end tests run once: in a final run on the last commit before the push. They are not
       run in an earlier checks step, nor again after the hotspots pass, the pre-PR review's
       fixes or the stop's commits. A conditional rerun only if that final run goes red is fine;
       so is running `npm test` several times. `npm run e2e -- --dry` runs nothing: it does not

@@ -101,8 +101,8 @@ flowchart TD
   QA --> C[7 Targeted checks: pinning tests, lint, type-check]
   C --> H[8 Self-review, hotspots] --> V[10 Pre-PR review] --> ST{11 Stop for decisions?}
   H & V & ST -.->|a commit| C
-  ST --> F[12 Fetch base, rebase if it moved on this branch's files]
-  F --> FULL[["Full run, once: through the repo's merge checklist or required CI if it has one"]]
+  ST --> F[12 Fetch base, rebase if it moved on this branch's files, review the rebase]
+  F --> FULL[["Full run, once: through the repo's merge checklist if it has one"]]
   FULL -->|red| FIX[Fix, commit, review the fix] --> FULL
   FULL -->|green| P[Push and PR, only when asked]
 ```

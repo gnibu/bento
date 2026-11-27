@@ -14,9 +14,10 @@
     as that path's exercise, reruns only the fixed path after a fix, and in ship mode leaves the
     full run to the ship flow.
   - `bento-ship` runs every check and the end-to-end tests once, on the last commit (step 12),
-    after a fetch that rebases first if the base moved on the branch's files, and through the
-    repo's per-commit check record when it has one. Earlier steps run only the tests that pin
-    the change, plus lint and type-check.
+    after a fetch that rebases first if the base moved on the branch's files (the pre-PR review
+    then checks the rebase), and through the repo's local per-commit check record (a merge
+    checklist) when it has one. Earlier steps run only the tests that pin the change, plus lint
+    and type-check.
 
 - **Instruction files stay lean, and bento's own block now follows its rules.** A downstream
   root `AGENTS.md` had grown to 167 lines, most of them e2e gotchas for one subfolder, because
