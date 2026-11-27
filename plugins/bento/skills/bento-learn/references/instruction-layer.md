@@ -33,7 +33,7 @@ the moment they need it.
   create one only if none fits).
 - **Code-scoped gotcha / command / env quirk** → the **nearest** `AGENTS.md` to that code,
   not the subsystem root. Root only for cross-cutting rules. None nearby → create one in the
-  code's directory with a sibling `CLAUDE.md` containing `@AGENTS.md`.
+  code's directory with a sibling `CLAUDE.md` like the repo's others (none: one holding `@AGENTS.md`).
 - **Human-facing architecture / decision** → docs (or an ADR).
 - **One-off** → drop it.
 
@@ -84,8 +84,8 @@ whoever wrote it (`check_entries.py --diff origin/<base>`).
 
 An entry never restates a bento principle: the bento block (`<!-- bento:start -->`) already
 loads it in every session, so a repo line saying "asked to commit, run bento-ship" pays twice
-for one rule. The check rejects an entry most of whose words are one line of the block the repo
-loads (the file's own, or the root `AGENTS.md`'s), so a rule the block leaves out stays.
+for one rule. The check warns about an entry most of whose words are one line of the block the
+repo loads (the file's own, or the root `AGENTS.md`'s): drop it, unless it is stricter than that line.
 
 ## A size budget for the root AGENTS.md
 

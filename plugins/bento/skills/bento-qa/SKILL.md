@@ -89,7 +89,7 @@ behavior (docs, comments, formatting) → report `QA: no behavior changed` and s
    tests (by title) that open the changed pages or components, new ones included. The whole end-to-end
    suite only when code every page uses changed (layout, routing, auth, the e2e harness) or no
    test matches the change. A red test the scope doesn't touch → rerun it on `origin/<base>`:
-   red there too is pre-existing, report it as such. **Ship mode:** the ship flow's final run is
+   red there with the same failure is pre-existing, report it as such. **Ship mode:** the ship flow's final run is
    this run; return the selection in `E2E:` and let it run there. Commit the tests (ship mode, or when asked) in conventional style,
    one logical change per commit.
 8. **Report**, blockers first. Ship mode returns every line below: the ship flow builds the

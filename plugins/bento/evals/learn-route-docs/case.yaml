@@ -30,7 +30,7 @@ graders:
     criteria: |
       PASS if all hold: (a) the cents rule is proposed in a new file billing/AGENTS.md, not in
       the root AGENTS.md; (b) a new file billing/CLAUDE.md is proposed whose content is
-      `@AGENTS.md`; (c) the rule in billing/AGENTS.md is a single bullet of at most two lines.
+      `@AGENTS.md`, or a symlink to billing/AGENTS.md; (c) the rule in billing/AGENTS.md is a single bullet of at most two lines.
   - type: llm
     name: drops-one-off
     criteria: |

@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- **`bento-authoring-a-playbook` is now `bento-authoring-a-skill`, written for a capable agent.**
+  The name agents look for is "skill". It now also fires when fixing a skill, and says to state
+  the rule and when it applies, leaving out reasoning the agent infers and what a script already
+  enforces. `npx skills update` keeps the old copy when run with `-y` or from an agent: remove it
+  with `npx skills remove bento-authoring-a-playbook -y` (add `-g` for a global install), or let
+  `bento-setup`, which now removes bento skills the source no longer lists (asking first
+  for a global install). Rename an overlay
+  `.agents/bento/bento-authoring-a-playbook.md` to `bento-authoring-a-skill.md`.
+- **Six fixes from a consumer repo's pre-PR review.**
+  - `check_entries.py` only warns about an entry in a bento principle's words: it rejected the
+    stricter "Never force-push, deploy, or delete data" against "Irreversible writes → confirm first".
+  - `check_entries.py --diff` skips a vendored skill's `AGENTS.md` (one beside a `SKILL.md`):
+    a skill update no longer fails `bento-ship`'s gate on third-party text.
+  - `check_entries.py --diff` checks a symlinked pair under its `AGENTS.md` name, so the `## Docs`
+    menu check runs whichever of the two the branch lists first.
+  - `bento-learn` creates a nested `CLAUDE.md` like the repo's others (a symlink is fine too).
+  - `bento-adversarial-review` reviews the whole branch when a rebased branch holds a merge:
+    `git range-diff` skips merges, so a merge resolved differently showed as unchanged.
+  - `bento-ship` and `bento-qa` count a red test as pre-existing only when it fails on the base
+    with the same assertion or error.
 - **A ship run stops repeating work.** A ~100-line fix in a consumer repo took hours: the same
   end-to-end scenarios ran by hand three times and then again in the merge checklist, and a
   rebase sent the whole branch back through review. Now:
