@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Run the other model family's CLI on a diff; leave the result in the git dir.
 
-    review.py codex|claude [--model M] [--effort E] [--focus TEXT] (--uncommitted | [--] GIT_ARGS...)
+    review.py codex|claude [--tier quick|deep] [--model M] [--effort E] [--focus TEXT] (--uncommitted | [--] GIT_ARGS...)
 
 GIT_ARGS is the scope command without its leading `git` (`diff origin/master...HEAD`,
-`show <sha>`); --uncommitted is `git diff HEAD` plus untracked files. Files, all from
+`show <sha>`); --uncommitted is `git diff HEAD` plus untracked files. --tier sets the default
+model, effort and prompt (prompt.md, or prompt-quick.md for quick, which also puts a small
+diff in Codex's prompt). Files, all from
 `git rev-parse --git-path`: adversarial-review.diff (the diff), .md (the findings), .log (the
 reviewer's or git's output), and .exit, written last: `EXIT=<reviewer status>`, `EXIT=diff-failed`
 or `EXIT=empty-diff`. Prints the .exit line, then the findings.
@@ -20,8 +22,11 @@ import subprocess
 import sys
 from typing import IO, List
 
-PROMPT = Path(__file__).with_name("prompt.md")
-MODELS = {"codex": "gpt-6.2-astra", "claude": "opus"}
+PROMPTS = {"deep": Path(__file__).with_name("prompt.md"), "quick": Path(__file__).with_name("prompt-quick.md")}
+MODELS = {"deep": {"codex": "gpt-6.2-astra", "claude": "opus"},
+          "quick": {"codex": "gpt-6.2-sol", "claude": "sonnet"}}
+EFFORTS = {"deep": "high", "quick": "medium"}
+INLINE_MAX = 64_000  # bytes of diff a quick review puts in the prompt, well under the OS's argv limit
 
 
 def git_path(name: str) -> Path:
@@ -46,12 +51,16 @@ def write_diff(scope: List[str], uncommitted: bool, diff: IO[bytes], log: IO[byt
 
 def reviewer_cmd(args: argparse.Namespace, prompt: str, diff: Path, out: Path) -> List[str]:
     if args.reviewer == "codex":
+        # A quick review's diff goes in the prompt: one tool call fewer before the review starts.
+        where = (f"The diff under review:\n\n{diff.read_text()}\n"
+                 if args.tier == "quick" and diff.stat().st_size < INLINE_MAX
+                 else f"The diff under review is in the file {diff}.")
         # Plain `codex exec`: `codex exec review` keeps a bug-only rubric.
         return ["codex", "exec", "-s", "read-only", "-m", args.model,
-                "-c", f"model_reasoning_effort={args.effort}", "-o", str(out),
-                f"The diff under review is in the file {diff}. {prompt}"]
-    return ["claude", "-p", "--model", args.model, "--setting-sources", "", "--tools", "Read,Grep,Glob",
-            "--strict-mcp-config", "--no-session-persistence", f"The diff under review is on stdin. {prompt}"]
+                "-c", f"model_reasoning_effort={args.effort}", "-o", str(out), f"{where} {prompt}"]
+    return ["claude", "-p", "--model", args.model, "--effort", args.effort, "--setting-sources", "",
+            "--tools", "Read,Grep,Glob", "--strict-mcp-config", "--no-session-persistence",
+            f"The diff under review is on stdin. {prompt}"]
 
 
 def run_reviewer(args: argparse.Namespace, prompt: str, diff: Path, out: Path, log: IO[bytes]) -> int:
@@ -70,7 +79,7 @@ def review(args: argparse.Namespace) -> str:
     d, x, o, l = (git_path(f"adversarial-review.{ext}") for ext in ("diff", "exit", "md", "log"))
     x.unlink(missing_ok=True)  # the caller polls for .exit: a stale one would end its wait now
     o.unlink(missing_ok=True)
-    prompt = f"{PROMPT.read_text().strip()} {args.focus}".strip()
+    prompt = f"{PROMPTS[args.tier].read_text().strip()} {args.focus}".strip()
     with d.open("wb") as diff, l.open("wb") as log:
         ok = write_diff(args.scope, args.uncommitted, diff, log)
     if not ok:
@@ -86,9 +95,10 @@ def review(args: argparse.Namespace) -> str:
 
 def main(argv: List[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("reviewer", choices=sorted(MODELS))
-    parser.add_argument("--model", help=f"default: {MODELS['codex']} for codex, {MODELS['claude']} for claude")
-    parser.add_argument("--effort", default="high", help="codex model_reasoning_effort (default: high)")
+    parser.add_argument("reviewer", choices=sorted(MODELS["deep"]))
+    parser.add_argument("--tier", choices=sorted(MODELS), default="deep", help="sets the defaults below (default: deep)")
+    parser.add_argument("--model", help=f"default per tier: {MODELS}")
+    parser.add_argument("--effort", help=f"reasoning effort (default per tier: {EFFORTS})")
     parser.add_argument("--focus", default="", help="what to focus on, appended to the prompt")
     parser.add_argument("--uncommitted", action="store_true", help="git diff HEAD plus untracked files")
     parser.add_argument("scope", nargs="*", help="the scope command's git arguments (after `--` if one starts with -)")
@@ -99,7 +109,8 @@ def main(argv: List[str]) -> int:
     args.scope += argv[split + 1:]
     if args.uncommitted == bool(args.scope):
         parser.error("give either --uncommitted or the scope command's git arguments")
-    args.model = args.model or MODELS[args.reviewer]
+    args.model = args.model or MODELS[args.tier][args.reviewer]
+    args.effort = args.effort or EFFORTS[args.tier]
     status = review(args)
     print(f"EXIT={status}")
     findings = git_path("adversarial-review.md")

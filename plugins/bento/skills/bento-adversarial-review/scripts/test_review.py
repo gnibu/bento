@@ -84,12 +84,24 @@ class ReviewTests(unittest.TestCase):
         out = self.run_review("claude", "--model", "sonnet", "show", "HEAD", rc="3")
         self.assertEqual(out, "EXIT=3\n- [P2] claude finding\n")
         [call] = self.recorded()
-        self.assertEqual(call["args"][:10], ["-p", "--model", "sonnet", "--setting-sources", "", "--tools",
-                                             "Read,Grep,Glob", "--strict-mcp-config", "--no-session-persistence",
-                                             call["args"][9]])
-        self.assertTrue(call["args"][9].startswith("The diff under review is on stdin. You are"))
+        self.assertEqual(call["args"][:12], ["-p", "--model", "sonnet", "--effort", "high", "--setting-sources", "",
+                                             "--tools", "Read,Grep,Glob", "--strict-mcp-config",
+                                             "--no-session-persistence", call["args"][11]])
+        self.assertTrue(call["args"][11].startswith("The diff under review is on stdin. You are"))
         self.assertIn("print('b')", call["stdin"])
         self.assertEqual(self.path("log").read_text(), "trace\n")
+
+    def test_quick_tier_uses_the_lighter_model_effort_and_prompt(self):
+        self.commit("app.py", "print('b')\n")
+        self.run_review("codex", "--tier", "quick", "show", "HEAD")
+        self.run_review("claude", "--tier", "quick", "--effort", "low", "show", "HEAD")
+        codex, claude = (call["args"] for call in self.recorded())
+        self.assertEqual(codex[3:7], ["-m", "gpt-6.2-sol", "-c", "model_reasoning_effort=medium"])
+        self.assertTrue(codex[9].startswith("The diff under review:\n\ncommit "))
+        self.assertIn("+print('b')", codex[9])
+        self.assertIn("reviewer of a small change", codex[9])
+        self.assertEqual(claude[1:5], ["--model", "sonnet", "--effort", "low"])
+        self.assertIn("reviewer of a small change", claude[-1])
 
     def test_git_arguments_after_the_separator_are_kept_verbatim(self):
         self.commit("other.py", "y = 1\n")

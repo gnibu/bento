@@ -38,6 +38,8 @@ A scope the caller or user gives is used as is. Otherwise: the branch,
 `git diff origin/<base>...HEAD` (after `git fetch -q origin <base>`), plus uncommitted work.
 `<base>` is the base branch `AGENTS.md` names, else `origin/HEAD`. The scope changes no
 behavior (docs, comments, formatting) → report `QA: no behavior changed` and stop.
+Then pick the scope's tier as [the pre-PR review does](../bento-adversarial-review/SKILL.md#tier)
+(a caller's is used as is). Quick → step 2 lists only the edge cases the diff itself changes.
 
 ## Steps (paste as todos)
 

@@ -1,0 +1,21 @@
+schema_version: "1.0"
+name: review-tier-deep
+tags: [review-tier]
+context:
+  scaffold_script: setup.sh
+execution:
+  prompt: "Run an adversarial review of my branch. First step only: tell me the exact review.py command you will run. Stop before launching the reviewer."
+  max_turns: 12
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+graders:
+  - type: llm
+    name: tier
+    criteria: |
+      The branch's last commit changes who may delete a document in auth.py. PASS if the review.py command
+      the response gives contains `--tier deep`; FAIL otherwise. Judge only that flag: the
+      scope, the reviewer and any sandbox remarks don't matter.
+  - type: tool_used
+    name: fired
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-adversarial-review"'
+    arm: with-only
