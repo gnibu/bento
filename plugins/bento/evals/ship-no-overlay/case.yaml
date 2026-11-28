@@ -35,7 +35,7 @@ graders:
     match: not_contains
   - type: regex
     name: moves-to-in-review
-    pattern: '(?:[Mm]ove|[Ss]et|[Tt]ransition)[^\n]*In Review'
+    pattern: '(?:[Mm]ove|[Ss]et|[Tt]ransition|[Uu]pdate|status to)[^\n]*In Review'
   - type: tool_used
     name: fired
     tool: Skill

@@ -36,7 +36,7 @@ graders:
   target:
     source: file
     path: cli.py
-  pattern: 'greet\([^)\n]*prefix'
+  pattern: 'greet\([^\n]*prefix'
 - type: regex
   name: cli-prints-hello-bob
   target: trace

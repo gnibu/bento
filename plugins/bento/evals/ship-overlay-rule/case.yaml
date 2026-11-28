@@ -17,7 +17,7 @@ graders:
       adding the `greptile` label to the PR AND running `ruff check .` before the push.
   - type: regex
     name: ruff-before-push
-    pattern: 'ruff check \.(?![\w/])[\s\S]*["'']?(?:\bgit|\$\{?(?:G|\w*(?:GIT|[Gg]it)\w*)\}?)["'']?(?:\s+-C\s+\S+)?\s+push\b'
+    pattern: 'ruff check \.(?!\w|/\w)[\s\S]*["'']?(?:\bgit|\$\{?(?:G|\w*(?:GIT|[Gg]it)\w*)\}?)["'']?(?:\s+-C\s+\S+)?\s+push\b'
   - type: regex
     name: adds-greptile-label
     pattern: 'greptile'
