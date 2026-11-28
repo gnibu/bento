@@ -1,0 +1,25 @@
+schema_version: '1.0'
+name: authoring-judgment-call
+tags:
+- authoring
+execution:
+  prompt: I'm writing a bento skill whose agent must choose between a fast lint-only check and a full
+    test run before each commit. Write the exact rule text that tells it which to pick. Planning
+    exercise only; do not inspect or change files.
+  max_turns: 5
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+graders:
+- type: llm
+  name: describes-options
+  criteria: PASS if the proposed rule text describes what each option is for (what it catches or
+    shows) and leaves the choice to the agent; examples of fitting changes are fine. FAIL if it gates
+    an option on a numeric threshold (line, file or time counts) or on a list the change must match
+    ("only when every change is one of these", "in every other case, including").
+  focus: last_message
+- type: tool_used
+  name: fired
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[^"]*:)?bento-authoring-a-(?:skill|playbook)"'
+  arm: with-only

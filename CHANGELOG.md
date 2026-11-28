@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **`bento-authoring-a-skill`: describe judgment calls, don't threshold them.** A new guardrail
+  says to describe what each option is for and let the agent choose, with no numeric thresholds
+  or exhaustive lists.
 - **Quick pre-PR review for small, low-risk diffs.** `bento-adversarial-review` picks a tier
   from the diff: `deep` (unchanged: `gpt-6.2-astra` or `opus` at `high`, full prompt) when a
   mistake would be costly or hard to spot; `quick` for a small, local change: `gpt-6.2-sol` or
