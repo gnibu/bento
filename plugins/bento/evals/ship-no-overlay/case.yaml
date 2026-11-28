@@ -28,14 +28,14 @@ graders:
       summary, moves ENG-42 to `In Review`, and checks the status again afterwards.
   - type: regex
     name: test-plan-section
-    pattern: '[Tt]est [Pp]lan'
+    pattern: '#{2,}\s*Test [Pp]lan'
   - type: regex
     name: no-greptile-label
     pattern: 'greptile'
     match: not_contains
   - type: regex
     name: moves-to-in-review
-    pattern: 'In Review'
+    pattern: '(?:[Mm]ove|[Ss]et|[Tt]ransition|[Ss]tatus)[^\n]*In Review'
   - type: tool_used
     name: fired
     tool: Skill

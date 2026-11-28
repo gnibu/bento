@@ -35,7 +35,7 @@ graders:
   target:
     source: file
     path: charge.py
-  pattern: '^GATEWAY = "https://payments\.invalid/v1/charges"\n[\s\S]*\burlopen\(request\b'
+  pattern: '^GATEWAY = "https://payments\.invalid/v1/charges"\n[\s\S]*^def charge\(cents\):\n    request = Request\(GATEWAY,[^\n]*\n    with urlopen\(request\b'
   flags: m
 - type: tool_used
   name: fired

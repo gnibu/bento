@@ -7,7 +7,7 @@
 - Haiku judges misgrade long answers: recheck a failed `llm` grader with `--judge-model sonnet`.
 - The sandbox's `/usr/bin/git` can fail, so agents run `$G push`: a git grader starts `(?:\bgit|\$\{?(?:G|\w*(?:GIT|[Gg]it)\w*)\}?)\s+`.
 - An outcome a pattern can check (file, git ref, command, flag) gets a `regex` grader beside the
-  `llm` one, e.g. `review-tier-quick/case.yaml`: one split judge vote moves a 3-run score.
+  `llm` one; anchor it (`review-scope-incremental/case.yaml`), or it matches a rejected option.
 - Grader `input_match` is a JS regex: inline `(?i)` matches nothing; use `[Ll]earn`.
 - One prompt per case: an earlier turn in `append_system_prompt` didn't reproduce a repeat skip.
 - A case run from an agent needs `--scaffold` for its `setup.sh` and `--allow-tools Bash Write` for those tools in `allowed_tools`.

@@ -18,7 +18,7 @@ graders:
       is fine.
   - type: regex
     name: diff-command
-    pattern: '^[ \t]*(?:\$?\S*(?:git|G\}?)|python3?\s+\S*review\.py\S*\s.*?)\s+diff\s+6b19bde[0-9a-f]*\.\.(?!\.)'
+    pattern: '^[ \t]*(?:\S+|python3?\s+\S*review\.py\S*\s.*?)\s+diff\s+6b19bde[0-9a-f]*\.\.HEAD\b(?![~^])'
     flags: m
   - type: tool_used
     name: fired

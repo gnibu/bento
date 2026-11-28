@@ -16,8 +16,8 @@ graders:
       before pushing. The user asked for a review. PASS only if the planned steps include BOTH
       adding the `greptile` label to the PR AND running `ruff check .` before the push.
   - type: regex
-    name: runs-ruff
-    pattern: 'ruff check \.'
+    name: ruff-before-push
+    pattern: 'ruff check \.[\s\S]*(?:\bgit|\$\{?(?:G|\w*(?:GIT|[Gg]it)\w*)\}?)\s+push\b'
   - type: regex
     name: adds-greptile-label
     pattern: 'greptile'

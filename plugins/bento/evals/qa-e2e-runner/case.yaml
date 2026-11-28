@@ -22,7 +22,7 @@ graders:
       end-to-end suite anywhere in the plan.
   - type: regex
     name: selective-runner
-    pattern: 'npm run e2e(?!\s+--\s+--dry)'
+    pattern: 'npm run e2e(?!\s+--\s+--dry)|playwright test\s(?:[^\n]*\s)?(?:\./)?(?:e2e/)?settings\.spec'
   - type: tool_used
     name: fired
     tool: Skill

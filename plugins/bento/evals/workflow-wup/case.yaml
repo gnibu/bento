@@ -24,7 +24,7 @@ graders:
     You names choosing the default prefix; other actions only the user can take are allowed.
 - type: regex
   name: heading-order
-  pattern: '^\s*🎯[^\n]*\n\s*✅ \*{0,2}Done\b[\s\S]*\n\s*🤖 \*{0,2}Next\b[\s\S]*\n\s*👉 \*{0,2}You\b'
+  pattern: '^\s*(?:[#*]+\s*)?🎯[^\n]*\n\s*(?:[#*]+\s*)?✅\s*\*{0,2}Done\b[\s\S]*\n\s*(?:[#*]+\s*)?🤖\s*\*{0,2}Next\b[\s\S]*\n\s*(?:[#*]+\s*)?👉\s*\*{0,2}You\b'
 - type: tool_used
   name: fired
   tool: Skill
