@@ -16,7 +16,7 @@ graders:
       scope, the reviewer and any sandbox remarks don't matter.
   - type: regex
     name: tier-flag
-    pattern: 'review\.py\b(?:[^\n#]|\\\n)*--tier[ =]quick\b'
+    pattern: 'review\.py\b(?:[^\n#]|\\\n)*--tier[ =]["'']?quick\b'
   - type: tool_used
     name: fired
     tool: Skill

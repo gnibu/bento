@@ -36,15 +36,15 @@ graders:
   target:
     source: file
     path: cli.py
-  pattern: 'greet\([^\n]*prefix'
+  pattern: 'greet\([^)\n]*prefix'
 - type: regex
   name: cli-prints-hello-bob
   target: trace
-  pattern: '"type"\s*:\s*"tool_result"[^\n]*(?:"|\\n)hello bob\\n'
+  pattern: '"type"\s*:\s*"tool_result"[^\n]*(?:"|\\n)hello bob(?:\\n|")'
 - type: regex
   name: passing-tests
   target: trace
-  pattern: '"type"\s*:\s*"tool_result"[^\n]*Ran [1-9][0-9]* tests? in [^\n]*?\\n\\nOK(?:\\n|")'
+  pattern: '"name"\s*:\s*"(?:Edit|Write|MultiEdit)"[\s\S]*"type"\s*:\s*"tool_result"[^\n]*Ran [1-9][0-9]* tests? in [^\n]*?\\n\\nOK(?:\\n|")'
 - type: tool_used
   name: fired
   tool: Skill

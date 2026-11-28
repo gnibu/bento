@@ -22,7 +22,7 @@ graders:
       it runs the whole end-to-end suite anywhere in the plan.
   - type: regex
     name: settings-spec-only
-    pattern: 'playwright test\s(?:[^\n]*\s)?(?:\./)?(?:e2e/)?settings\.spec|playwright test\s[^\n]*(?:-g|--grep)[ =]+[''"]?[^\n''"]*[Ss]ettings'
+    pattern: 'playwright test\s(?![^\n]*--list)(?:[^\n]*\s)?[''"]?(?:\./)?(?:e2e/)?settings\.spec|playwright test\s(?![^\n]*--list)[^\n]*(?:-g|--grep)[ =]+[''"]?[^\n''"]*[Ss]ettings'
   - type: tool_used
     name: fired
     tool: Skill

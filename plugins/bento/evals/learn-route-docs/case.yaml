@@ -37,7 +37,7 @@ graders:
       PASS if the frozen terminal is dropped: no proposed diff mentions it.
   - type: regex
     name: procedure-file
-    pattern: 'docs/procedures/[\w.-]+\.md[\s\S]*?\n\+[^\n]*docker compose up'
+    pattern: '(?:^|\n)(?!\+)[^\n]*docs/procedures/[\w.-]+\.md[^\n]*\n(?:[^\n+][^\n]*\n){0,3}(?:\+[^\n]*\n)*?\+[^\n]*docker compose up'
   - type: tool_used
     name: fired
     tool: Skill
