@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Quick pre-PR review for small, low-risk diffs.** `bento-adversarial-review` picks a tier
+  from the diff: `deep` (unchanged: `gpt-6.2-astra` or `opus` at `high`, full prompt) when a
+  mistake would be costly or hard to spot; `quick` for a small, local change: `gpt-6.2-sol` or
+  `sonnet` at `medium`, a correctness-only prompt that reads only the changed files unless a
+  finding needs more, and a small UTF-8 diff on Codex's stdin. On a one-line planted bug it caught the
+  bug every time in half the time (10 s vs 21 s).
+  `review.py --tier quick|deep` sets these defaults and now passes `--effort` to `claude` too.
+  `bento-qa`'s quick tier checks only the edge cases the diff changes. The rebased-scope rules
+  and the sub-agent fallback moved to `references/`, read only when they apply.
 - **`bento-authoring-a-playbook` is now `bento-authoring-a-skill`, written for a capable agent.**
   The name agents look for is "skill". It now also fires when fixing a skill, and says to state
   the rule and when it applies, leaving out reasoning the agent infers and what a script already

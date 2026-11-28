@@ -6,7 +6,8 @@ description: |
   under Codex it is headless `claude -p` (opus); a reviewer out of quota falls back to the
   same provider's CLI. Interactive mode (default) gets explicit human sign-off before fixing
   anything; ship mode (called by a ship flow) fixes verified findings itself and returns only
-  the ones that need a human decision. Skips commits it already reviewed. Triggers:
+  the ones that need a human decision. Skips commits it already reviewed; a small, low-risk
+  diff gets a quick review (lighter model and effort). Triggers:
   "adversarial review", "codex review", "claude review", "second opinion on my diff",
   "outside review".
 ---
@@ -52,15 +53,10 @@ the last recorded review. Every review path uses the same diff command:
   stop. Interactive: say so, and ask before running a full review.
 - it is an ancestor of `HEAD` (`git merge-base --is-ancestor <sha> HEAD`) and
   `git rev-list --merges <sha>..HEAD` is empty → `git diff <sha>..HEAD`.
-- not an ancestor (rebased), and `git rev-list --merges` lists none in `origin/<base>..<sha>`
-  or `origin/<base>..HEAD` (range-diff skips merges) →
-  `git range-diff origin/<base> <sha> HEAD`. Every line up to
-  `<sha>`'s is `=` (same patch, same order, no `>` commit inserted between them) → its rebased
-  copy (the right-hand sha on `<sha>`'s line) stands for `<sha>`: record that copy now, then
-  apply the two cases above to it. Any `!`, `<` or `>` before it → the whole branch.
+- not an ancestor (rebased) → [rebased-scope.md](references/rebased-scope.md).
 - otherwise (missing, base merged in) → the whole branch, `git diff origin/<base>...HEAD`.
 
-Say which case applied and the diff command before phase 1.
+Say which case applied, the diff command and the tier before phase 1.
 
 Uncommitted diff command, including untracked files. Its exit status is `git diff HEAD`'s; the
 untracked part's is dropped, because `--no-index` exits 1 on any difference:
@@ -71,6 +67,15 @@ untracked part's is dropped, because `--no-index` exits 1 on any difference:
 
 For the branch scope, run `git fetch -q origin <base>` first. A stale base means re-reviewing
 commits that already landed.
+
+## Tier
+
+Judge the scope's diff; a tier the caller or user gives is used as is. Unsure → deep.
+
+- **deep**: a mistake here would be costly or hard to spot: it touches security, data,
+  concurrency or what other code relies on, or it is large or spread out, or the request asks
+  for more than correctness bugs.
+- **quick**: small, local and easy to check by reading it.
 
 ## Phase 1 — Produce the findings
 
@@ -86,33 +91,13 @@ models below are *(default)*.
 and the end of its `.log` or `.md` (`tail -n 40`; `claude -p` prints its errors to the `.md`)
 says it hit a usage limit, rate limit, `429` or quota, rerun `review.py` once with your own
 family's CLI as `<REVIEWER>` (`claude` under Claude, `codex` under Codex; any other host → Path
-A), same scope and focus. It is a fresh context, not the other family: say in the result that
+A), same scope, tier and focus. It is a fresh context, not the other family: say in the result that
 the review ran on the same provider, and why. Any other reviewer failure is reported, not
 swapped.
 
-Fall back to Path A only if the reviewer's CLI is missing (`command -v codex` / `command -v
-claude`), or out of quota and your own CLI is missing, and say in the result that you did.
-
-### Path A — fallback: your own sub-agents
-
-Gather the diff (the scope command) and the full text of every file it touches. A diff alone
-hides the callers and the invariants; most false findings come from reviewing hunks in
-isolation.
-
-Fan out one sub-agent per dimension, concurrently (one pass yourself if your host has no
-sub-agents). Drop a dimension the diff clearly doesn't touch; add one the user asked for:
-
-- **correctness** — logic errors, off-by-one, wrong branch, error paths, null/undefined,
-  async mistakes, transaction and ordering bugs.
-- **contracts & callers** — every caller of every changed signature; migrations vs. readers;
-  config keys vs. their allow-lists; API/response shape changes.
-- **concurrency & state** — races, shared mutable state, idempotency, retries, tenant leakage.
-- **reuse & simplicity** — code that duplicates an existing helper, or could be simpler.
-- **security & data** — authz gaps, tenant isolation, injection, secrets in logs or args.
-
-Give each the stance explicitly: *assume this diff is broken and find where; a finding you
-cannot point at a specific line for is not a finding.* Require the CLI output shape —
-`- [P1] Title — path/file.ts:12-15` plus a paragraph of rationale — so phase 2 is identical.
+Fall back to [Path A, your own sub-agents](references/path-a.md), only if the reviewer's CLI is
+missing (`command -v codex` / `command -v claude`), or out of quota and your own CLI is missing,
+and say in the result that you did.
 
 ### Paths B and C — the other model family's CLI
 
@@ -123,7 +108,7 @@ every permission mode, Bypass included. Run it in the **background**: a review t
 minutes and will blow a foreground timeout on a large diff.
 
 ```bash
-python3 "<skill>/scripts/review.py" <REVIEWER> [--focus "<CUSTOM FOCUS>"] <SCOPE>
+python3 "<skill>/scripts/review.py" <REVIEWER> --tier <TIER> [--focus "<CUSTOM FOCUS>"] <SCOPE>
 ```
 
 - `<SCOPE>`: the scope command's arguments after `git` (`diff origin/<base>...HEAD`,
@@ -131,18 +116,18 @@ python3 "<skill>/scripts/review.py" <REVIEWER> [--focus "<CUSTOM FOCUS>"] <SCOPE
   the uncommitted command above.
 - `<CUSTOM FOCUS>`: what the user asked to focus on; leave `--focus` out otherwise. The rest
   of the reviewer's prompt is `scripts/prompt.md`.
-- `--model` overrides the reviewer's model; `--effort` Codex's `model_reasoning_effort`
-  (default `high`).
+- `<TIER>`: `quick` or `deep`. It sets the reviewer's model, effort and prompt (`quick`:
+  correctness only, `scripts/prompt-quick.md`); `--model` and `--effort` override them.
 
 `<REVIEWER>` for **Path B — you are Claude**: `codex`. It runs `codex exec -s read-only -m
-gpt-6.2-astra -c model_reasoning_effort=high -o <.md>` with stdin closed (or codex waits on it
-forever). Plain `codex exec`, not `codex exec review`: review mode keeps a bug-only rubric that
-drops reuse and convention findings. `-s read-only` keeps Codex from touching the tree. Never
-relax it.
+gpt-6.2-astra -c model_reasoning_effort=high -o <.md>` (quick: `gpt-6.2-sol`, `medium`) with
+stdin closed (or codex waits on it forever). Plain `codex exec`, not `codex exec review`: review
+mode keeps a bug-only rubric that drops reuse and convention findings. `-s read-only` keeps
+Codex from touching the tree. Never relax it.
 
-`<REVIEWER>` for **Path C — you are Codex**: `claude`. It runs `claude -p --model opus
---setting-sources "" --tools Read,Grep,Glob --strict-mcp-config --no-session-persistence`,
-the diff on stdin.
+`<REVIEWER>` for **Path C — you are Codex**: `claude`. It runs `claude -p --model opus --effort
+high` (quick: `sonnet`, `medium`) `--setting-sources "" --tools Read,Grep,Glob
+--strict-mcp-config --no-session-persistence`, the diff on stdin.
 
 - `--setting-sources ""` loads no hooks, plugins, output style or permission allow-list. It
   still reads the operator's auto-memory, so treat it as a second opinion, not a clean room.
@@ -166,7 +151,7 @@ The paths come from `git rev-parse --git-path`, not a shell variable or `/tmp`: 
 a different shell call, and parallel worktrees sharing one `/tmp` file would silently triage
 each other's diffs. The git dir is per-worktree and can't be committed by a stray `git add .`.
 
-If `-m gpt-6.2-astra` or `--model opus` fails with an unknown-model error, say so and ask. Don't
+If the reviewer's model fails with an unknown-model error, say so and ask. Don't
 switch model, or to Path A, silently.
 
 ## Phase 2 — Assess each finding yourself

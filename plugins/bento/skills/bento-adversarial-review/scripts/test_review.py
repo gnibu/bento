@@ -84,12 +84,47 @@ class ReviewTests(unittest.TestCase):
         out = self.run_review("claude", "--model", "sonnet", "show", "HEAD", rc="3")
         self.assertEqual(out, "EXIT=3\n- [P2] claude finding\n")
         [call] = self.recorded()
-        self.assertEqual(call["args"][:10], ["-p", "--model", "sonnet", "--setting-sources", "", "--tools",
-                                             "Read,Grep,Glob", "--strict-mcp-config", "--no-session-persistence",
-                                             call["args"][9]])
-        self.assertTrue(call["args"][9].startswith("The diff under review is on stdin. You are"))
+        self.assertEqual(call["args"][:12], ["-p", "--model", "sonnet", "--effort", "high", "--setting-sources", "",
+                                             "--tools", "Read,Grep,Glob", "--strict-mcp-config",
+                                             "--no-session-persistence", call["args"][11]])
+        self.assertTrue(call["args"][11].startswith("The diff under review is on stdin. You are"))
         self.assertIn("print('b')", call["stdin"])
         self.assertEqual(self.path("log").read_text(), "trace\n")
+
+    def test_quick_tier_uses_the_lighter_model_effort_and_prompt(self):
+        self.commit("app.py", "print('b')\n")
+        self.run_review("codex", "--tier", "quick", "show", "HEAD")
+        self.run_review("claude", "--tier", "quick", "--effort", "low", "show", "HEAD")
+        codex_call, claude_call = self.recorded()
+        codex, claude = codex_call["args"], claude_call["args"]
+        self.assertEqual(codex[3:7], ["-m", "gpt-6.2-sol", "-c", "model_reasoning_effort=medium"])
+        self.assertTrue(codex[9].startswith("The diff under review is on stdin. You are"))
+        self.assertIn("+print('b')", codex_call["stdin"])
+        self.assertNotIn("print('b')", codex[9])
+        self.assertIn("reviewer of a small change", codex[9])
+        self.assertEqual(claude[1:5], ["--model", "sonnet", "--effort", "low"])
+        self.assertIn("reviewer of a small change", claude[-1])
+
+    def test_quick_tier_points_codex_at_a_large_diff_file(self):
+        self.commit("app.py", "x = 1\n" * 20000)
+        self.run_review("codex", "--tier", "quick", "show", "HEAD")
+        [call] = self.recorded()
+        self.assertTrue(call["args"][9].startswith(f"The diff under review is in the file {self.path('diff').resolve()}. "))
+        self.assertEqual(call["stdin"], "")
+
+    def test_quick_tier_points_codex_at_a_diff_that_is_not_utf8(self):
+        (self.repo / "app.py").write_bytes("print('caf\u00e9')\n".encode("latin-1"))
+        self.git("commit", "-qam", "latin-1")
+        self.assertEqual(self.run_review("codex", "--tier", "quick", "show", "HEAD"), "EXIT=0\n- [P2] codex finding\n")
+        [call] = self.recorded()
+        self.assertTrue(call["args"][9].startswith(f"The diff under review is in the file {self.path('diff').resolve()}. "))
+        self.assertEqual(call["stdin"], "")
+
+    def test_quick_tier_sends_a_nul_byte_on_stdin(self):
+        self.commit("app.py", "a\0b\n")
+        self.assertEqual(self.run_review("codex", "--tier", "quick", "--", "show", "--text", "HEAD"), "EXIT=0\n- [P2] codex finding\n")
+        [call] = self.recorded()
+        self.assertIn("+a\0b", call["stdin"])
 
     def test_git_arguments_after_the_separator_are_kept_verbatim(self):
         self.commit("other.py", "y = 1\n")
