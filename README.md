@@ -52,7 +52,8 @@ Everything ships as skills (`bento-*`, plus `wup`) under `plugins/bento/skills/`
     tracker from the repo's AGENTS.md, so a repo needs no PR skill of its own.
   - `bento-adversarial-review` — the other model family (Codex under Claude, Claude under
     Codex) reviews the diff; every finding is triaged against the code before any fix.
-    Reviews only the commits since its last recorded review.
+    Reviews only the commits since its last recorded review; a small, local change gets a quick
+    review (lighter model and effort), a risky or large one the full review.
   - `bento-qa` — exercise a change on its real surface (browser/CLI/API), pin each changed
     behavior with a test, and bootstrap a test system when the repo has none. `bento-ship` runs it.
   - `bento-spec` — turn vague intent into a precise, executable spec before building.

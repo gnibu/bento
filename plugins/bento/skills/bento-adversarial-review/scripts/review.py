@@ -52,7 +52,7 @@ def write_diff(scope: List[str], uncommitted: bool, diff: IO[bytes], log: IO[byt
 def reviewer_cmd(args: argparse.Namespace, prompt: str, diff: Path, out: Path) -> List[str]:
     if args.reviewer == "codex":
         # A quick review's diff goes in the prompt: one tool call fewer before the review starts.
-        where = (f"The diff under review:\n\n{diff.read_text()}\n"
+        where = (f"The diff under review:\n\n{diff.read_text(errors='replace')}\n"
                  if args.tier == "quick" and diff.stat().st_size < INLINE_MAX
                  else f"The diff under review is in the file {diff}.")
         # Plain `codex exec`: `codex exec review` keeps a bug-only rubric.

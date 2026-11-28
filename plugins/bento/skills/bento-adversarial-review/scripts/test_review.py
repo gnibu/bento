@@ -103,6 +103,19 @@ class ReviewTests(unittest.TestCase):
         self.assertEqual(claude[1:5], ["--model", "sonnet", "--effort", "low"])
         self.assertIn("reviewer of a small change", claude[-1])
 
+    def test_quick_tier_points_codex_at_a_large_diff_file(self):
+        self.commit("app.py", "x = 1\n" * 20000)
+        self.run_review("codex", "--tier", "quick", "show", "HEAD")
+        [call] = self.recorded()
+        self.assertTrue(call["args"][9].startswith(f"The diff under review is in the file {self.path('diff').resolve()}. "))
+
+    def test_quick_tier_inlines_a_diff_that_is_not_utf8(self):
+        (self.repo / "app.py").write_bytes("print('caf\u00e9')\n".encode("latin-1"))
+        self.git("commit", "-qam", "latin-1")
+        self.assertEqual(self.run_review("codex", "--tier", "quick", "show", "HEAD"), "EXIT=0\n- [P2] codex finding\n")
+        [call] = self.recorded()
+        self.assertIn("print('caf\ufffd')", call["args"][9])
+
     def test_git_arguments_after_the_separator_are_kept_verbatim(self):
         self.commit("other.py", "y = 1\n")
         self.commit("app.py", "print('b')\n")
