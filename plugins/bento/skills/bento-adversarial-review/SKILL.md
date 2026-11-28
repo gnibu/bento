@@ -73,7 +73,8 @@ commits that already landed.
 Judge the scope's diff; a tier the caller or user gives is used as is. Unsure → deep.
 
 - **deep**: a mistake here would be costly or hard to spot: it touches security, data,
-  concurrency or what other code relies on, or it is large or spread out.
+  concurrency or what other code relies on, or it is large or spread out, or the request asks
+  for more than correctness bugs.
 - **quick**: small, local and easy to check by reading it.
 
 ## Phase 1 — Produce the findings

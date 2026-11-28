@@ -95,10 +95,12 @@ class ReviewTests(unittest.TestCase):
         self.commit("app.py", "print('b')\n")
         self.run_review("codex", "--tier", "quick", "show", "HEAD")
         self.run_review("claude", "--tier", "quick", "--effort", "low", "show", "HEAD")
-        codex, claude = (call["args"] for call in self.recorded())
+        codex_call, claude_call = self.recorded()
+        codex, claude = codex_call["args"], claude_call["args"]
         self.assertEqual(codex[3:7], ["-m", "gpt-6.2-sol", "-c", "model_reasoning_effort=medium"])
-        self.assertTrue(codex[9].startswith("The diff under review:\n\ncommit "))
-        self.assertIn("+print('b')", codex[9])
+        self.assertTrue(codex[9].startswith("The diff under review is on stdin. You are"))
+        self.assertIn("+print('b')", codex_call["stdin"])
+        self.assertNotIn("print('b')", codex[9])
         self.assertIn("reviewer of a small change", codex[9])
         self.assertEqual(claude[1:5], ["--model", "sonnet", "--effort", "low"])
         self.assertIn("reviewer of a small change", claude[-1])
@@ -108,13 +110,21 @@ class ReviewTests(unittest.TestCase):
         self.run_review("codex", "--tier", "quick", "show", "HEAD")
         [call] = self.recorded()
         self.assertTrue(call["args"][9].startswith(f"The diff under review is in the file {self.path('diff').resolve()}. "))
+        self.assertEqual(call["stdin"], "")
 
-    def test_quick_tier_inlines_a_diff_that_is_not_utf8(self):
+    def test_quick_tier_points_codex_at_a_diff_that_is_not_utf8(self):
         (self.repo / "app.py").write_bytes("print('caf\u00e9')\n".encode("latin-1"))
         self.git("commit", "-qam", "latin-1")
         self.assertEqual(self.run_review("codex", "--tier", "quick", "show", "HEAD"), "EXIT=0\n- [P2] codex finding\n")
         [call] = self.recorded()
-        self.assertIn("print('caf\ufffd')", call["args"][9])
+        self.assertTrue(call["args"][9].startswith(f"The diff under review is in the file {self.path('diff').resolve()}. "))
+        self.assertEqual(call["stdin"], "")
+
+    def test_quick_tier_sends_a_nul_byte_on_stdin(self):
+        self.commit("app.py", "a\0b\n")
+        self.assertEqual(self.run_review("codex", "--tier", "quick", "--", "show", "--text", "HEAD"), "EXIT=0\n- [P2] codex finding\n")
+        [call] = self.recorded()
+        self.assertIn("+a\0b", call["stdin"])
 
     def test_git_arguments_after_the_separator_are_kept_verbatim(self):
         self.commit("other.py", "y = 1\n")

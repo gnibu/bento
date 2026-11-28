@@ -5,8 +5,8 @@
 
 GIT_ARGS is the scope command without its leading `git` (`diff origin/master...HEAD`,
 `show <sha>`); --uncommitted is `git diff HEAD` plus untracked files. --tier sets the default
-model, effort and prompt (prompt.md, or prompt-quick.md for quick, which also puts a small
-diff in Codex's prompt). Files, all from
+model, effort and prompt (prompt.md, or prompt-quick.md for quick, which also sends a small
+UTF-8 diff on Codex's stdin). Files, all from
 `git rev-parse --git-path`: adversarial-review.diff (the diff), .md (the findings), .log (the
 reviewer's or git's output), and .exit, written last: `EXIT=<reviewer status>`, `EXIT=diff-failed`
 or `EXIT=empty-diff`. Prints the .exit line, then the findings.
@@ -20,13 +20,13 @@ import argparse
 from pathlib import Path
 import subprocess
 import sys
-from typing import IO, List
+from typing import IO, List, Optional
 
 PROMPTS = {"deep": Path(__file__).with_name("prompt.md"), "quick": Path(__file__).with_name("prompt-quick.md")}
 MODELS = {"deep": {"codex": "gpt-6.2-astra", "claude": "opus"},
           "quick": {"codex": "gpt-6.2-sol", "claude": "sonnet"}}
 EFFORTS = {"deep": "high", "quick": "medium"}
-INLINE_MAX = 64_000  # bytes of diff a quick review puts in the prompt, well under the OS's argv limit
+INLINE_MAX = 64_000  # bytes of diff a quick review sends on stdin rather than as a file to read
 
 
 def git_path(name: str) -> Path:
@@ -49,24 +49,37 @@ def write_diff(scope: List[str], uncommitted: bool, diff: IO[bytes], log: IO[byt
     return True
 
 
-def reviewer_cmd(args: argparse.Namespace, prompt: str, diff: Path, out: Path) -> List[str]:
+def quick_stdin(args: argparse.Namespace, diff: Path) -> Optional[bytes]:
+    """A quick review's small diff, for Codex's stdin: one tool call fewer, and none in `ps`."""
+    if args.reviewer != "codex" or args.tier != "quick" or diff.stat().st_size >= INLINE_MAX:
+        return None
+    data = diff.read_bytes()
+    try:
+        data.decode("utf-8")  # codex rejects stdin that isn't UTF-8
+    except UnicodeDecodeError:
+        return None
+    return data
+
+
+def reviewer_cmd(args: argparse.Namespace, prompt: str, diff: Path, out: Path, on_stdin: bool) -> List[str]:
     if args.reviewer == "codex":
-        # A quick review's diff goes in the prompt: one tool call fewer before the review starts.
-        where = (f"The diff under review:\n\n{diff.read_text(errors='replace')}\n"
-                 if args.tier == "quick" and diff.stat().st_size < INLINE_MAX
-                 else f"The diff under review is in the file {diff}.")
+        where = "on stdin" if on_stdin else f"in the file {diff}"
         # Plain `codex exec`: `codex exec review` keeps a bug-only rubric.
         return ["codex", "exec", "-s", "read-only", "-m", args.model,
-                "-c", f"model_reasoning_effort={args.effort}", "-o", str(out), f"{where} {prompt}"]
+                "-c", f"model_reasoning_effort={args.effort}", "-o", str(out),
+                f"The diff under review is {where}. {prompt}"]
     return ["claude", "-p", "--model", args.model, "--effort", args.effort, "--setting-sources", "",
             "--tools", "Read,Grep,Glob", "--strict-mcp-config", "--no-session-persistence",
             f"The diff under review is on stdin. {prompt}"]
 
 
 def run_reviewer(args: argparse.Namespace, prompt: str, diff: Path, out: Path, log: IO[bytes]) -> int:
-    cmd = reviewer_cmd(args, prompt, diff, out)
+    data = quick_stdin(args, diff)
+    cmd = reviewer_cmd(args, prompt, diff, out, data is not None)
     try:
-        if args.reviewer == "codex":  # stdin closed, or codex waits on it forever
+        if args.reviewer == "codex":  # stdin given or closed, or codex waits on it forever
+            if data is not None:
+                return subprocess.run(cmd, input=data, stdout=log, stderr=log).returncode
             return subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=log, stderr=log).returncode
         with diff.open("rb") as stdin, out.open("wb") as findings:
             return subprocess.run(cmd, stdin=stdin, stdout=findings, stderr=log).returncode
