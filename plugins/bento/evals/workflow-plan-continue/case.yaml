@@ -44,7 +44,7 @@ graders:
 - type: regex
   name: passing-tests
   target: trace
-  pattern: '"name"\s*:\s*"(?:Edit|Write|MultiEdit)"[\s\S]*"type"\s*:\s*"tool_result"[^\n]*Ran [1-9][0-9]* tests? in [^\n]*?\\n\\nOK(?:\\n|")'
+  pattern: '"name"\s*:\s*"(?:Edit|Write|MultiEdit)"[\s\S]*"type"\s*:\s*"tool_result"[^\n]*Ran [1-9][0-9]* tests? in [^\n]*?\\n\\nOK(?:\\n|")|"type"\s*:\s*"tool_result"[^\n]*Ran (?:[3-9]|[1-9][0-9]+) tests? in [^\n]*?\\n\\nOK(?:\\n|")'
 - type: tool_used
   name: fired
   tool: Skill
