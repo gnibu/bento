@@ -73,3 +73,5 @@ Speculative playbooks are cost paid by every future reader. Default to not addin
 - Shorter is better: if the explanation is longer than the steps, cut the explanation.
 - Write for a capable agent: the rule and when it applies, not the reasoning it can infer.
   Leave out what a script already enforces or its message says; a fix adds a clause, not a paragraph.
+- For a judgment call, describe what each option is for and let the agent choose: no numeric
+  thresholds or exhaustive lists.
