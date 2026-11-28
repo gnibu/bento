@@ -16,6 +16,10 @@ graders:
       and does not report the branch as already reviewed or ask whether to skip.
       Mentioning the recorded review, or waiting for the user's go before launching the reviewer,
       is fine.
+  - type: regex
+    name: diff-command
+    pattern: '^[ \t]*(?:\S+|python3?\s+\S*review\.py\S*\s.*?)\s+diff\s+6b19bde[0-9a-f]*\.\.(?:HEAD\b(?![~^])|(?=[\s`''"]|$))'
+    flags: m
   - type: tool_used
     name: fired
     tool: Skill

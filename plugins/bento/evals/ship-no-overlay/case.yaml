@@ -26,6 +26,16 @@ graders:
       The repo has no bento overlay; its AGENTS.md names base `master`, GitHub, Linear (ticket ENG-42, from the branch name) and review status `In Review`. The response is a dry-run plan of steps.
       PASS if, after the PR is opened, the plan comments on ENG-42 with the PR link and a short
       summary, moves ENG-42 to `In Review`, and checks the status again afterwards.
+  - type: regex
+    name: test-plan-section
+    pattern: '#{2,}\s*Test [Pp]lan'
+  - type: regex
+    name: no-greptile-label
+    pattern: 'greptile'
+    match: not_contains
+  - type: regex
+    name: moves-to-in-review
+    pattern: '(?:[Mm]ove|[Ss]et|[Tt]ransition|[Uu]pdate|status to)[^\n]*In Review'
   - type: tool_used
     name: fired
     tool: Skill

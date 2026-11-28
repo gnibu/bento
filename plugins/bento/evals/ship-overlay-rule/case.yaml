@@ -15,6 +15,12 @@ graders:
       `greptile` label to the PR when the user asks for a review, and also run `ruff check .`
       before pushing. The user asked for a review. PASS only if the planned steps include BOTH
       adding the `greptile` label to the PR AND running `ruff check .` before the push.
+  - type: regex
+    name: ruff-before-push
+    pattern: 'ruff check \.(?!\w|/\w)[\s\S]*["'']?(?:\bgit|\$\{?(?:G|\w*(?:GIT|[Gg]it)\w*)\}?)["'']?(?:\s+-C\s+\S+)?\s+push\b'
+  - type: regex
+    name: adds-greptile-label
+    pattern: 'greptile'
   - type: tool_used
     name: fired
     tool: Skill

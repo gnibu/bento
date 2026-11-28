@@ -14,6 +14,9 @@ graders:
       The branch adds a three-line local helper to app.py. PASS if the review.py command
       the response gives contains `--tier quick`; FAIL otherwise. Judge only that flag: the
       scope, the reviewer and any sandbox remarks don't matter.
+  - type: regex
+    name: tier-flag
+    pattern: 'review\.py\b(?:[^\n#]|\\\n)*--tier[ =]["'']?quick\b'
   - type: tool_used
     name: fired
     tool: Skill

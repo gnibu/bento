@@ -16,6 +16,10 @@ graders:
       chosen scope is the commits after 803376e, i.e. only "chore: mark end of module" (a diff
       like `git diff 803376e..HEAD`, full or short sha). FAIL if the scope is the whole branch
       against origin/master. Offering the whole branch as an alternative the user may pick is fine.
+  - type: regex
+    name: diff-command
+    pattern: '^[ \t]*(?:\S+|python3?\s+\S*review\.py\S*\s.*?)\s+diff\s+803376e[0-9a-f]*\.\.(?:HEAD\b(?![~^])|(?=[\s`''"]|$))'
+    flags: m
   - type: tool_used
     name: fired
     tool: Skill

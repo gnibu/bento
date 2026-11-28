@@ -25,6 +25,20 @@ graders:
     tool: Bash
     input_match: "--base"
     arm: with-only
+  - type: regex
+    name: legacy-unchanged
+    target:
+      source: file
+      path: legacy.py
+    pattern: '^def legacy\(a, b, c\):\n    for x in a:\n        if x:\n            for y in b:\n                if y:\n                    while c:\n                        if x and y:\n                            c -= 1\n    return c\n$'
+  - type: regex
+    name: shout-flattened
+    target:
+      source: file
+      path: app.py
+    pattern: '^ {16}(?:if|else)\b'
+    flags: m
+    match: not_contains
   - type: tool_used
     name: fired
     tool: Skill

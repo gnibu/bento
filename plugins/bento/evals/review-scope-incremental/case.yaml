@@ -15,6 +15,10 @@ graders:
       chosen scope is the commits since 6b19bde (a diff like `git diff 6b19bde..HEAD`, full or short
       sha), not the whole branch against origin/master. Offering the whole branch as an
       alternative the user may pick is fine.
+  - type: regex
+    name: diff-command
+    pattern: '^[ \t]*(?:\S+|python3?\s+\S*review\.py\S*\s.*?)\s+diff\s+6b19bde[0-9a-f]*\.\.(?:HEAD\b(?![~^])|(?=[\s`''"]|$))'
+    flags: m
   - type: tool_used
     name: fired
     tool: Skill

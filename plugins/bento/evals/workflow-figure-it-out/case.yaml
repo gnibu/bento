@@ -26,6 +26,21 @@ graders:
     originals. The transcript must sequence the work before edits; a self-report without verification
     fails. No new playbook should be created.
   focus: trace
+- type: regex
+  name: a-unchanged
+  target:
+    source: file
+    path: exports/a.json
+  pattern: '^\[\{"id":1,"v":"a"\},\{"id":2,"v":"b"\},\{"id":3,"v":"old"\}\]\n$'
+- type: regex
+  name: b-unchanged
+  target:
+    source: file
+    path: exports/b.json
+  pattern: '^\[\{"id":1,"v":"a"\},\{"id":3,"v":"new"\}\]\n$'
+- type: file_exists
+  name: manifest-written
+  path: '.context/**/*manifest*'
 - type: tool_used
   name: fired
   tool: Skill
