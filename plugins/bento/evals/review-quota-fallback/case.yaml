@@ -16,6 +16,9 @@ graders:
       scope (`diff origin/master...HEAD`), and the response says the review then runs on the same
       provider (Claude), not the other model family. FAIL if it falls back to its own sub-agents,
       waits for the quota to reset, retries Codex, or only reports the failure.
+  - type: regex
+    name: reruns-with-claude
+    pattern: 'review\.py"?\s+(?:--\S+\s+(?:\S+\s+)?)*claude\b[^\n]*\bdiff\s+origin/master\.\.\.HEAD'
   - type: tool_used
     name: fired
     tool: Skill

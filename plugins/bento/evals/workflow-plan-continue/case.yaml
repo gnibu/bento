@@ -31,6 +31,20 @@ graders:
   criteria: PASS if a plan artifact is written before implementation with dependent units (formatter,
     app, CLI), each naming concrete verification evidence. A retrospective list after coding fails.
   focus: trace
+- type: regex
+  name: cli-forwards-prefix
+  target:
+    source: file
+    path: cli.py
+  pattern: '--prefix'
+- type: tool_used
+  name: ran-cli-with-prefix
+  tool: Bash
+  input_match: 'cli\.py[^"]*--prefix'
+- type: regex
+  name: passing-tests-added
+  target: trace
+  pattern: '"type"\s*:\s*"tool_result"[^\n]*Ran (?:[3-9]|[1-9][0-9]+) tests? in [^\n]*?\\n\\nOK(?:\\n|")'
 - type: tool_used
   name: fired
   tool: Skill

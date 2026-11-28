@@ -19,6 +19,35 @@ graders:
       Leave list; (b) it refactors `summary` on a new branch, with a test that pins its
       behaviour written before or alongside the change; (c) it reports before/after metrics
       for `summary`; (d) it opened no PR and pushed nothing.
+  - type: regex
+    name: price-left-alone
+    target:
+      source: file
+      path: orders.py
+    pattern: '\n {20}if coupon and coupon\["active"\]:\n[\s\S]*\n        total \+= 12\n'
+  - type: regex
+    name: summary-flattened
+    target:
+      source: file
+      path: report.py
+    pattern: '^ {16}(?:if|else)\b'
+    flags: m
+    match: not_contains
+  - type: regex
+    name: on-hotspots-branch
+    target:
+      source: file
+      path: .git/HEAD
+    pattern: '^ref: refs/heads/hotspots/'
+  - type: file_exists
+    name: pin-test-written
+    path: '**/test*.py'
+  - type: tool_used
+    name: no-push
+    tool: Bash
+    input_match: '(?:\bgit|\$\{?(?:G|\w*(?:GIT|[Gg]it)\w*)\}?)\s+push\b'
+    min: 0
+    max: 0
   - type: tool_used
     name: fired
     tool: Skill

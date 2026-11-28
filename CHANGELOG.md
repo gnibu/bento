@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Deterministic graders beside the LLM judge in 22 eval cases.** Where a case's outcome is a
+  file, a git ref, a command or a flag in the answer (`--tier quick`, `git diff 6b19bde..HEAD`,
+  a test file left unchanged, a pin test written, the wup headings), a `regex` or `file_exists`
+  grader now scores it too, so a judge's split vote no longer moves the score alone.
+  Judgment calls keep their `llm` grader.
 - **`bento-authoring-a-skill`: describe judgment calls, don't threshold them.** A new guardrail
   says to describe what each option is for and let the agent choose, with no numeric thresholds
   or exhaustive lists.

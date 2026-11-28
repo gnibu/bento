@@ -31,6 +31,10 @@ graders:
   criteria: PASS if an actual spec artifact records the stated behavior and checkable acceptance
     criteria before implementation. Do not reward merely promising to write a spec.
   focus: trace
+- type: regex
+  name: passing-tests-added
+  target: trace
+  pattern: '"type"\s*:\s*"tool_result"[^\n]*Ran (?:[3-9]|[1-9][0-9]+) tests? in [^\n]*?\\n\\nOK(?:\\n|")'
 - type: tool_used
   name: fired
   tool: Skill

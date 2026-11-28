@@ -20,6 +20,9 @@ graders:
       `make test-e2e` or an unfiltered `npx playwright test`, and (3) says in its report which
       end-to-end tests it ran and why, or which it left out. FAIL if it runs the whole
       end-to-end suite anywhere in the plan.
+  - type: regex
+    name: selective-runner
+    pattern: 'npm run e2e(?!\s+--\s+--dry)'
   - type: tool_used
     name: fired
     tool: Skill

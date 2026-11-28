@@ -35,6 +35,9 @@ graders:
     name: drops-one-off
     criteria: |
       PASS if the frozen terminal is dropped: no proposed diff mentions it.
+  - type: regex
+    name: procedure-file
+    pattern: 'docs/procedures/[\w.-]+\.md'
   - type: tool_used
     name: fired
     tool: Skill
